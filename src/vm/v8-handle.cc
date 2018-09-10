@@ -2,8 +2,9 @@
 //
 //
 
-#include "include/libplatform/libplatform.h"
 #include "src/vm/v8-handle.h"
+
+#include "include/libplatform/libplatform.h"
 
 namespace v8 {
 namespace vm {

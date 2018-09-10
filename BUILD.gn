@@ -2448,6 +2448,8 @@ v8_source_set("v8_base") {
     "src/vm/v8-handle.cc", # @adsniper
     "src/vm/v8-handle.h", # @adsniper
     "src/vm/vm-api.cc", # @adsniper
+    "src/vm/vm-compiler.h", # @adsniper
+    "src/vm/vm-compiler.cc", # @adsniper
     "src/wasm/baseline/liftoff-assembler-defs.h",
     "src/wasm/baseline/liftoff-assembler.cc",
     "src/wasm/baseline/liftoff-assembler.h",

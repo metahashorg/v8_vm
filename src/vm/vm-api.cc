@@ -4,6 +4,7 @@
 
 #include "include/v8-vm.h"
 #include "src/vm/v8-handle.h"
+#include "src/vm/vm-compiler.h"
 
 namespace vi = v8::vm::internal ;
 
@@ -16,6 +17,10 @@ void InitializeV8(const char* app_path) {
 
 void DeinitializeV8() {
   vi::V8Handle::instance_.Pointer()->Deinitialize() ;
+}
+
+void CompileScript(const char* script_path) {
+  vi::CompileScript(script_path) ;
 }
 
 }  // namespace vm

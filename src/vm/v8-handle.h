@@ -2,8 +2,8 @@
 //
 //
 
-#ifndef INCLUDE_V8_HANDLE_H_
-#define INCLUDE_V8_HANDLE_H_
+#ifndef V8_VM_V8_HANDLE_H_
+#define V8_VM_V8_HANDLE_H_
 
 #include "include/v8.h"
 #include "src/base/lazy-instance.h"
@@ -17,6 +17,8 @@ class V8Handle {
  public:
   void Initialize(const char* app_path) ;
   void Deinitialize() ;
+
+  const Isolate::CreateParams& create_params() const { return create_params_ ; }
 
   static base::LazyInstance<V8Handle>::type instance_ ;
 
@@ -35,4 +37,4 @@ class V8Handle {
 }  // namespace vm
 }  // namespace v8
 
-#endif  // INCLUDE_V8_HANDLE_H_
+#endif  // V8_VM_V8_HANDLE_H_

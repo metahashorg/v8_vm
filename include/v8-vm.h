@@ -11,15 +11,18 @@
 namespace v8 {
 namespace vm {
 
-  /**
-   * Initialize V8 for working with virtual machine
-   */
+  /** Initializes V8 for working with virtual machine. */
   void V8_EXPORT InitializeV8(const char* app_path) ;
 
-  /**
-   * Deinitialize V8
-   */
+  /** Deinitializes V8. */
   void V8_EXPORT DeinitializeV8() ;
+
+  /**
+   * Compiles the script.
+   * Result will be saved into a file with the same name and
+   * extension is .cmpl.
+   */
+  void V8_EXPORT CompileScript(const char* script_path) ;
 
 }  // namespace vm
 }  // namespace v8
