@@ -1491,6 +1491,7 @@ v8_source_set("v8_base") {
     "include/v8-profiler.h",
     "include/v8-testing.h",
     "include/v8-util.h",
+    "include/v8-vm.h", # @adsniper
     "include/v8.h",
     "include/v8config.h",
     "src/accessors.cc",
@@ -2444,6 +2445,9 @@ v8_source_set("v8_base") {
     "src/visitors.h",
     "src/vm-state-inl.h",
     "src/vm-state.h",
+    "src/vm/v8-handle.cc", # @adsniper
+    "src/vm/v8-handle.h", # @adsniper
+    "src/vm/vm-api.cc", # @adsniper
     "src/wasm/baseline/liftoff-assembler-defs.h",
     "src/wasm/baseline/liftoff-assembler.cc",
     "src/wasm/baseline/liftoff-assembler.h",
@@ -2810,6 +2814,7 @@ v8_source_set("v8_base") {
     ":torque_generated_core",
     ":v8_headers",
     ":v8_libbase",
+    ":v8_libplatform", # @adsniper
     ":v8_libsampler",
     "src/inspector:inspector",
   ]
