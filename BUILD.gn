@@ -3467,6 +3467,10 @@ if (want_v8_shell) {
 # @adsniper
 v8_executable("v8_vm") {
   sources = [
+    "vm_apps/app-utils.h",
+    "vm_apps/app-utils.cc",
+    "vm_apps/command-line.h",
+    "vm_apps/command-line.cc",
     "vm_apps/v8-vm.cc",
   ]
 
