@@ -20,8 +20,12 @@
 namespace v8 {
 namespace internal {
 
-ScriptData::ScriptData(const byte* data, int length)
-    : owns_data_(false), rejected_(false), data_(data), length_(length) {
+// @adsniper
+// ScriptData::ScriptData(const byte* data, int length)
+//     : owns_data_(false), rejected_(false), data_(data), length_(length) {
+ScriptData::ScriptData(const byte* data, int length, bool use_hash_for_check)
+    : owns_data_(false), rejected_(false), use_hash_for_check_(use_hash_for_check),
+      data_(data), length_(length) {
   if (!IsAligned(reinterpret_cast<intptr_t>(data), kPointerAlignment)) {
     byte* copy = NewArray<byte>(length);
     DCHECK(IsAligned(reinterpret_cast<intptr_t>(copy), kPointerAlignment));
@@ -433,7 +437,10 @@ SerializedCodeData::SerializedCodeData(const std::vector<byte>* payload,
 }
 
 SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
-    Isolate* isolate, uint32_t expected_source_hash) const {
+    // @adsniper
+    // Isolate* isolate, uint32_t expected_source_hash) const {
+    Isolate* isolate, uint32_t expected_source_hash,
+    bool use_hash_for_check) const {
   if (this->size_ < kHeaderSize) return INVALID_HEADER;
   uint32_t magic_number = GetMagicNumber();
   if (magic_number != ComputeMagicNumber(isolate)) return MAGIC_NUMBER_MISMATCH;
@@ -445,7 +452,10 @@ SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
   uint32_t c1 = GetHeaderValue(kChecksum1Offset);
   uint32_t c2 = GetHeaderValue(kChecksum2Offset);
   if (version_hash != Version::Hash()) return VERSION_MISMATCH;
-  if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
+  // @adsniper
+  // if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
+  if (use_hash_for_check && source_hash != expected_source_hash)
+    return SOURCE_MISMATCH ;
   if (cpu_features != static_cast<uint32_t>(CpuFeatures::SupportedFeatures())) {
     return CPU_FEATURES_MISMATCH;
   }
@@ -517,7 +527,10 @@ SerializedCodeData SerializedCodeData::FromCachedData(
     SanityCheckResult* rejection_result) {
   DisallowHeapAllocation no_gc;
   SerializedCodeData scd(cached_data);
-  *rejection_result = scd.SanityCheck(isolate, expected_source_hash);
+  // @adsniper
+  // *rejection_result = scd.SanityCheck(isolate, expected_source_hash);
+  *rejection_result = scd.SanityCheck(
+      isolate, expected_source_hash, cached_data->use_hash_for_check()) ;
   if (*rejection_result != CHECK_SUCCESS) {
     cached_data->Reject();
     return SerializedCodeData(nullptr, 0);

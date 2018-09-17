@@ -3,6 +3,8 @@
 //
 
 #include "include/v8-vm.h"
+
+#include "src/vm/script-runner.h"
 #include "src/vm/v8-handle.h"
 #include "src/vm/vm-compiler.h"
 
@@ -21,6 +23,11 @@ void DeinitializeV8() {
 
 void CompileScript(const char* script_path) {
   vi::CompileScript(script_path) ;
+}
+
+void RunScriptByCompilation(
+    const char* compilation_path, const char* script_path) {
+  vi::RunScriptByCompilation(compilation_path, script_path) ;
 }
 
 }  // namespace vm

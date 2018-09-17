@@ -2124,7 +2124,8 @@ ScriptCompiler::CachedData::CachedData(const uint8_t* data_, int length_,
     : data(data_),
       length(length_),
       rejected(false),
-      buffer_policy(buffer_policy_) {}
+      buffer_policy(buffer_policy_),
+      use_hash_for_check(true) /* @adsniper */ {}
 
 
 ScriptCompiler::CachedData::~CachedData() {
@@ -2505,7 +2506,9 @@ MaybeLocal<UnboundScript> ScriptCompiler::CompileUnboundInternal(
     DCHECK(source->cached_data);
     // ScriptData takes care of pointer-aligning the data.
     script_data = new i::ScriptData(source->cached_data->data,
-                                    source->cached_data->length);
+                                    source->cached_data->length,
+                                    // @adsniper
+                                    source->cached_data->use_hash_for_check) ;
   }
 
   i::Handle<i::String> str = Utils::OpenHandle(*(source->source_string));

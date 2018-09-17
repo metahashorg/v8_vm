@@ -24,6 +24,12 @@ namespace vm {
    */
   void V8_EXPORT CompileScript(const char* script_path) ;
 
+  /**
+   * Runs the script by using a previous compilation.
+   */
+  void V8_EXPORT RunScriptByCompilation(
+      const char* compilation_path, const char* script_path) ;
+
 }  // namespace vm
 }  // namespace v8
 
