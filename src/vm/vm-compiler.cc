@@ -31,8 +31,8 @@ void CompileScript(const char* script_path) {
 
   // Need for a full compilation
   // TODO: Look at other flags
-  i::FLAG_lazy = false ;
-  i::FLAG_log_code = true ;
+  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
+  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
 
   Isolate* isolate =
       Isolate::New(V8Handle::instance_.Pointer()->create_params()) ;
@@ -75,7 +75,8 @@ Local<Module> LoadCompilation(
 
 #ifdef DEBUG
   // Use for a verbose deserialization
-  i::FLAG_profile_deserialization = true ;
+  TemporarilySetValue<bool> profile_deserialization(
+      i::FLAG_profile_deserialization, true) ;
 #endif  // DEBUG
 
   ScriptCompiler::CachedData* cache =
