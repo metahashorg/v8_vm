@@ -4,6 +4,8 @@
 
 #include "vm_apps/command-line.h"
 
+#include <algorithm>
+
 #include "vm_apps/app-utils.h"
 
 namespace {
