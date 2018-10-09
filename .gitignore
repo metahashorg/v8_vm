@@ -34,47 +34,47 @@
 .settings
 .vscode
 /_*
-/base
-/build
-/buildtools
+# /base # @adsniper
+# /build # @adsniper
+# /buildtools # @adsniper
 /hydrogen.cfg
 /obj
 /out
 /out.gn
 /perf.data
 /perf.data.old
-/src/inspector/build/closure-compiler
-/src/inspector/build/closure-compiler.tar.gz
-/test/benchmarks/data
+# /src/inspector/build/closure-compiler # @adsniper
+# /src/inspector/build/closure-compiler.tar.gz # @adsniper
+# /test/benchmarks/data # @adsniper
 /test/fuzzer/wasm_corpus
 /test/fuzzer/wasm_corpus.tar.gz
-/test/mozilla/data
-/test/test262/data
-/test/test262/harness
-/test/wasm-js
-/test/wasm-spec-tests/tests
-/test/wasm-spec-tests/tests.tar.gz
-/third_party/*
-!/third_party/antlr4
-!/third_party/binutils
-!/third_party/eu-strip
-!/third_party/inspector_protocol
-!/third_party/colorama
+# /test/mozilla/data # @adsniper
+# /test/test262/data # @adsniper
+# /test/test262/harness # @adsniper
+# /test/wasm-js # @adsniper
+# /test/wasm-spec-tests/tests # @adsniper
+# /test/wasm-spec-tests/tests.tar.gz # @adsniper
+# /third_party/* # @adsniper
+# !/third_party/antlr4 # @adsniper
+# !/third_party/binutils # @adsniper
+# !/third_party/eu-strip # @adsniper
+# !/third_party/inspector_protocol # @adsniper
+# !/third_party/colorama # @adsniper
 /third_party/colorama/src
-!/third_party/googletest
-/third_party/googletest/src
-/tools/clang
-/tools/gcmole/gcmole-tools
-/tools/gcmole/gcmole-tools.tar.gz
+# !/third_party/googletest # @adsniper
+# /third_party/googletest/src # @adsniper
+# /tools/clang # @adsniper
+# /tools/gcmole/gcmole-tools # @adsniper
+# /tools/gcmole/gcmole-tools.tar.gz # @adsniper
 /tools/gyp
 /tools/jsfunfuzz/jsfunfuzz
 /tools/jsfunfuzz/jsfunfuzz.tar.gz
-/tools/luci-go
+# /tools/luci-go # @adsniper
 /tools/mips_toolchain
 /tools/mips_toolchain.tar.gz
 /tools/oom_dump/oom_dump
 /tools/oom_dump/oom_dump.o
-/tools/swarming_client
+# /tools/swarming_client # @adsniper
 /tools/visual_studio/Debug
 /tools/visual_studio/Release
 /v8.log.ll
@@ -104,4 +104,8 @@ node_modules
 tools/turbolizer/build
 tools/turbolizer/.rpt2_cache
 tools/turbolizer/deploy
+
+# @adsniper additional exclusions
+/build/linux/debian_*-sysroot
+/build/linux/ubuntu_*-sysroot
 
