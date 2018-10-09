@@ -1,40 +1,22 @@
-V8 JavaScript Engine
+Virtual machine is based on V8
 =============
 
-V8 is Google's open source JavaScript engine.
+Virtual machine is MetaHash's open source project.
 
-V8 implements ECMAScript as specified in ECMA-262.
+Virtual machine is written in C++ and uses V8, open source JavaScript engine from Google.
 
-V8 is written in C++ and is used in Google Chrome, the open source
-browser from Google.
-
-V8 can run standalone, or can be embedded into any C++ application.
-
-V8 Project page: https://github.com/v8/v8/wiki
+Virtual machine can run standalone, or can be embedded into any C++ application.
 
 
-Getting the Code
+Building the Code
 =============
 
-Checkout [depot tools](http://www.chromium.org/developers/how-tos/install-depot-tools), and run
+Linux:
 
-        fetch v8
+        ./build/vm/linux/build-all-x64-release.sh
 
-This will checkout V8 into the directory `v8` and fetch all of its dependencies.
-To stay up to date, run
+Windows:
 
-        git pull origin
-        gclient sync
+        .\build\vm\win\build-all-x64-debug-sharedlibs.bat
 
-For fetching all branches, add the following into your remote
-configuration in `.git/config`:
-
-        fetch = +refs/branch-heads/*:refs/remotes/branch-heads/*
-        fetch = +refs/tags/*:refs/tags/*
-
-
-Contributing
-=============
-
-Please follow the instructions mentioned on the
-[V8 wiki](https://github.com/v8/v8/wiki/Contributing).
+Result will be in ./out directory.
