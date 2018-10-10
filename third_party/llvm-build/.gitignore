@@ -1,0 +1,5 @@
+# @metahash additional exclusions
+!*.a
+!*.exe
+!*.lib
+!*.so

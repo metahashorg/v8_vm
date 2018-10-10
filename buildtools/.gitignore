@@ -1,0 +1,7 @@
+# @metahash additional exclusions
+!linux64/clang-format
+!linux64/gn
+!mac/clang-format
+!mac/gn
+!win/clang-format.exe
+!win/gn.exe

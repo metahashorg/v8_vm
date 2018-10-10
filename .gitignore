@@ -105,7 +105,7 @@ tools/turbolizer/build
 tools/turbolizer/.rpt2_cache
 tools/turbolizer/deploy
 
-# @adsniper additional exclusions
+# @metahash additional exclusions
 /build/linux/debian_*-sysroot
 /build/linux/ubuntu_*-sysroot
 

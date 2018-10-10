@@ -59,3 +59,10 @@ keep.lst
 
 # Editor by-products
 .vscode/
+
+# @metahash additional exclusions
+!unord.map
+!forwardlist.spec
+!pairs.spec
+!util.smartptr.shared.spec
+!util.smartptr.weak.spec

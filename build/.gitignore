@@ -1,0 +1,3 @@
+# @metahash additional exclusions
+!*.so
+!*.map

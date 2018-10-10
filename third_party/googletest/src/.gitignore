@@ -52,3 +52,10 @@ googlemock/CTestTestfile.cmake
 googlemock/Makefile
 googlemock/cmake_install.cmake
 googlemock/gtest
+
+# @metahash additional exclusions
+!*/build-aux/*
+!*/make/*
+!*/msvc/**/*
+!*/xcode/**/*
+!Makefile
