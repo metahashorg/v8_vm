@@ -5,11 +5,14 @@
 @echo off
 
 :check_depot_tools
-:: Check commands 'gn' and 'ninja' it's enough
+:: Check commands 'gn', 'ninja' and 'python' it's enough
 call %~dp0check-command.bat gn
 if %errorlevel% neq 0 goto :get_depot_tools
 
 call %~dp0check-command.bat ninja
+if %errorlevel% neq 0 goto :get_depot_tools
+
+call %~dp0check-command.bat python
 if %errorlevel% neq 0 goto :get_depot_tools
 
 exit /b 0
