@@ -1,6 +1,10 @@
-# /isolate
+# /isolate # @metahash
 # /isolate.exe # @metahash
 # /linux64/isolate # @metahash
 # /mac64/isolate # @metahash
 # /win64/isolate.exe # @metahash
 .versions
+
+# @metahash additional exclusions
+!/isolate.exe
+!/win64/isolate.exe

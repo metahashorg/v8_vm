@@ -27,7 +27,7 @@ x64-Release/
 Makefile.in
 aclocal.m4
 configure
-build-aux/
+# build-aux/ # @metahash
 autom4te.cache/
 googletest/m4/libtool.m4
 googletest/m4/ltoptions.m4
