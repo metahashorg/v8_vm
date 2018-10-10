@@ -1,0 +1,4 @@
+# @metahash additional exclusions
+!profviz-test.log
+!tickprocessor-test.log
+!tickprocessor-test-func-info.log 
