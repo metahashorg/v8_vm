@@ -3,3 +3,4 @@
 # Do not modify line endings for binary files (which are sometimes auto
 # detected as text files by git).
 *.png binary
+*.exe filter=lfs diff=lfs merge=lfs -text
