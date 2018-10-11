@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-#  Copyright 2018 the AdSniper project authors. All rights reserved.
-#
-#
+# Copyright 2018 the MetaHash project authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
 # Command line parameters:
 # $1 is a folder for building project (e.g. out\win\release_x64) (must be)

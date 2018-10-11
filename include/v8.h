@@ -1405,7 +1405,7 @@ class V8_EXPORT ScriptCompiler {
           length(0),
           rejected(false),
           buffer_policy(BufferNotOwned),
-          use_hash_for_check(true) /* @adsniper */ {}
+          use_hash_for_check(true) /* @metahash */ {}
 
     // If buffer_policy is BufferNotOwned, the caller keeps the ownership of
     // data and guarantees that it stays alive until the CachedData object is
@@ -1420,7 +1420,7 @@ class V8_EXPORT ScriptCompiler {
     int length;
     bool rejected;
     BufferPolicy buffer_policy;
-    // @adsniper Flag of using a source hash for a sanity check
+    // @metahash Flag of using a source hash for a sanity check
     bool use_hash_for_check ;
 
     // Prevent copying.

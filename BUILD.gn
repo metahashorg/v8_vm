@@ -1491,7 +1491,7 @@ v8_source_set("v8_base") {
     "include/v8-profiler.h",
     "include/v8-testing.h",
     "include/v8-util.h",
-    "include/v8-vm.h", # @adsniper
+    "include/v8-vm.h", # @metahash
     "include/v8.h",
     "include/v8config.h",
     "src/accessors.cc",
@@ -2445,14 +2445,14 @@ v8_source_set("v8_base") {
     "src/visitors.h",
     "src/vm-state-inl.h",
     "src/vm-state.h",
-    "src/vm/script-runner.cc", # @adsniper
-    "src/vm/script-runner.h", # @adsniper
-    "src/vm/v8-handle.cc", # @adsniper
-    "src/vm/v8-handle.h", # @adsniper
-    "src/vm/vm-api.cc", # @adsniper
-    "src/vm/vm-compiler.h", # @adsniper
-    "src/vm/vm-compiler.cc", # @adsniper
-    "src/vm/vm-utils.h", # @adsniper
+    "src/vm/script-runner.cc", # @metahash
+    "src/vm/script-runner.h", # @metahash
+    "src/vm/v8-handle.cc", # @metahash
+    "src/vm/v8-handle.h", # @metahash
+    "src/vm/vm-api.cc", # @metahash
+    "src/vm/vm-compiler.h", # @metahash
+    "src/vm/vm-compiler.cc", # @metahash
+    "src/vm/vm-utils.h", # @metahash
     "src/wasm/baseline/liftoff-assembler-defs.h",
     "src/wasm/baseline/liftoff-assembler.cc",
     "src/wasm/baseline/liftoff-assembler.h",
@@ -2819,7 +2819,7 @@ v8_source_set("v8_base") {
     ":torque_generated_core",
     ":v8_headers",
     ":v8_libbase",
-    ":v8_libplatform", # @adsniper
+    ":v8_libplatform", # @metahash
     ":v8_libsampler",
     "src/inspector:inspector",
   ]
@@ -3467,7 +3467,7 @@ if (want_v8_shell) {
   }
 }
 
-# @adsniper
+# @metahash
 v8_executable("v8_vm") {
   sources = [
     "vm_apps/app-utils.h",
@@ -3489,7 +3489,7 @@ v8_executable("v8_vm") {
     "//build/win:default_exe_manifest",
   ]
 }
-# @adsniper end
+# @metahash end
 
 template("v8_fuzzer") {
   name = target_name

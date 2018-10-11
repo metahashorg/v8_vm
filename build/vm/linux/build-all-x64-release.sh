@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#  Copyright 2018 the AdSniper project authors. All rights reserved.
-#
-#
+# Copyright 2018 the MetaHash project authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
 $(dirname "$0")/utils/generate-and-build.sh all x64 release $@

@@ -13,7 +13,7 @@ namespace internal {
 
 class ScriptData {
  public:
-  // @adsniper ScriptData(const byte* data, int length);
+  // @metahash ScriptData(const byte* data, int length);
   ScriptData(const byte* data, int length, bool use_hash_for_check = true) ;
   ~ScriptData() {
     if (owns_data_) DeleteArray(data_);
@@ -22,7 +22,7 @@ class ScriptData {
   const byte* data() const { return data_; }
   int length() const { return length_; }
   bool rejected() const { return rejected_; }
-  // @adsniper
+  // @metahash
   bool use_hash_for_check() const { return use_hash_for_check_ ; }
 
   void Reject() { rejected_ = true; }
@@ -40,7 +40,7 @@ class ScriptData {
  private:
   bool owns_data_ : 1;
   bool rejected_ : 1;
-  // @adsniper Flag of using a source hash for a sanity check
+  // @metahash Flag of using a source hash for a sanity check
   bool use_hash_for_check_ : 1 ;
   const byte* data_;
   int length_;
@@ -167,7 +167,7 @@ class SerializedCodeData : public SerializedData {
 
   SanityCheckResult SanityCheck(Isolate* isolate,
                                 uint32_t expected_source_hash,
-                                // @adsniper
+                                // @metahash
                                 bool use_hash_for_check = true) const;
 };
 

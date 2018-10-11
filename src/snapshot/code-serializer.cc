@@ -20,7 +20,7 @@
 namespace v8 {
 namespace internal {
 
-// @adsniper
+// @metahash
 // ScriptData::ScriptData(const byte* data, int length)
 //     : owns_data_(false), rejected_(false), data_(data), length_(length) {
 ScriptData::ScriptData(const byte* data, int length, bool use_hash_for_check)
@@ -437,7 +437,7 @@ SerializedCodeData::SerializedCodeData(const std::vector<byte>* payload,
 }
 
 SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
-    // @adsniper
+    // @metahash
     // Isolate* isolate, uint32_t expected_source_hash) const {
     Isolate* isolate, uint32_t expected_source_hash,
     bool use_hash_for_check) const {
@@ -452,7 +452,7 @@ SerializedCodeData::SanityCheckResult SerializedCodeData::SanityCheck(
   uint32_t c1 = GetHeaderValue(kChecksum1Offset);
   uint32_t c2 = GetHeaderValue(kChecksum2Offset);
   if (version_hash != Version::Hash()) return VERSION_MISMATCH;
-  // @adsniper
+  // @metahash
   // if (source_hash != expected_source_hash) return SOURCE_MISMATCH;
   if (use_hash_for_check && source_hash != expected_source_hash)
     return SOURCE_MISMATCH ;
@@ -527,7 +527,7 @@ SerializedCodeData SerializedCodeData::FromCachedData(
     SanityCheckResult* rejection_result) {
   DisallowHeapAllocation no_gc;
   SerializedCodeData scd(cached_data);
-  // @adsniper
+  // @metahash
   // *rejection_result = scd.SanityCheck(isolate, expected_source_hash);
   *rejection_result = scd.SanityCheck(
       isolate, expected_source_hash, cached_data->use_hash_for_check()) ;

@@ -34,47 +34,47 @@
 .settings
 .vscode
 /_*
-# /base # @adsniper
-# /build # @adsniper
-# /buildtools # @adsniper
+# /base # @metahash
+# /build # @metahash
+# /buildtools # @metahash
 /hydrogen.cfg
 /obj
 /out
 /out.gn
 /perf.data
 /perf.data.old
-# /src/inspector/build/closure-compiler # @adsniper
-# /src/inspector/build/closure-compiler.tar.gz # @adsniper
-# /test/benchmarks/data # @adsniper
+# /src/inspector/build/closure-compiler # @metahash
+# /src/inspector/build/closure-compiler.tar.gz # @metahash
+# /test/benchmarks/data # @metahash
 /test/fuzzer/wasm_corpus
 /test/fuzzer/wasm_corpus.tar.gz
-# /test/mozilla/data # @adsniper
-# /test/test262/data # @adsniper
-# /test/test262/harness # @adsniper
-# /test/wasm-js # @adsniper
-# /test/wasm-spec-tests/tests # @adsniper
-# /test/wasm-spec-tests/tests.tar.gz # @adsniper
-# /third_party/* # @adsniper
-# !/third_party/antlr4 # @adsniper
-# !/third_party/binutils # @adsniper
-# !/third_party/eu-strip # @adsniper
-# !/third_party/inspector_protocol # @adsniper
-# !/third_party/colorama # @adsniper
+# /test/mozilla/data # @metahash
+# /test/test262/data # @metahash
+# /test/test262/harness # @metahash
+# /test/wasm-js # @metahash
+# /test/wasm-spec-tests/tests # @metahash
+# /test/wasm-spec-tests/tests.tar.gz # @metahash
+# /third_party/* # @metahash
+# !/third_party/antlr4 # @metahash
+# !/third_party/binutils # @metahash
+# !/third_party/eu-strip # @metahash
+# !/third_party/inspector_protocol # @metahash
+# !/third_party/colorama # @metahash
 /third_party/colorama/src
-# !/third_party/googletest # @adsniper
-# /third_party/googletest/src # @adsniper
-# /tools/clang # @adsniper
-# /tools/gcmole/gcmole-tools # @adsniper
-# /tools/gcmole/gcmole-tools.tar.gz # @adsniper
+# !/third_party/googletest # @metahash
+# /third_party/googletest/src # @metahash
+# /tools/clang # @metahash
+# /tools/gcmole/gcmole-tools # @metahash
+# /tools/gcmole/gcmole-tools.tar.gz # @metahash
 /tools/gyp
 /tools/jsfunfuzz/jsfunfuzz
 /tools/jsfunfuzz/jsfunfuzz.tar.gz
-# /tools/luci-go # @adsniper
+# /tools/luci-go # @metahash
 /tools/mips_toolchain
 /tools/mips_toolchain.tar.gz
 /tools/oom_dump/oom_dump
 /tools/oom_dump/oom_dump.o
-# /tools/swarming_client # @adsniper
+# /tools/swarming_client # @metahash
 /tools/visual_studio/Debug
 /tools/visual_studio/Release
 /v8.log.ll
@@ -108,4 +108,3 @@ tools/turbolizer/deploy
 # @metahash additional exclusions
 /build/linux/debian_*-sysroot
 /build/linux/ubuntu_*-sysroot
-
