@@ -48,6 +48,11 @@ void RunScriptByCompilation(
     // Load compilation
     Local<Module> main_module =
         LoadCompilation(isolate, context, compilation_path) ;
+    if (main_module.IsEmpty()) {
+      printf("ERROR: Module loading've ended failure\n") ;
+      return ;
+    }
+
     main_module->InstantiateModule(context, ModuleResolveCallback).ToChecked() ;
     global_main_module = main_module ;
 
@@ -71,7 +76,7 @@ void RunScriptByCompilation(
 
     // TODO: Temporary output
     v8::String::Utf8Value utf8(isolate, result) ;
-    printf("Result: %s\n", *utf8) ;
+    printf("INFO: Result of command: %s\n", *utf8) ;
   }
 
   isolate->Dispose() ;

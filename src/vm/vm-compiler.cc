@@ -91,13 +91,14 @@ Local<Module> LoadCompilation(
   ScriptCompiler::Source source(source_string, script_origin, cache) ;
   ScriptCompiler::CompileOptions option = ScriptCompiler::kConsumeCodeCache ;
 
-#ifdef DEBUG
-  // For checking that we only load compilation.
-  i::DisallowCompilation no_compile(reinterpret_cast<i::Isolate*>(isolate)) ;
-#endif  // DEBUG
-
   Local<Module> module =
       ScriptCompiler::CompileModule(isolate, &source, option).ToLocalChecked() ;
+  // We can't use a compilation of a script source because it's fake
+  if (cache->rejected) {
+    printf("ERROR: The compilation is corrupted\n") ;
+    module.Clear() ;
+  }
+
   return module ;
 }
 
