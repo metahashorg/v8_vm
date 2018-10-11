@@ -67,8 +67,7 @@ void CompileScript(const char* script_path) {
 Local<Module> LoadCompilation(
     Isolate* isolate, Local<Context> context, const char* compilation_path) {
   int file_size = 0 ;
-  std::unique_ptr<i::byte> file_content(
-      i::ReadBytes(compilation_path, &file_size, true)) ;
+  i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
   if (file_size == 0) {
     return Local<Module>() ;
   }
@@ -80,7 +79,8 @@ Local<Module> LoadCompilation(
 #endif  // DEBUG
 
   ScriptCompiler::CachedData* cache =
-      new ScriptCompiler::CachedData(file_content.get(), file_size) ;
+      new ScriptCompiler::CachedData(file_content, file_size,
+                                     ScriptCompiler::CachedData::BufferOwned) ;
   cache->use_hash_for_check = false ;
   Local<String> source_string = Utf8ToStr(isolate, "") ;
   ScriptOrigin script_origin(
