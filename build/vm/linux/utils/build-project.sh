@@ -14,9 +14,10 @@
 
 # Check and get depots_tools
 $(dirname "$0")/check-and-get-depot-tools.sh
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Building of '$project_name' failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 # If second parameter is absent we'll build all projects
@@ -31,9 +32,10 @@ cd $(dirname "$0")/../../../..
 # Build a project
 echo "Build project '$project_name' ($(date '+%d.%m.%Y %H:%M:%S'))..."
 ninja -C $1 $2
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Building of '$project_name' failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 echo "------- Building of '$project_name' is successful ($(date '+%d.%m.%Y %H:%M:%S')) -------"

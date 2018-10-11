@@ -13,9 +13,10 @@
 
 # Check and get depots_tools
 $(dirname "$0")/check-and-get-depot-tools.sh
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Running of tests failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 # Go into a root folder of source codes
@@ -25,9 +26,10 @@ echo "Run tests (folder: $1; $(date '+%d.%m.%Y %H:%M:%S'))..."
 
 # Run tests
 python tools/run-tests.py --outdir $1
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Running of tests failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 echo "------- Running of tests is successful ($(date '+%d.%m.%Y %H:%M:%S')) -------"

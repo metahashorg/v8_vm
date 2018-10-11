@@ -89,24 +89,27 @@ if [ "$generation_flag" == "true" ]; then
   $(dirname "$0")/generate-projects.sh \
   "is_debug=${debug_flag} is_component_build=${shared_library} target_cpu=\"${target_cpu}\"" \
   $build_folder $target_cpu
-  if [ $? -ne 0 ]; then
-    exit $?
+  errcode=$?
+  if [ $errcode -ne 0 ]; then
+    exit $errcode
   fi
 fi
 
 # Build project
 if [ "$build_flag" == "true" ]; then
   $(dirname "$0")/build-project.sh $build_folder $project_name
-  if [ $? -ne 0 ]; then
-    exit $?
+  errcode=$?
+  if [ $errcode -ne 0 ]; then
+    exit $errcode
   fi
 fi
 
 # Run tests
 if [ "$run_tests" == "true" ]; then
   $(dirname "$0")/run-tests.sh $build_folder
-  if [ $? -ne 0 ]; then
-    exit $?
+  errcode=$?
+  if [ $errcode -ne 0 ]; then
+    exit $errcode
   fi
 fi
 

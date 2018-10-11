@@ -19,9 +19,10 @@ fi
 if ! [ -d $sysroot_directory ]; then
   python $(dirname "$0")/../../../linux/sysroot_scripts/install-sysroot.py \
       --arch=$architecture
-  if [ $? -ne 0 ]; then
+  errcode=$?
+  if [ $errcode -ne 0 ]; then
     echo "------- Installation of sysroot failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-    exit $?
+    exit $errcode
   fi
 fi
 

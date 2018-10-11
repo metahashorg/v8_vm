@@ -15,9 +15,10 @@
 
 # Check and get depots_tools
 $(dirname "$0")/check-and-get-depot-tools.sh
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Generation of projects failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 # Install sysroot
@@ -27,9 +28,10 @@ if [ $# -eq 3 ]; then
 fi
 
 $(dirname "$0")/install-sysroot.sh $target_cpu
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Generation of projects failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 # Go into a root folder of source codes
@@ -39,9 +41,10 @@ echo "Generate project files (options: $1; folder: $2; $(date '+%d.%m.%Y %H:%M:%
 
 # Generate all projects
 gn gen $2 --args="$1"
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Generation of projects failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit $?
+  exit $errcode
 fi
 
 echo "------- Generation of projects is successful ($(date '+%d.%m.%Y %H:%M:%S')) -------"

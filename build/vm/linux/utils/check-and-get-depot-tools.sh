@@ -32,9 +32,10 @@ fi
 echo Clone depot_tools files...
 
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-if [ $? -ne 0 ]; then
+errcode=$?
+if [ $errcode -ne 0 ]; then
   echo "------- Getting of depot_tools failed ($(date '+%d.%m.%Y %H:%M:%S')) -------"
-  exit 1
+  exit $errcode
 fi
 
 echo "------- Cloning of depot_tools is successful ($(date '+%d.%m.%Y %H:%M:%S')) ------"
