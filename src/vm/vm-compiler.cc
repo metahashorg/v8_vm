@@ -21,6 +21,41 @@ std::string ChangeFileExtension(
   return (std::string(file_name) + new_extension) ;
 }
 
+Local<Module> CompileModule(
+    Isolate* isolate, const char* resource_name, const char* source,
+    v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+  // We need to create a copy of cache
+  // because ScriptCompiler::Source will delete it
+  ScriptCompiler::CachedData* local_cache = nullptr ;
+  if (cache) {
+    local_cache = new ScriptCompiler::CachedData(
+        cache->data, cache->length,
+        ScriptCompiler::CachedData::BufferNotOwned) ;
+    local_cache->use_hash_for_check = cache->use_hash_for_check ;
+  }
+
+  Local<String> source_string = Utf8ToStr(isolate, source) ;
+  ScriptOrigin script_origin(
+      Utf8ToStr(isolate, resource_name), Local<v8::Integer>(),
+      Local<v8::Integer>(), Local<v8::Boolean>(), Local<v8::Integer>(),
+      Local<v8::Value>(), Local<v8::Boolean>(), Local<v8::Boolean>(),
+      True(isolate) /* is_module */) ;
+  ScriptCompiler::Source script_source(
+      source_string, script_origin, local_cache) ;
+  ScriptCompiler::CompileOptions option =
+      local_cache ? ScriptCompiler::kConsumeCodeCache :
+                    ScriptCompiler::kNoCompileOptions ;
+
+  Local<Module> module =
+      ScriptCompiler::CompileModule(isolate, &script_source, option)
+          .ToLocalChecked() ;
+  if (cache) {
+    cache->rejected = local_cache->rejected ;
+  }
+
+  return module ;
+}
+
 void CompileScript(const char* script_path) {
   bool file_exists = false ;
   i::Vector<const char> file_content =
@@ -43,17 +78,9 @@ void CompileScript(const char* script_path) {
     HandleScope scope(isolate) ;
     Local<Context> context = Context::New(isolate) ;
     Context::Scope cscope(context) ;
-    Local<String> source_string = Utf8ToStr(isolate, file_content.start()) ;
-    // TODO: Cut path, use the only a file name
-    ScriptOrigin script_origin(
-      Utf8ToStr(isolate, script_path), Local<v8::Integer>(),
-      Local<v8::Integer>(), Local<v8::Boolean>(), Local<v8::Integer>(),
-      Local<v8::Value>(), Local<v8::Boolean>(), Local<v8::Boolean>(),
-      True(isolate) /* is_module */) ;
-    ScriptCompiler::Source source(source_string, script_origin) ;
-    ScriptCompiler::CompileOptions options = ScriptCompiler::kNoCompileOptions ;
-    Local<Module> module = ScriptCompiler::CompileModule(
-        isolate, &source, options).ToLocalChecked() ;
+
+    Local<Module> module =
+        CompileModule(isolate, script_path, file_content.start()) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
     i::WriteBytes(
@@ -64,11 +91,11 @@ void CompileScript(const char* script_path) {
   isolate->Dispose() ;
 }
 
-Local<Module> LoadCompilation(
-    Isolate* isolate, Local<Context> context, const char* compilation_path) {
+Local<Module> LoadCompilation(Isolate* isolate, const char* compilation_path) {
   int file_size = 0 ;
   i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
   if (file_size == 0) {
+    printf("ERROR: File of compilation is empty (%s)\n", compilation_path) ;
     return Local<Module>() ;
   }
 
@@ -78,21 +105,12 @@ Local<Module> LoadCompilation(
       i::FLAG_profile_deserialization, true) ;
 #endif  // DEBUG
 
-  ScriptCompiler::CachedData* cache =
+  std::unique_ptr<ScriptCompiler::CachedData> cache(
       new ScriptCompiler::CachedData(file_content, file_size,
-                                     ScriptCompiler::CachedData::BufferOwned) ;
+                                     ScriptCompiler::CachedData::BufferOwned)) ;
   cache->use_hash_for_check = false ;
-  Local<String> source_string = Utf8ToStr(isolate, "") ;
-  ScriptOrigin script_origin(
-      Utf8ToStr(isolate, "memory"), Local<v8::Integer>(), Local<v8::Integer>(),
-      Local<v8::Boolean>(), Local<v8::Integer>(), Local<v8::Value>(),
-      Local<v8::Boolean>(), Local<v8::Boolean>(),
-      True(isolate) /* is_module */) ;
-  ScriptCompiler::Source source(source_string, script_origin, cache) ;
-  ScriptCompiler::CompileOptions option = ScriptCompiler::kConsumeCodeCache ;
+  Local<Module> module = CompileModule(isolate, "memory", "", cache.get()) ;
 
-  Local<Module> module =
-      ScriptCompiler::CompileModule(isolate, &source, option).ToLocalChecked() ;
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {
     printf("ERROR: The compilation is corrupted\n") ;

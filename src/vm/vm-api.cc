@@ -27,7 +27,14 @@ void CompileScript(const char* script_path) {
 
 void RunScriptByCompilation(
     const char* compilation_path, const char* script_path) {
-  vi::RunScriptByCompilation(compilation_path, script_path) ;
+  std::unique_ptr<vi::ScriptRunner> runner(
+      vi::ScriptRunner::CreateByCompilation(compilation_path, script_path)) ;
+  if (!runner) {
+    printf("ERROR: Can't create ScriptRunner\n") ;
+    return ;
+  }
+
+  runner->Run() ;
 }
 
 }  // namespace vm

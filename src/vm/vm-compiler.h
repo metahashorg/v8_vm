@@ -11,10 +11,13 @@ namespace v8 {
 namespace vm {
 namespace internal {
 
+Local<Module> CompileModule(
+    Isolate* isolate, const char* resource_name, const char* source,
+    v8::ScriptCompiler::CachedData* cache = nullptr) ;
+
 void CompileScript(const char* script_path) ;
 
-Local<Module> LoadCompilation(
-    Isolate* isolate, Local<Context> context, const char* compilation_path) ;
+Local<Module> LoadCompilation(Isolate* isolate, const char* compilation_path) ;
 
 }  // namespace internal
 }  // namespace vm

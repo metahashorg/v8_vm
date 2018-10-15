@@ -5,6 +5,9 @@
 #ifndef V8_VM_VM_UTILS_H_
 #define V8_VM_VM_UTILS_H_
 
+#include "src/handles.h"
+#include "src/handles-inl.h"
+
 namespace v8 {
 namespace vm {
 namespace internal {
@@ -36,6 +39,16 @@ class TemporarilySetValue {
 
   T& variable_ ;
   T cache_ ;
+};
+
+// HandleScope can't be created by 'new()' but we need something for classes
+class InitializedHandleScope {
+ public:
+  explicit InitializedHandleScope(Isolate* isolate)
+      : handle_scope_(isolate) {}
+
+ private:
+  HandleScope handle_scope_ ;
 };
 
 }  // namespace internal
