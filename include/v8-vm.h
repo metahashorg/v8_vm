@@ -28,7 +28,15 @@ namespace vm {
    * Runs the script by using a previous compilation.
    */
   void V8_EXPORT RunScriptByCompilation(
-      const char* compilation_path, const char* script_path) ;
+      const char* compilation_path, const char* script_path,
+      const char* out_snapshot_path = nullptr) ;
+
+  /**
+   * Runs the script by using a previous snapshot.
+   */
+  void V8_EXPORT RunScriptBySnapshot(
+      const char* snapshot_path, const char* script_path,
+      const char* out_snapshot_path = nullptr) ;
 
 }  // namespace vm
 }  // namespace v8

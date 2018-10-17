@@ -5,9 +5,11 @@
 #include "include/v8-vm.h"
 #include "vm_apps/command-line.h"
 
-const char kSwitchCmd[] = "cmd" ;
-const char kSwitchCmpl[] = "cmpl" ;
+const char kSwitchCommand[] = "cmd" ;
+const char kSwitchCompilation[] = "cmpl" ;
 const char kSwitchMode[] = "mode" ;
+const char kSwitchSnapshotIn[] = "snap_i" ;
+const char kSwitchSnapshotOut[] = "snap_o" ;
 
 const char kSwitchModeCmdRun[] = "cmdrun" ;
 const char kSwitchModeCompile[] = "compile" ;
@@ -25,14 +27,17 @@ ModeType GetModeType(const CommandLine& cmd_line) {
 
   if (cmd_line.HasSwitch(kSwitchMode)) {
     if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeCompile &&
-        cmd_line.GetArgCount() != 0)
+        cmd_line.GetArgCount() != 0) {
       result = ModeType::Compile ;
-    else if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeCmdRun &&
-             cmd_line.HasSwitch(kSwitchCmd) &&
-             cmd_line.HasSwitch(kSwitchCmpl))
+    } else if (
+        cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeCmdRun &&
+        cmd_line.HasSwitch(kSwitchCommand) &&
+        (cmd_line.HasSwitch(kSwitchCompilation) ||
+         cmd_line.HasSwitch(kSwitchSnapshotIn))) {
       result = ModeType::Run ;
-    else if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump)
+    } else if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump) {
       ;
+    }
   }
 
   return result ;
@@ -47,8 +52,9 @@ int DoCompile(const CommandLine& cmd_line) {
   // Initialize V8
   v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
 
-  for (auto it : cmd_line.GetArgs())
+  for (auto it : cmd_line.GetArgs()) {
     v8::vm::CompileScript(it.c_str()) ;
+  }
 
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
@@ -59,9 +65,34 @@ int DoRun(const CommandLine& cmd_line) {
   // Initialize V8
   v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
 
-  v8::vm::RunScriptByCompilation(
-      cmd_line.GetSwitchValueNative(kSwitchCmpl).c_str(),
-      cmd_line.GetSwitchValueNative(kSwitchCmd).c_str()) ;
+  std::string snapshot_path ;
+  if (cmd_line.HasSwitch(kSwitchSnapshotIn)) {
+    snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotIn) ;
+  }
+
+  std::string compilation_path ;
+  if (cmd_line.HasSwitch(kSwitchCompilation)) {
+    compilation_path = cmd_line.GetSwitchValueNative(kSwitchCompilation) ;
+  }
+
+  std::string out_snapshot_path ;
+  if (cmd_line.HasSwitch(kSwitchSnapshotOut)) {
+    out_snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotOut) ;
+  }
+
+  if (snapshot_path.length()) {
+    v8::vm::RunScriptBySnapshot(
+        snapshot_path.c_str(),
+        cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
+        out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
+  } else if (compilation_path.c_str()) {
+    v8::vm::RunScriptByCompilation(
+        compilation_path.c_str(),
+        cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
+        out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
+  } else {
+    return DoUnknown() ;
+  }
 
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
@@ -72,12 +103,13 @@ int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
   ModeType mode_type = GetModeType(cmd_line) ;
   int result = 0 ;
-  if (mode_type == ModeType::Unknown)
+  if (mode_type == ModeType::Unknown) {
     result = DoUnknown() ;
-  else if (mode_type == ModeType::Compile)
+  } else if (mode_type == ModeType::Compile) {
     result = DoCompile(cmd_line) ;
-  else if (mode_type == ModeType::Run)
+  } else if (mode_type == ModeType::Run) {
     result = DoRun(cmd_line) ;
+  }
 
   return result ;
 }

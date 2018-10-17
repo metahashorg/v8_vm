@@ -17,19 +17,27 @@ class ScriptRunner {
  public:
   ~ScriptRunner() ;
 
+  // Run a command script (can be called many times)
   void Run() ;
 
   static ScriptRunner* CreateByCompilation(
-      const char* compilation_path, const char* script_path) ;
+      const char* compilation_path, const char* script_path,
+      StartupData* snapshot_out = nullptr) ;
+
+  static ScriptRunner* CreateBySnapshot(
+      const char* snapshot_path, const char* script_path,
+      StartupData* snapshot_out = nullptr) ;
 
  private:
-  ScriptRunner() ;
+  ScriptRunner(StartupData* snapshot = nullptr) ;
 
   static MaybeLocal<Module> ModuleResolveCallback(
       Local<Context> context, Local<String> specifier, Local<Module> referrer) ;
 
   std::string script_origin_ ;
   i::Vector<const char> script_source_ ;
+  StartupData* snapshot_out_ = nullptr ;
+  std::unique_ptr<SnapshotCreator> snapshot_creator_ ;
   Isolate* isolate_ ;
   std::unique_ptr<Isolate::Scope> iscope_ ;
   std::unique_ptr<InitializedHandleScope> scope_ ;

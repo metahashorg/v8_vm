@@ -14,11 +14,11 @@ namespace v8 {
 namespace vm {
 
 void InitializeV8(const char* app_path) {
-  vi::V8Handle::instance_.Pointer()->Initialize(app_path) ;
+  V8HANDLE()->Initialize(app_path) ;
 }
 
 void DeinitializeV8() {
-  vi::V8Handle::instance_.Pointer()->Deinitialize() ;
+  V8HANDLE()->Deinitialize() ;
 }
 
 void CompileScript(const char* script_path) {
@@ -26,15 +26,58 @@ void CompileScript(const char* script_path) {
 }
 
 void RunScriptByCompilation(
-    const char* compilation_path, const char* script_path) {
+    const char* compilation_path, const char* script_path,
+    const char* out_snapshot_path /*= nullptr*/) {
+  StartupData data = { nullptr, 0 }, *pdata = nullptr ;
+  if (out_snapshot_path && strlen(out_snapshot_path)) {
+    pdata = &data ;
+  }
+
   std::unique_ptr<vi::ScriptRunner> runner(
-      vi::ScriptRunner::CreateByCompilation(compilation_path, script_path)) ;
+      vi::ScriptRunner::CreateByCompilation(
+          compilation_path, script_path, pdata)) ;
   if (!runner) {
     printf("ERROR: Can't create ScriptRunner\n") ;
     return ;
   }
 
   runner->Run() ;
+
+  // We've obtained a snapshot only after destruction of runner
+  runner.reset() ;
+  if (out_snapshot_path && strlen(out_snapshot_path)) {
+    i::WriteChars(out_snapshot_path, data.data, data.raw_size, true) ;
+    if (data.raw_size) {
+      delete [] data.data ;
+    }
+  }
+}
+
+void RunScriptBySnapshot(
+    const char* snapshot_path, const char* script_path,
+    const char* out_snapshot_path /*= nullptr*/) {
+  StartupData data = { nullptr, 0 }, *pdata = nullptr ;
+  if (out_snapshot_path && strlen(out_snapshot_path)) {
+    pdata = &data ;
+  }
+
+  std::unique_ptr<vi::ScriptRunner> runner(
+      vi::ScriptRunner::CreateBySnapshot(snapshot_path, script_path, pdata)) ;
+  if (!runner) {
+    printf("ERROR: Can't create ScriptRunner\n") ;
+    return ;
+  }
+
+  runner->Run() ;
+
+  // We've obtained a snapshot only after destruction of runner
+  runner.reset() ;
+  if (out_snapshot_path && strlen(out_snapshot_path)) {
+    i::WriteChars(out_snapshot_path, data.data, data.raw_size, true) ;
+    if (data.raw_size) {
+      delete [] data.data ;
+    }
+  }
 }
 
 }  // namespace vm

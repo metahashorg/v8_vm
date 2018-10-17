@@ -69,8 +69,7 @@ void CompileScript(const char* script_path) {
   TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
   TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
 
-  Isolate* isolate =
-      Isolate::New(V8Handle::instance_.Pointer()->create_params()) ;
+  Isolate* isolate = Isolate::New(V8HANDLE()->create_params()) ;
 
   {
     // TODO: Use TryCatch and output errors

@@ -25,8 +25,18 @@ ScriptRunner::~ScriptRunner() {
   cscope_.reset() ;
   context_.Clear() ;
   scope_.reset() ;
+
+  // Create a snapshot. We can't avoid it because error'll happen
+  StartupData snapshot = snapshot_creator_->CreateBlob(
+      SnapshotCreator::FunctionCodeHandling::kKeep) ;
+  if (snapshot_out_) {
+    *snapshot_out_ = snapshot ;
+  } else {
+    delete [] snapshot.data ;
+  }
+
   iscope_.reset() ;
-  isolate_->Dispose() ;
+  snapshot_creator_.reset() ;
 }
 
 void ScriptRunner::Run() {
@@ -50,13 +60,14 @@ void ScriptRunner::Run() {
 }
 
 ScriptRunner* ScriptRunner::CreateByCompilation(
-    const char* compilation_path, const char* script_path) {
+    const char* compilation_path, const char* script_path,
+    StartupData* snapshot_out /*= nullptr*/) {
   // Load a command script
   bool file_exists = false ;
-  i::Vector<const char> file_content =
+  i::Vector<const char> script_content =
       i::ReadFile(script_path, &file_exists, true) ;
-  if (!file_exists || file_content.size() == 0) {
-    printf("ERROR: File doesn't exist (%s)\n", script_path) ;
+  if (!file_exists || script_content.size() == 0) {
+    printf("ERROR: Script file doesn't exist (%s)\n", script_path) ;
     return nullptr ;
   }
 
@@ -77,22 +88,57 @@ ScriptRunner* ScriptRunner::CreateByCompilation(
 
   // Compile a script and save a cache of it
   Local<Module> script =
-      CompileModule(result->isolate_, script_path, file_content.start()) ;
+      CompileModule(result->isolate_, script_path, script_content.start()) ;
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
       script->GetUnboundModuleScript())) ;
 
   // Remember origin and source of script
   result->script_origin_ = script_path ;
-  std::swap(result->script_source_, file_content) ;
+  std::swap(result->script_source_, script_content) ;
+  result->snapshot_out_ = snapshot_out ;
   return result ;
 }
 
-ScriptRunner::ScriptRunner()
-  : isolate_(Isolate::New(V8Handle::instance_.Pointer()->create_params())),
+ScriptRunner* ScriptRunner::CreateBySnapshot(
+    const char* snapshot_path, const char* script_path,
+    StartupData* snapshot_out /*= nullptr*/) {
+  // Load a command script
+  bool file_exists = false ;
+  i::Vector<const char> script_content =
+      i::ReadFile(script_path, &file_exists, true) ;
+  if (!file_exists || script_content.size() == 0) {
+    printf("ERROR: Script file doesn't exist (%s)\n", script_path) ;
+    return nullptr ;
+  }
+
+  // Load a snapshot
+  i::Vector<const char> snapshot_content =
+      i::ReadFile(snapshot_path, &file_exists, true) ;
+  if (!file_exists || snapshot_content.size() == 0) {
+    printf("ERROR: Snapshot file doesn't exist (%s)\n", snapshot_path) ;
+    return nullptr ;
+  }
+
+  StartupData snapshot = { nullptr, 0 } ;
+  snapshot.data = snapshot_content.start() ;
+  snapshot.raw_size = (int)snapshot_content.size() ;
+
+  // Create ScriptRunner
+  ScriptRunner* result = new ScriptRunner(&snapshot) ;
+
+  delete result ;
+  return nullptr ;
+}
+
+ScriptRunner::ScriptRunner(StartupData* snapshot /*= nullptr*/)
+  : snapshot_creator_(new SnapshotCreator(
+        V8HANDLE()->create_params().external_references, snapshot)),
+    isolate_(snapshot_creator_->GetIsolate()),
     iscope_(new Isolate::Scope(isolate_)),
     scope_(new InitializedHandleScope(isolate_)),
     context_(Context::New(isolate_)),
     cscope_(new Context::Scope(context_)) {
+  snapshot_creator_->SetDefaultContext(context_) ;
   // We need to pass 'this' to 'ModuleResolveCallback()''
   context_->SetAlignedPointerInEmbedderData(kScriptRunnerIndex, this) ;
 }

@@ -9,6 +9,8 @@
 #include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
 
+#define V8HANDLE() v8::vm::internal::V8Handle::instance_.Pointer()
+
 namespace v8 {
 namespace vm {
 namespace internal {
