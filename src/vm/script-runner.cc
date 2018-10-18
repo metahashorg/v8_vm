@@ -12,21 +12,15 @@ namespace v8 {
 namespace vm {
 namespace internal {
 
-namespace {
-
-const int kScriptRunnerIndex = 2 ;
-
-}  // namespace
-
 ScriptRunner::~ScriptRunner() {
   result_.Clear() ;
   script_cache_.reset() ;
-  main_module_.Clear() ;
+  main_script_.Clear() ;
   cscope_.reset() ;
   context_.Clear() ;
   scope_.reset() ;
 
-  // Create a snapshot. We can't avoid it because error'll happen
+  // Create a snapshot in any case. We can't avoid it because error'll happen
   StartupData snapshot = snapshot_creator_->CreateBlob(
       SnapshotCreator::FunctionCodeHandling::kKeep) ;
   if (snapshot_out_) {
@@ -41,18 +35,16 @@ ScriptRunner::~ScriptRunner() {
 
 void ScriptRunner::Run() {
   // Get script from cache
-  Local<Module> script = CompileModule(
-      isolate_, script_origin_.c_str(), script_source_.start(),
+  Local<Script> script = CompileScript(
+      context_, script_origin_.c_str(), script_source_.start(),
       script_cache_.get()) ;
   if (script.IsEmpty()){
     printf("ERROR: Command script hasn't been compiled\n") ;
     return ;
   }
 
-  script->InstantiateModule(context_, ModuleResolveCallback).ToChecked() ;
-
   // Run script
-  result_ = script->Evaluate(context_).ToLocalChecked() ;
+  result_ = script->Run(context_).ToLocalChecked() ;
 
   // TODO: Temporary output
   v8::String::Utf8Value utf8(isolate_, result_) ;
@@ -67,7 +59,7 @@ ScriptRunner* ScriptRunner::CreateByCompilation(
   i::Vector<const char> script_content =
       i::ReadFile(script_path, &file_exists, true) ;
   if (!file_exists || script_content.size() == 0) {
-    printf("ERROR: Script file doesn't exist (%s)\n", script_path) ;
+    printf("ERROR: Command script file doesn't exist (%s)\n", script_path) ;
     return nullptr ;
   }
 
@@ -75,26 +67,27 @@ ScriptRunner* ScriptRunner::CreateByCompilation(
   ScriptRunner* result = new ScriptRunner() ;
 
   // Load compilation
-  result->main_module_ =
-      LoadCompilation(result->isolate_, compilation_path) ;
-  if (result->main_module_.IsEmpty()) {
-    printf("ERROR: Module loading've ended failure\n") ;
+  result->main_script_ =
+      LoadScriptCompilation(result->context_, compilation_path) ;
+  if (result->main_script_.IsEmpty()) {
+    printf("ERROR: Main script loading've ended failure\n") ;
     delete result ;
     return nullptr ;
   }
 
-  result->main_module_->InstantiateModule(
-      result->context_, ModuleResolveCallback).ToChecked() ;
+  // We need to run a main script for using it
+  result->main_script_->Run(result->context_).ToLocalChecked() ;
 
-  // Compile a script and save a cache of it
-  Local<Module> script =
-      CompileModule(result->isolate_, script_path, script_content.start()) ;
+  // Compile a command script and save a cache of it
+  Local<Script> script =
+      CompileScript(result->context_, script_path, script_content.start()) ;
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
-      script->GetUnboundModuleScript())) ;
+      script->GetUnboundScript())) ;
 
   // Remember origin and source of script
   result->script_origin_ = script_path ;
   std::swap(result->script_source_, script_content) ;
+  // Add a outcoming snapshot pointer
   result->snapshot_out_ = snapshot_out ;
   return result ;
 }
@@ -107,7 +100,7 @@ ScriptRunner* ScriptRunner::CreateBySnapshot(
   i::Vector<const char> script_content =
       i::ReadFile(script_path, &file_exists, true) ;
   if (!file_exists || script_content.size() == 0) {
-    printf("ERROR: Script file doesn't exist (%s)\n", script_path) ;
+    printf("ERROR: Command script file doesn't exist (%s)\n", script_path) ;
     return nullptr ;
   }
 
@@ -126,8 +119,18 @@ ScriptRunner* ScriptRunner::CreateBySnapshot(
   // Create ScriptRunner
   ScriptRunner* result = new ScriptRunner(&snapshot) ;
 
-  delete result ;
-  return nullptr ;
+  // Compile a command script and save a cache of it
+  Local<Script> script =
+      CompileScript(result->context_, script_path, script_content.start()) ;
+  result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
+      script->GetUnboundScript())) ;
+
+  // Remember origin and source of script
+  result->script_origin_ = script_path ;
+  std::swap(result->script_source_, script_content) ;
+  // Add a outcoming snapshot pointer
+  result->snapshot_out_ = snapshot_out ;
+  return result ;
 }
 
 ScriptRunner::ScriptRunner(StartupData* snapshot /*= nullptr*/)
@@ -139,19 +142,6 @@ ScriptRunner::ScriptRunner(StartupData* snapshot /*= nullptr*/)
     context_(Context::New(isolate_)),
     cscope_(new Context::Scope(context_)) {
   snapshot_creator_->SetDefaultContext(context_) ;
-  // We need to pass 'this' to 'ModuleResolveCallback()''
-  context_->SetAlignedPointerInEmbedderData(kScriptRunnerIndex, this) ;
-}
-
-MaybeLocal<Module> ScriptRunner::ModuleResolveCallback(
-    Local<Context> context, Local<String> specifier, Local<Module> referrer) {
-  // TODO: Temporary output
-  v8::String::Utf8Value utf8(context->GetIsolate(), specifier) ;
-  printf("INFO: Module specifier: %s\n", *utf8) ;
-
-  ScriptRunner* runner = static_cast<ScriptRunner*>(
-      context->GetAlignedPointerFromEmbedderData(kScriptRunnerIndex));
-  return runner->main_module_ ;
 }
 
 }  // namespace internal

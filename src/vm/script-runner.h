@@ -31,9 +31,6 @@ class ScriptRunner {
  private:
   ScriptRunner(StartupData* snapshot = nullptr) ;
 
-  static MaybeLocal<Module> ModuleResolveCallback(
-      Local<Context> context, Local<String> specifier, Local<Module> referrer) ;
-
   std::string script_origin_ ;
   i::Vector<const char> script_source_ ;
   StartupData* snapshot_out_ = nullptr ;
@@ -43,7 +40,7 @@ class ScriptRunner {
   std::unique_ptr<InitializedHandleScope> scope_ ;
   Local<Context> context_ ;
   std::unique_ptr<Context::Scope> cscope_ ;
-  Local<Module> main_module_ ;
+  Local<Script> main_script_ ;
   std::unique_ptr<v8::ScriptCompiler::CachedData> script_cache_ ;
   Local<Value> result_ ;
 

@@ -15,9 +15,19 @@ Local<Module> CompileModule(
     Isolate* isolate, const char* resource_name, const char* source,
     v8::ScriptCompiler::CachedData* cache = nullptr) ;
 
-void CompileScript(const char* script_path) ;
+Local<Script> CompileScript(
+    Local<Context> context, const char* resource_name, const char* source,
+    v8::ScriptCompiler::CachedData* cache = nullptr) ;
 
-Local<Module> LoadCompilation(Isolate* isolate, const char* compilation_path) ;
+void CompileModuleFromFile(const char* module_path) ;
+
+void CompileScriptFromFile(const char* script_path) ;
+
+Local<Module> LoadModuleCompilation(
+    Isolate* isolate, const char* compilation_path) ;
+
+Local<Script> LoadScriptCompilation(
+    Local<Context> context, const char* compilation_path) ;
 
 }  // namespace internal
 }  // namespace vm

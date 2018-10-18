@@ -22,7 +22,7 @@ void DeinitializeV8() {
 }
 
 void CompileScript(const char* script_path) {
-  vi::CompileScript(script_path) ;
+  vi::CompileScriptFromFile(script_path) ;
 }
 
 void RunScriptByCompilation(

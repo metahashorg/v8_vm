@@ -56,11 +56,44 @@ Local<Module> CompileModule(
   return module ;
 }
 
-void CompileScript(const char* script_path) {
+Local<Script> CompileScript(
+    Local<Context> context, const char* resource_name, const char* source,
+    v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+  // We need to create a copy of cache
+  // because ScriptCompiler::Source will delete it
+  ScriptCompiler::CachedData* local_cache = nullptr ;
+  if (cache) {
+    local_cache = new ScriptCompiler::CachedData(
+        cache->data, cache->length,
+        ScriptCompiler::CachedData::BufferNotOwned) ;
+    local_cache->use_hash_for_check = cache->use_hash_for_check ;
+  }
+
+  Isolate* isolate = context->GetIsolate() ;
+  Local<String> source_string = Utf8ToStr(isolate, source) ;
+  ScriptOrigin script_origin(Utf8ToStr(isolate, resource_name)) ;
+  ScriptCompiler::Source script_source(
+      source_string, script_origin, local_cache) ;
+  ScriptCompiler::CompileOptions option =
+      local_cache ? ScriptCompiler::kConsumeCodeCache :
+                    ScriptCompiler::kNoCompileOptions ;
+
+  Local<Script> script =
+      ScriptCompiler::Compile(context, &script_source, option)
+          .ToLocalChecked() ;
+  if (cache) {
+    cache->rejected = local_cache->rejected ;
+  }
+
+  return script ;
+}
+
+void CompileModuleFromFile(const char* module_path) {
   bool file_exists = false ;
   i::Vector<const char> file_content =
-      i::ReadFile(script_path, &file_exists, true) ;
+      i::ReadFile(module_path, &file_exists, true) ;
   if (!file_exists || file_content.size() == 0) {
+    printf("ERROR: File of a module source is empty (%s)\n", module_path) ;
     return ;
   }
 
@@ -79,9 +112,44 @@ void CompileScript(const char* script_path) {
     Context::Scope cscope(context) ;
 
     Local<Module> module =
-        CompileModule(isolate, script_path, file_content.start()) ;
+        CompileModule(isolate, module_path, file_content.start()) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
+    i::WriteBytes(
+        ChangeFileExtension(module_path, ".cmpl").c_str(),
+        cache->data, cache->length, true) ;
+  }
+
+  isolate->Dispose() ;
+}
+
+void CompileScriptFromFile(const char* script_path) {
+  bool file_exists = false ;
+  i::Vector<const char> file_content =
+      i::ReadFile(script_path, &file_exists, true) ;
+  if (!file_exists || file_content.size() == 0) {
+    printf("ERROR: File of a script source is empty (%s)\n", script_path) ;
+    return ;
+  }
+
+  // Need for a full compilation
+  // TODO: Look at other flags
+  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
+  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
+
+  Isolate* isolate = Isolate::New(V8HANDLE()->create_params()) ;
+
+  {
+    // TODO: Use TryCatch and output errors
+    Isolate::Scope iscope(isolate) ;
+    HandleScope scope(isolate) ;
+    Local<Context> context = Context::New(isolate) ;
+    Context::Scope cscope(context) ;
+
+    Local<Script> script =
+        CompileScript(context, script_path, file_content.start()) ;
+    ScriptCompiler::CachedData* cache =
+        ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
     i::WriteBytes(
         ChangeFileExtension(script_path, ".cmpl").c_str(),
         cache->data, cache->length, true) ;
@@ -90,11 +158,13 @@ void CompileScript(const char* script_path) {
   isolate->Dispose() ;
 }
 
-Local<Module> LoadCompilation(Isolate* isolate, const char* compilation_path) {
+Local<Module> LoadModuleCompilation(
+    Isolate* isolate, const char* compilation_path) {
   int file_size = 0 ;
   i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
   if (file_size == 0) {
-    printf("ERROR: File of compilation is empty (%s)\n", compilation_path) ;
+    printf("ERROR: File of a module compilation is empty (%s)\n",
+           compilation_path) ;
     return Local<Module>() ;
   }
 
@@ -112,11 +182,42 @@ Local<Module> LoadCompilation(Isolate* isolate, const char* compilation_path) {
 
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {
-    printf("ERROR: The compilation is corrupted\n") ;
+    printf("ERROR: The module compilation is corrupted\n") ;
     module.Clear() ;
   }
 
   return module ;
+}
+
+Local<Script> LoadScriptCompilation(
+    Local<Context> context, const char* compilation_path) {
+  int file_size = 0 ;
+  i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
+  if (file_size == 0) {
+    printf("ERROR: File of a script compilation is empty (%s)\n",
+           compilation_path) ;
+    return Local<Script>() ;
+  }
+
+#ifdef DEBUG
+  // Use for a verbose deserialization
+  TemporarilySetValue<bool> profile_deserialization(
+      i::FLAG_profile_deserialization, true) ;
+#endif  // DEBUG
+
+  std::unique_ptr<ScriptCompiler::CachedData> cache(
+      new ScriptCompiler::CachedData(file_content, file_size,
+                                     ScriptCompiler::CachedData::BufferOwned)) ;
+  cache->use_hash_for_check = false ;
+  Local<Script> script = CompileScript(context, "memory", "", cache.get()) ;
+
+  // We can't use a compilation of a script source because it's fake
+  if (cache->rejected) {
+    printf("ERROR: The script compilation is corrupted\n") ;
+    script.Clear() ;
+  }
+
+  return script ;
 }
 
 }  // namespace internal
