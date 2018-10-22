@@ -22,8 +22,10 @@ std::string ChangeFileExtension(
 }
 
 Local<Module> CompileModule(
-    Isolate* isolate, const char* resource_name, const char* source,
+    Isolate* isolate, const Data& module_data,
     v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+  DCHECK_EQ(Data::Type::JSScript, module_data.type) ;
+
   // We need to create a copy of cache
   // because ScriptCompiler::Source will delete it
   ScriptCompiler::CachedData* local_cache = nullptr ;
@@ -34,9 +36,9 @@ Local<Module> CompileModule(
     local_cache->use_hash_for_check = cache->use_hash_for_check ;
   }
 
-  Local<String> source_string = Utf8ToStr(isolate, source) ;
+  Local<String> source_string = Utf8ToStr(isolate, module_data.data) ;
   ScriptOrigin script_origin(
-      Utf8ToStr(isolate, resource_name), Local<v8::Integer>(),
+      Utf8ToStr(isolate, module_data.origin.c_str()), Local<v8::Integer>(),
       Local<v8::Integer>(), Local<v8::Boolean>(), Local<v8::Integer>(),
       Local<v8::Value>(), Local<v8::Boolean>(), Local<v8::Boolean>(),
       True(isolate) /* is_module */) ;
@@ -45,7 +47,6 @@ Local<Module> CompileModule(
   ScriptCompiler::CompileOptions option =
       local_cache ? ScriptCompiler::kConsumeCodeCache :
                     ScriptCompiler::kNoCompileOptions ;
-
   Local<Module> module =
       ScriptCompiler::CompileModule(isolate, &script_source, option)
           .ToLocalChecked() ;
@@ -57,8 +58,10 @@ Local<Module> CompileModule(
 }
 
 Local<Script> CompileScript(
-    Local<Context> context, const char* resource_name, const char* source,
+    Local<Context> context, const Data& script_data,
     v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+  DCHECK_EQ(Data::Type::JSScript, script_data.type) ;
+
   // We need to create a copy of cache
   // because ScriptCompiler::Source will delete it
   ScriptCompiler::CachedData* local_cache = nullptr ;
@@ -70,14 +73,13 @@ Local<Script> CompileScript(
   }
 
   Isolate* isolate = context->GetIsolate() ;
-  Local<String> source_string = Utf8ToStr(isolate, source) ;
-  ScriptOrigin script_origin(Utf8ToStr(isolate, resource_name)) ;
+  Local<String> source_string = Utf8ToStr(isolate, script_data.data) ;
+  ScriptOrigin script_origin(Utf8ToStr(isolate, script_data.origin.c_str())) ;
   ScriptCompiler::Source script_source(
       source_string, script_origin, local_cache) ;
   ScriptCompiler::CompileOptions option =
       local_cache ? ScriptCompiler::kConsumeCodeCache :
                     ScriptCompiler::kNoCompileOptions ;
-
   Local<Script> script =
       ScriptCompiler::Compile(context, &script_source, option)
           .ToLocalChecked() ;
@@ -110,9 +112,8 @@ void CompileModuleFromFile(const char* module_path) {
     HandleScope scope(isolate) ;
     Local<Context> context = Context::New(isolate) ;
     Context::Scope cscope(context) ;
-
-    Local<Module> module =
-        CompileModule(isolate, module_path, file_content.start()) ;
+    Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
+    Local<Module> module = CompileModule(isolate, module_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
     i::WriteBytes(
@@ -145,9 +146,8 @@ void CompileScriptFromFile(const char* script_path) {
     HandleScope scope(isolate) ;
     Local<Context> context = Context::New(isolate) ;
     Context::Scope cscope(context) ;
-
-    Local<Script> script =
-        CompileScript(context, script_path, file_content.start()) ;
+    Data script_data(Data::Type::JSScript, script_path, file_content.start()) ;
+    Local<Script> script = CompileScript(context, script_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
     i::WriteBytes(
@@ -159,14 +159,8 @@ void CompileScriptFromFile(const char* script_path) {
 }
 
 Local<Module> LoadModuleCompilation(
-    Isolate* isolate, const char* compilation_path) {
-  int file_size = 0 ;
-  i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
-  if (file_size == 0) {
-    printf("ERROR: File of a module compilation is empty (%s)\n",
-           compilation_path) ;
-    return Local<Module>() ;
-  }
+    Isolate* isolate, const Data& compilation_data) {
+  DCHECK_EQ(Data::Type::Compilation, compilation_data.type) ;
 
 #ifdef DEBUG
   // Use for a verbose deserialization
@@ -175,10 +169,13 @@ Local<Module> LoadModuleCompilation(
 #endif  // DEBUG
 
   std::unique_ptr<ScriptCompiler::CachedData> cache(
-      new ScriptCompiler::CachedData(file_content, file_size,
-                                     ScriptCompiler::CachedData::BufferOwned)) ;
+    new ScriptCompiler::CachedData(
+          reinterpret_cast<const uint8_t*>(compilation_data.data),
+          compilation_data.size,
+          ScriptCompiler::CachedData::BufferNotOwned)) ;
   cache->use_hash_for_check = false ;
-  Local<Module> module = CompileModule(isolate, "memory", "", cache.get()) ;
+  Data module_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
+  Local<Module> module = CompileModule(isolate, module_data, cache.get()) ;
 
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {
@@ -190,14 +187,8 @@ Local<Module> LoadModuleCompilation(
 }
 
 Local<Script> LoadScriptCompilation(
-    Local<Context> context, const char* compilation_path) {
-  int file_size = 0 ;
-  i::byte* file_content(i::ReadBytes(compilation_path, &file_size, true)) ;
-  if (file_size == 0) {
-    printf("ERROR: File of a script compilation is empty (%s)\n",
-           compilation_path) ;
-    return Local<Script>() ;
-  }
+    Local<Context> context, const Data& compilation_data) {
+  DCHECK_EQ(Data::Type::Compilation, compilation_data.type) ;
 
 #ifdef DEBUG
   // Use for a verbose deserialization
@@ -206,10 +197,13 @@ Local<Script> LoadScriptCompilation(
 #endif  // DEBUG
 
   std::unique_ptr<ScriptCompiler::CachedData> cache(
-      new ScriptCompiler::CachedData(file_content, file_size,
-                                     ScriptCompiler::CachedData::BufferOwned)) ;
+      new ScriptCompiler::CachedData(
+          reinterpret_cast<const uint8_t*>(compilation_data.data),
+          compilation_data.size,
+          ScriptCompiler::CachedData::BufferNotOwned)) ;
   cache->use_hash_for_check = false ;
-  Local<Script> script = CompileScript(context, "memory", "", cache.get()) ;
+  Data script_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
+  Local<Script> script = CompileScript(context, script_data, cache.get()) ;
 
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {

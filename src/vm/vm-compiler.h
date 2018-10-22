@@ -6,17 +6,18 @@
 #define V8_VM_VM_COMPILER_H_
 
 #include "include/v8.h"
+#include "src/vm/vm-utils.h"
 
 namespace v8 {
 namespace vm {
 namespace internal {
 
 Local<Module> CompileModule(
-    Isolate* isolate, const char* resource_name, const char* source,
+    Isolate* isolate, const Data& module_data,
     v8::ScriptCompiler::CachedData* cache = nullptr) ;
 
 Local<Script> CompileScript(
-    Local<Context> context, const char* resource_name, const char* source,
+    Local<Context> context, const Data& script_data,
     v8::ScriptCompiler::CachedData* cache = nullptr) ;
 
 void CompileModuleFromFile(const char* module_path) ;
@@ -24,10 +25,10 @@ void CompileModuleFromFile(const char* module_path) ;
 void CompileScriptFromFile(const char* script_path) ;
 
 Local<Module> LoadModuleCompilation(
-    Isolate* isolate, const char* compilation_path) ;
+    Isolate* isolate, const Data& compilation_data) ;
 
 Local<Script> LoadScriptCompilation(
-    Local<Context> context, const char* compilation_path) ;
+    Local<Context> context, const Data& compilation_data) ;
 
 }  // namespace internal
 }  // namespace vm

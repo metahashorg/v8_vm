@@ -15,24 +15,24 @@ namespace internal {
 
 class ScriptRunner {
  public:
+  // Destructor
   ~ScriptRunner() ;
 
   // Run a command script (can be called many times)
   void Run() ;
 
-  static ScriptRunner* CreateByCompilation(
-      const char* compilation_path, const char* script_path,
+  static ScriptRunner* Create(
+      const Data* data, const Data& script,
       StartupData* snapshot_out = nullptr) ;
 
-  static ScriptRunner* CreateBySnapshot(
-      const char* snapshot_path, const char* script_path,
+  static ScriptRunner* CreateByFiles(
+      Data::Type file_type, const char* file_path, const char* script_path,
       StartupData* snapshot_out = nullptr) ;
 
  private:
   ScriptRunner(StartupData* snapshot = nullptr) ;
 
-  std::string script_origin_ ;
-  i::Vector<const char> script_source_ ;
+  Data script_data_ ;
   StartupData* snapshot_out_ = nullptr ;
   std::unique_ptr<SnapshotCreator> snapshot_creator_ ;
   Isolate* isolate_ ;

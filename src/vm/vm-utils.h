@@ -5,6 +5,8 @@
 #ifndef V8_VM_VM_UTILS_H_
 #define V8_VM_VM_UTILS_H_
 
+#include <cstring>
+
 #include "src/handles.h"
 #include "src/handles-inl.h"
 
@@ -39,6 +41,69 @@ class TemporarilySetValue {
 
   T& variable_ ;
   T cache_ ;
+};
+
+// We need some structure of a file content and so on for using during calls.
+struct Data {
+  enum class Type {
+    Unknown = 0,
+    None,
+    JSScript,
+    Compilation,
+    Snapshot,
+  };
+
+  Data(Type data_type = Type::Unknown,
+       const char* data_origin = nullptr,
+       const char* data_pointer = nullptr,
+       int data_size = 0,
+       bool data_owner = false)
+    : type(data_type),
+      origin(data_origin ? data_origin : ""),
+      data(data_pointer),
+      size(data_size),
+      owner(data_owner) {
+    if (type == Type::JSScript && data && !size) {
+      size = static_cast<int>(strlen(data)) + 1 ;
+    }
+  }
+
+  ~Data() {
+    if (owner && data) {
+      delete [] data ;
+    }
+  }
+
+  void CopyData(const char* data_pointer, int data_size) {
+    if (owner && size) {
+      delete [] data ;
+    }
+
+    data = nullptr ;
+    size = data_size ;
+    owner = true ;
+    if (size) {
+      data = new char[size] ;
+      memcpy((void*)data, data_pointer, size) ;
+    }
+  }
+
+  Data& operator =(const Data& other) {
+    type = other.type ;
+    origin = other.origin ;
+    data = other.data ;
+    size = other.size ;
+    owner = false ;
+    return *this ;
+  }
+
+  Type type ;
+  std::string origin ;
+  const char* data ;
+  int size ;
+  bool owner ;
+
+  Data(const Data&) = delete ;
 };
 
 // HandleScope can't be created by 'new()' but we need something for classes
