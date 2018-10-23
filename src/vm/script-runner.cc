@@ -60,7 +60,20 @@ ScriptRunner* ScriptRunner::Create(
   if (!data || data->type == Data::Type::None) {
     result.reset(new ScriptRunner()) ;
   } else {
-    if (data->type == Data::Type::Compilation) {
+    if (data->type == Data::Type::JSScript) {
+      // Create ScriptRunner
+      result.reset(new ScriptRunner()) ;
+
+      // Compile a main script
+      result->main_script_ = CompileScript(result->context_, *data) ;
+      if (result->main_script_.IsEmpty()) {
+        printf("ERROR: Main script compiling've ended failure\n") ;
+        return nullptr ;
+      }
+
+      // We need to run a main script for using it
+      result->main_script_->Run(result->context_).ToLocalChecked() ;
+    } else if (data->type == Data::Type::Compilation) {
       // Create ScriptRunner
       result.reset(new ScriptRunner()) ;
 
@@ -84,8 +97,7 @@ ScriptRunner* ScriptRunner::Create(
   }
 
   // Compile a command script and save a cache of it
-  Local<Script> script =
-      CompileScript(result->context_, script_data) ;
+  Local<Script> script = CompileScript(result->context_, script_data) ;
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
       script->GetUnboundScript())) ;
   if (script.IsEmpty()) {
@@ -115,9 +127,20 @@ ScriptRunner* ScriptRunner::CreateByFiles(
   }
 
   // Load a file content
+  i::Vector<const char> main_script_source ;
   Data data(file_type, file_path) ;
-  if (file_type == Data::Type::Compilation ||
-      file_type == Data::Type::Snapshot) {
+  if (file_type == Data::Type::JSScript) {
+    main_script_source = i::ReadFile(file_path, &file_exists, true) ;
+    if (!file_exists || script_source.size() == 0) {
+      printf("ERROR: Main script file doesn't exist or is empty (%s)\n",
+             script_path) ;
+      return nullptr ;
+    }
+
+    data.data = main_script_source.start() ;
+    data.size = static_cast<int>(strlen(data.data)) + 1 ;
+  } else if (file_type == Data::Type::Compilation ||
+             file_type == Data::Type::Snapshot) {
     data.data = reinterpret_cast<const char*>(
         i::ReadBytes(file_path, &data.size, true)) ;
     data.owner = true ;

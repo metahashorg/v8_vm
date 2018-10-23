@@ -116,9 +116,10 @@ void CompileModuleFromFile(const char* module_path) {
     Local<Module> module = CompileModule(isolate, module_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
-    i::WriteBytes(
-        ChangeFileExtension(module_path, ".cmpl").c_str(),
-        cache->data, cache->length, true) ;
+    std::string compilation_path(ChangeFileExtension(module_path, ".cmpl")) ;
+    i::WriteBytes(compilation_path.c_str(), cache->data, cache->length, true) ;
+    printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
+           module_path, compilation_path.c_str()) ;
   }
 
   isolate->Dispose() ;
@@ -150,9 +151,10 @@ void CompileScriptFromFile(const char* script_path) {
     Local<Script> script = CompileScript(context, script_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
-    i::WriteBytes(
-        ChangeFileExtension(script_path, ".cmpl").c_str(),
-        cache->data, cache->length, true) ;
+    std::string compilation_path(ChangeFileExtension(script_path, ".cmpl")) ;
+    i::WriteBytes(compilation_path.c_str(), cache->data, cache->length, true) ;
+    printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
+           script_path, compilation_path.c_str()) ;
   }
 
   isolate->Dispose() ;

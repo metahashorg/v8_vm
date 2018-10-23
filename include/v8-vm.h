@@ -25,16 +25,23 @@ namespace vm {
   void V8_EXPORT CompileScript(const char* script_path) ;
 
   /**
+   * Runs the script by using a js-script.
+   */
+  void V8_EXPORT RunScriptByJSScriptFromFile(
+      const char* js_path, const char* script_path,
+      const char* out_snapshot_path = nullptr) ;
+
+  /**
    * Runs the script by using a previous compilation.
    */
-  void V8_EXPORT RunScriptByCompilation(
+  void V8_EXPORT RunScriptByCompilationFromFile(
       const char* compilation_path, const char* script_path,
       const char* out_snapshot_path = nullptr) ;
 
   /**
    * Runs the script by using a previous snapshot.
    */
-  void V8_EXPORT RunScriptBySnapshot(
+  void V8_EXPORT RunScriptBySnapshotFromFile(
       const char* snapshot_path, const char* script_path,
       const char* out_snapshot_path = nullptr) ;
 

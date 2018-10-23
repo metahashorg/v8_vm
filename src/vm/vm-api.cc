@@ -53,7 +53,14 @@ void RunScriptByFile(
   }
 }
 
-void RunScriptByCompilation(
+void RunScriptByJSScriptFromFile(
+    const char* js_path, const char* script_path,
+    const char* out_snapshot_path /*= nullptr*/) {
+  RunScriptByFile(
+      vi::Data::Type::JSScript, js_path, script_path, out_snapshot_path) ;
+}
+
+void RunScriptByCompilationFromFile(
     const char* compilation_path, const char* script_path,
     const char* out_snapshot_path /*= nullptr*/) {
   RunScriptByFile(
@@ -61,7 +68,7 @@ void RunScriptByCompilation(
       out_snapshot_path) ;
 }
 
-void RunScriptBySnapshot(
+void RunScriptBySnapshotFromFile(
     const char* snapshot_path, const char* script_path,
     const char* out_snapshot_path /*= nullptr*/) {
   RunScriptByFile(

@@ -7,6 +7,7 @@
 
 const char kSwitchCommand[] = "cmd" ;
 const char kSwitchCompilation[] = "cmpl" ;
+const char kSwitchJSScript[] = "js" ;
 const char kSwitchMode[] = "mode" ;
 const char kSwitchSnapshotIn[] = "snap_i" ;
 const char kSwitchSnapshotOut[] = "snap_o" ;
@@ -32,7 +33,8 @@ ModeType GetModeType(const CommandLine& cmd_line) {
     } else if (
         cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeCmdRun &&
         cmd_line.HasSwitch(kSwitchCommand) &&
-        (cmd_line.HasSwitch(kSwitchCompilation) ||
+        (cmd_line.HasSwitch(kSwitchJSScript) ||
+         cmd_line.HasSwitch(kSwitchCompilation) ||
          cmd_line.HasSwitch(kSwitchSnapshotIn))) {
       result = ModeType::Run ;
     } else if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump) {
@@ -65,14 +67,19 @@ int DoRun(const CommandLine& cmd_line) {
   // Initialize V8
   v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
 
-  std::string snapshot_path ;
-  if (cmd_line.HasSwitch(kSwitchSnapshotIn)) {
-    snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotIn) ;
+  std::string js_path ;
+  if (cmd_line.HasSwitch(kSwitchJSScript)) {
+    js_path = cmd_line.GetSwitchValueNative(kSwitchJSScript) ;
   }
 
   std::string compilation_path ;
   if (cmd_line.HasSwitch(kSwitchCompilation)) {
     compilation_path = cmd_line.GetSwitchValueNative(kSwitchCompilation) ;
+  }
+
+  std::string snapshot_path ;
+  if (cmd_line.HasSwitch(kSwitchSnapshotIn)) {
+    snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotIn) ;
   }
 
   std::string out_snapshot_path ;
@@ -81,14 +88,18 @@ int DoRun(const CommandLine& cmd_line) {
   }
 
   if (snapshot_path.length()) {
-    v8::vm::RunScriptBySnapshot(
+    v8::vm::RunScriptBySnapshotFromFile(
         snapshot_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
-  } else if (compilation_path.c_str()) {
-    v8::vm::RunScriptByCompilation(
+  } else if (compilation_path.length()) {
+    v8::vm::RunScriptByCompilationFromFile(
         compilation_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
+        out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
+  } else if (js_path.length()) {
+    v8::vm::RunScriptByJSScriptFromFile(
+        js_path.c_str(), cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else {
     return DoUnknown() ;
