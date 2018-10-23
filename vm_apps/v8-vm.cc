@@ -49,7 +49,22 @@ ModeType GetModeType(const CommandLine& cmd_line) {
 }
 
 int DoUnknown() {
-  printf("Specify what you want to do\n") ;
+  const char usage[] =
+      "usage: v8_vm --mode=<mode_type> <args>\n\n"
+      "These are mode types and appropriate arguments:\n\n"
+      "  mode=compile     Compile js-file(s)\n"
+      "    <args>         js-file path(s) (may be more than one)\n"
+      "  e.g.: v8_vm --mode=compile script.js\n\n"
+      "  mode=cmdrun      Run a js-file in environment (one of environment arguments must be)\n"
+      "    cmd=<path>     Js-file path for running (must be)\n"
+      "    snap_i=<path>  Snapshot of environment\n"
+      "    cmpl=<path>    Compilation of js-script for creating environment (Be ignored if \'snap_i\' is present)\n"
+      "    js=<path>      Js-script for creating environment (Be ignored if \'snap_i\' or \'cmpl\' are present)\n"
+      "    snap_o=<path>  Path for saving environment after script has been run (optional)\n"
+      "  e.g.: v8_vm --mode=cmdrun --cmd=script_cmd.js --js=script.js --snap_o=script.shot\n"
+      "        v8_vm --mode=cmdrun --cmd=script_cmd.js --cmpl=script.cmpl\n"
+      "        v8_vm --mode=cmdrun --cmd=script_cmd.js --snap_i=script1.shot --snap_o=script2.shot" ;
+  printf("%s\n", usage) ;
   return 1 ;
 }
 
