@@ -15,12 +15,6 @@ namespace v8 {
 namespace vm {
 namespace internal {
 
-std::string ChangeFileExtension(
-    const char* file_name, const char* new_extension) {
-  // TODO: Implement
-  return (std::string(file_name) + new_extension) ;
-}
-
 Local<Module> CompileModule(
     Isolate* isolate, const Data& module_data,
     v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
@@ -90,7 +84,7 @@ Local<Script> CompileScript(
   return script ;
 }
 
-void CompileModuleFromFile(const char* module_path) {
+void CompileModuleFromFile(const char* module_path, const char* result_path) {
   bool file_exists = false ;
   i::Vector<const char> file_content =
       i::ReadFile(module_path, &file_exists, true) ;
@@ -116,16 +110,15 @@ void CompileModuleFromFile(const char* module_path) {
     Local<Module> module = CompileModule(isolate, module_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
-    std::string compilation_path(ChangeFileExtension(module_path, ".cmpl")) ;
-    i::WriteBytes(compilation_path.c_str(), cache->data, cache->length, true) ;
+    i::WriteBytes(result_path, cache->data, cache->length, true) ;
     printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-           module_path, compilation_path.c_str()) ;
+           module_path, result_path) ;
   }
 
   isolate->Dispose() ;
 }
 
-void CompileScriptFromFile(const char* script_path) {
+void CompileScriptFromFile(const char* script_path, const char* result_path) {
   bool file_exists = false ;
   i::Vector<const char> file_content =
       i::ReadFile(script_path, &file_exists, true) ;
@@ -151,10 +144,9 @@ void CompileScriptFromFile(const char* script_path) {
     Local<Script> script = CompileScript(context, script_data) ;
     ScriptCompiler::CachedData* cache =
         ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
-    std::string compilation_path(ChangeFileExtension(script_path, ".cmpl")) ;
-    i::WriteBytes(compilation_path.c_str(), cache->data, cache->length, true) ;
+    i::WriteBytes(result_path, cache->data, cache->length, true) ;
     printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-           script_path, compilation_path.c_str()) ;
+           script_path, result_path) ;
   }
 
   isolate->Dispose() ;

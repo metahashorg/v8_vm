@@ -20,9 +20,9 @@ Local<Script> CompileScript(
     Local<Context> context, const Data& script_data,
     v8::ScriptCompiler::CachedData* cache = nullptr) ;
 
-void CompileModuleFromFile(const char* module_path) ;
+void CompileModuleFromFile(const char* module_path, const char* result_path) ;
 
-void CompileScriptFromFile(const char* script_path) ;
+void CompileScriptFromFile(const char* script_path, const char* result_path) ;
 
 Local<Module> LoadModuleCompilation(
     Isolate* isolate, const Data& compilation_data) ;

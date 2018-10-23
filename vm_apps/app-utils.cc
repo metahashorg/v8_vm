@@ -4,6 +4,12 @@
 
 #include "vm_apps/app-utils.h"
 
+std::string ChangeFileExtension(
+    const char* file_name, const char* new_extension) {
+  // TODO: Implement
+  return (std::string(file_name) + new_extension) ;
+}
+
 const char kWhitespaceASCII[] = {
   0x09,    // CHARACTER TABULATION
   0x0A,    // LINE FEED (LF)

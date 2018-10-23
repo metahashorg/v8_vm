@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "include/v8-vm.h"
+#include "vm_apps/app-utils.h"
 #include "vm_apps/command-line.h"
 
 const char kSwitchCommand[] = "cmd" ;
@@ -15,6 +16,8 @@ const char kSwitchSnapshotOut[] = "snap_o" ;
 const char kSwitchModeCmdRun[] = "cmdrun" ;
 const char kSwitchModeCompile[] = "compile" ;
 const char kSwitchModeDump[] = "dump" ;
+
+const char kCompilationFileExtension[] = ".cmpl" ;
 
 enum class ModeType {
   Unknown = 0,
@@ -55,7 +58,9 @@ int DoCompile(const CommandLine& cmd_line) {
   v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
 
   for (auto it : cmd_line.GetArgs()) {
-    v8::vm::CompileScript(it.c_str()) ;
+    v8::vm::CompileScriptFromFile(
+        it.c_str(),
+        ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
   }
 
   // Deinitialize V8

@@ -21,8 +21,8 @@ void DeinitializeV8() {
   V8HANDLE()->Deinitialize() ;
 }
 
-void CompileScript(const char* script_path) {
-  vi::CompileScriptFromFile(script_path) ;
+void CompileScriptFromFile(const char* script_path, const char* result_path) {
+  vi::CompileScriptFromFile(script_path, result_path) ;
 }
 
 void RunScriptByFile(
