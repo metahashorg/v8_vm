@@ -8,6 +8,7 @@
 #include "include/v8.h"
 #include "src/base/macros.h"
 #include "src/vm/vm-utils.h"
+#include "src/vm/work-context.h"
 
 namespace v8 {
 namespace vm {
@@ -30,16 +31,11 @@ class ScriptRunner {
       StartupData* snapshot_out = nullptr) ;
 
  private:
-  ScriptRunner(StartupData* snapshot = nullptr) ;
+  ScriptRunner(
+      StartupData* snapshot = nullptr, StartupData* snapshot_out = nullptr) ;
 
   Data script_data_ ;
-  StartupData* snapshot_out_ = nullptr ;
-  std::unique_ptr<SnapshotCreator> snapshot_creator_ ;
-  Isolate* isolate_ ;
-  std::unique_ptr<Isolate::Scope> iscope_ ;
-  std::unique_ptr<InitializedHandleScope> scope_ ;
-  Local<Context> context_ ;
-  std::unique_ptr<Context::Scope> cscope_ ;
+  std::unique_ptr<WorkContext> context_ ;
   Local<Script> main_script_ ;
   std::unique_ptr<v8::ScriptCompiler::CachedData> script_cache_ ;
   Local<Value> result_ ;

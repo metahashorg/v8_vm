@@ -106,16 +106,6 @@ struct Data {
   Data(const Data&) = delete ;
 };
 
-// HandleScope can't be created by 'new()' but we need something for classes
-class InitializedHandleScope {
- public:
-  explicit InitializedHandleScope(Isolate* isolate)
-      : handle_scope_(isolate) {}
-
- private:
-  HandleScope handle_scope_ ;
-};
-
 }  // namespace internal
 }  // namespace vm
 }  // namespace v8

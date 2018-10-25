@@ -10,6 +10,7 @@
 #include "src/utils.h"
 #include "src/vm/v8-handle.h"
 #include "src/vm/vm-utils.h"
+#include "src/vm/work-context.h"
 
 namespace v8 {
 namespace vm {
@@ -17,7 +18,7 @@ namespace internal {
 
 Local<Module> CompileModule(
     Isolate* isolate, const Data& module_data,
-    v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+    ScriptCompiler::CachedData* cache /*= nullptr*/) {
   DCHECK_EQ(Data::Type::JSScript, module_data.type) ;
 
   // We need to create a copy of cache
@@ -53,7 +54,7 @@ Local<Module> CompileModule(
 
 Local<Script> CompileScript(
     Local<Context> context, const Data& script_data,
-    v8::ScriptCompiler::CachedData* cache /*= nullptr*/) {
+    ScriptCompiler::CachedData* cache /*= nullptr*/) {
   DCHECK_EQ(Data::Type::JSScript, script_data.type) ;
 
   // We need to create a copy of cache
@@ -98,24 +99,14 @@ void CompileModuleFromFile(const char* module_path, const char* result_path) {
   TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
   TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
 
-  Isolate* isolate = Isolate::New(V8HANDLE()->create_params()) ;
-
-  {
-    // TODO: Use TryCatch and output errors
-    Isolate::Scope iscope(isolate) ;
-    HandleScope scope(isolate) ;
-    Local<Context> context = Context::New(isolate) ;
-    Context::Scope cscope(context) ;
-    Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
-    Local<Module> module = CompileModule(isolate, module_data) ;
-    ScriptCompiler::CachedData* cache =
-        ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
-    i::WriteBytes(result_path, cache->data, cache->length, true) ;
-    printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-           module_path, result_path) ;
-  }
-
-  isolate->Dispose() ;
+  std::unique_ptr<WorkContext> context(WorkContext::New()) ;
+  Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
+  Local<Module> module = CompileModule(context->isolate(), module_data) ;
+  ScriptCompiler::CachedData* cache =
+      ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
+  i::WriteBytes(result_path, cache->data, cache->length, true) ;
+  printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
+         module_path, result_path) ;
 }
 
 void CompileScriptFromFile(const char* script_path, const char* result_path) {
@@ -132,24 +123,14 @@ void CompileScriptFromFile(const char* script_path, const char* result_path) {
   TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
   TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
 
-  Isolate* isolate = Isolate::New(V8HANDLE()->create_params()) ;
-
-  {
-    // TODO: Use TryCatch and output errors
-    Isolate::Scope iscope(isolate) ;
-    HandleScope scope(isolate) ;
-    Local<Context> context = Context::New(isolate) ;
-    Context::Scope cscope(context) ;
-    Data script_data(Data::Type::JSScript, script_path, file_content.start()) ;
-    Local<Script> script = CompileScript(context, script_data) ;
-    ScriptCompiler::CachedData* cache =
-        ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
-    i::WriteBytes(result_path, cache->data, cache->length, true) ;
-    printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-           script_path, result_path) ;
-  }
-
-  isolate->Dispose() ;
+  std::unique_ptr<WorkContext> context(WorkContext::New()) ;
+  Data script_data(Data::Type::JSScript, script_path, file_content.start()) ;
+  Local<Script> script = CompileScript(*context, script_data) ;
+  ScriptCompiler::CachedData* cache =
+      ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
+  i::WriteBytes(result_path, cache->data, cache->length, true) ;
+  printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
+         script_path, result_path) ;
 }
 
 Local<Module> LoadModuleCompilation(

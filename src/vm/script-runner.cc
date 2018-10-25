@@ -16,37 +16,23 @@ ScriptRunner::~ScriptRunner() {
   result_.Clear() ;
   script_cache_.reset() ;
   main_script_.Clear() ;
-  cscope_.reset() ;
-  context_.Clear() ;
-  scope_.reset() ;
-
-  // Create a snapshot in any case. We can't avoid it because error'll happen
-  StartupData snapshot = snapshot_creator_->CreateBlob(
-      SnapshotCreator::FunctionCodeHandling::kKeep) ;
-  if (snapshot_out_) {
-    *snapshot_out_ = snapshot ;
-  } else {
-    delete [] snapshot.data ;
-  }
-
-  iscope_.reset() ;
-  snapshot_creator_.reset() ;
+  context_.reset() ;
 }
 
 void ScriptRunner::Run() {
   // Get script from cache
   Local<Script> script = CompileScript(
-      context_, script_data_, script_cache_.get()) ;
+      *context_, script_data_, script_cache_.get()) ;
   if (script.IsEmpty()){
     printf("ERROR: Command script hasn't been compiled\n") ;
     return ;
   }
 
   // Run script
-  result_ = script->Run(context_).ToLocalChecked() ;
+  result_ = script->Run(*context_).ToLocalChecked() ;
 
   // TODO: Temporary output
-  v8::String::Utf8Value utf8(isolate_, result_) ;
+  v8::String::Utf8Value utf8(*context_, result_) ;
   printf("INFO: Result of command: %s\n", *utf8) ;
 }
 
@@ -62,34 +48,34 @@ ScriptRunner* ScriptRunner::Create(
   } else {
     if (data->type == Data::Type::JSScript) {
       // Create ScriptRunner
-      result.reset(new ScriptRunner()) ;
+      result.reset(new ScriptRunner(nullptr, snapshot_out)) ;
 
       // Compile a main script
-      result->main_script_ = CompileScript(result->context_, *data) ;
+      result->main_script_ = CompileScript(*result->context_, *data) ;
       if (result->main_script_.IsEmpty()) {
         printf("ERROR: Main script compiling've ended failure\n") ;
         return nullptr ;
       }
 
       // We need to run a main script for using it
-      result->main_script_->Run(result->context_).ToLocalChecked() ;
+      result->main_script_->Run(*result->context_).ToLocalChecked() ;
     } else if (data->type == Data::Type::Compilation) {
       // Create ScriptRunner
-      result.reset(new ScriptRunner()) ;
+      result.reset(new ScriptRunner(nullptr, snapshot_out)) ;
 
       // Load compilation
-      result->main_script_ = LoadScriptCompilation(result->context_, *data) ;
+      result->main_script_ = LoadScriptCompilation(*result->context_, *data) ;
       if (result->main_script_.IsEmpty()) {
         printf("ERROR: Main script loading've ended failure\n") ;
         return nullptr ;
       }
 
       // We need to run a main script for using it
-      result->main_script_->Run(result->context_).ToLocalChecked() ;
+      result->main_script_->Run(*result->context_).ToLocalChecked() ;
     } else if (data->type == Data::Type::Snapshot) {
       // Create ScriptRunner
       StartupData snapshot = { data->data, data->size } ;
-      result.reset(new ScriptRunner(&snapshot)) ;
+      result.reset(new ScriptRunner(&snapshot, snapshot_out)) ;
     } else {
       printf("ERROR: Arguments of \'%s\' are wrong.\n", __FUNCTION__) ;
       return nullptr ;
@@ -97,7 +83,7 @@ ScriptRunner* ScriptRunner::Create(
   }
 
   // Compile a command script and save a cache of it
-  Local<Script> script = CompileScript(result->context_, script_data) ;
+  Local<Script> script = CompileScript(*result->context_, script_data) ;
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
       script->GetUnboundScript())) ;
   if (script.IsEmpty()) {
@@ -109,8 +95,6 @@ ScriptRunner* ScriptRunner::Create(
   // Remember origin and source of script
   result->script_data_ = script_data ;
   result->script_data_.CopyData(script_data.data, script_data.size) ;
-  // Add a outcoming snapshot pointer
-  result->snapshot_out_ = snapshot_out ;
   return result.release() ;
 }
 
@@ -157,16 +141,10 @@ ScriptRunner* ScriptRunner::CreateByFiles(
   return Create(&data, script_data, snapshot_out) ;
 }
 
-ScriptRunner::ScriptRunner(StartupData* snapshot /*= nullptr*/)
-  : snapshot_creator_(new SnapshotCreator(
-        V8HANDLE()->create_params().external_references, snapshot)),
-    isolate_(snapshot_creator_->GetIsolate()),
-    iscope_(new Isolate::Scope(isolate_)),
-    scope_(new InitializedHandleScope(isolate_)),
-    context_(Context::New(isolate_)),
-    cscope_(new Context::Scope(context_)) {
-  snapshot_creator_->SetDefaultContext(context_) ;
-}
+ScriptRunner::ScriptRunner(
+    StartupData* snapshot /*= nullptr*/,
+    StartupData* snapshot_out /*= nullptr*/)
+  : context_(WorkContext::New(snapshot, snapshot_out)) {}
 
 }  // namespace internal
 }  // namespace vm

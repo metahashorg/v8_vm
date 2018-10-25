@@ -14,11 +14,11 @@ namespace internal {
 
 Local<Module> CompileModule(
     Isolate* isolate, const Data& module_data,
-    v8::ScriptCompiler::CachedData* cache = nullptr) ;
+    ScriptCompiler::CachedData* cache = nullptr) ;
 
 Local<Script> CompileScript(
     Local<Context> context, const Data& script_data,
-    v8::ScriptCompiler::CachedData* cache = nullptr) ;
+    ScriptCompiler::CachedData* cache = nullptr) ;
 
 void CompileModuleFromFile(const char* module_path, const char* result_path) ;
 
