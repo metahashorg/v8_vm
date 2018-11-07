@@ -4,25 +4,61 @@
 
 #include "include/v8-vm.h"
 
+#include <fstream>
+
+#include "src/vm/dumper.h"
 #include "src/vm/script-runner.h"
 #include "src/vm/v8-handle.h"
 #include "src/vm/vm-compiler.h"
+#include "src/vm/vm-utils.h"
 
 namespace vi = v8::vm::internal ;
 
 namespace v8 {
 namespace vm {
 
-void InitializeV8(const char* app_path) {
-  V8HANDLE()->Initialize(app_path) ;
-}
+namespace {
 
-void DeinitializeV8() {
-  V8HANDLE()->Deinitialize() ;
-}
+enum class DumpType {
+  Context = 1,
+  Heap = 2,
+  HeapGraph = 3,
+};
 
-void CompileScriptFromFile(const char* script_path, const char* result_path) {
-  vi::CompileScriptFromFile(script_path, result_path) ;
+void CreateDumpBySnapshotFromFile(
+    DumpType type, const char* snapshot_path, v8::vm::FormattedJson formatted,
+    const char* result_path) {
+  vi::Data data(vi::Data::Type::Snapshot, snapshot_path) ;
+  data.data = reinterpret_cast<const char*>(
+    i::ReadBytes(snapshot_path, &data.size, true)) ;
+  data.owner = true ;
+  if (data.size == 0) {
+    printf("ERROR: Snapshot is corrupted (\'%s\')\n", snapshot_path) ;
+    return ;
+  }
+
+  std::fstream fs(result_path, std::fstream::out | std::fstream::binary) ;
+  if (fs.fail()) {
+    printf("ERROR: Can't open file \'%s\'\n", result_path) ;
+    return ;
+  }
+
+  StartupData snapshot = { data.data, data.size } ;
+  std::unique_ptr<vi::WorkContext> context(vi::WorkContext::New(&snapshot)) ;
+  if (type == DumpType::Context) {
+    CreateContextDump(*context, fs, formatted) ;
+  } else if (type == DumpType::Heap) {
+    CreateHeapDump(*context, fs) ;
+  } else {
+    CreateHeapGraphDump(*context, fs, formatted) ;
+  }
+
+  fs.close() ;
+
+  printf(
+      "INFO: Created a dump by the snapshot-file \'%s\' and "
+      "saved result into \'%s\'\n",
+      snapshot_path, result_path) ;
 }
 
 void RunScriptByFile(
@@ -51,6 +87,40 @@ void RunScriptByFile(
       delete [] data.data ;
     }
   }
+}
+
+}  // namespace
+
+void InitializeV8(const char* app_path) {
+  V8HANDLE()->Initialize(app_path) ;
+}
+
+void DeinitializeV8() {
+  V8HANDLE()->Deinitialize() ;
+}
+
+void CompileScriptFromFile(const char* script_path, const char* result_path) {
+  vi::CompileScriptFromFile(script_path, result_path) ;
+}
+
+void CreateContextDumpBySnapshotFromFile(
+    const char* snapshot_path, FormattedJson formatted,
+    const char* result_path) {
+  CreateDumpBySnapshotFromFile(
+      DumpType::Context, snapshot_path, formatted, result_path) ;
+}
+
+void CreateHeapDumpBySnapshotFromFile(
+    const char* snapshot_path, const char* result_path) {
+  CreateDumpBySnapshotFromFile(
+      DumpType::Heap, snapshot_path, FormattedJson::False, result_path) ;
+}
+
+void CreateHeapGraphDumpBySnapshotFromFile(
+    const char* snapshot_path, FormattedJson formatted,
+    const char* result_path) {
+  CreateDumpBySnapshotFromFile(
+      DumpType::HeapGraph, snapshot_path, formatted, result_path) ;
 }
 
 void RunScriptByJSScriptFromFile(

@@ -47,4 +47,4 @@ class ScriptRunner {
 }  // namespace vm
 }  // namespace v8
 
-#endif  // V8_VM_VM_COMPILER_H_
+#endif  // V8_VM_SCRIPT_RUNNER_H_

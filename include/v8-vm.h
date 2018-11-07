@@ -11,6 +11,12 @@
 namespace v8 {
 namespace vm {
 
+/** Enum about how to write Json */
+enum class FormattedJson {
+  False = 0,
+  True = 1
+};
+
 /** Initializes V8 for working with virtual machine. */
 void V8_EXPORT InitializeV8(const char* app_path) ;
 
@@ -22,6 +28,26 @@ void V8_EXPORT DeinitializeV8() ;
  */
 void V8_EXPORT CompileScriptFromFile(
     const char* script_path, const char* result_path) ;
+
+/**
+ * Creates a context dump by a snapshot
+ */
+void V8_EXPORT CreateContextDumpBySnapshotFromFile(
+    const char* snapshot_path, FormattedJson formatted,
+    const char* result_path) ;
+
+/**
+ * Creates a heap dump by a snapshot
+ */
+void V8_EXPORT CreateHeapDumpBySnapshotFromFile(
+    const char* snapshot_path, const char* result_path) ;
+
+/**
+ * Creates a heap graph dump by a snapshot
+ */
+void V8_EXPORT CreateHeapGraphDumpBySnapshotFromFile(
+    const char* snapshot_path, FormattedJson formatted,
+    const char* result_path) ;
 
 /**
  * Runs the script by using a js-script.

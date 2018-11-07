@@ -90,6 +90,14 @@ class SnapshotWorkContext : public WorkContext {
   friend class WorkContext ;
 };
 
+// Converts a v8::Value (e.g. v8::String) into a utf8-string
+// by using WorkContext
+// See src/vm/vm-utils.h for ValueToUtf8
+template <class T>
+static inline std::string ValueToUtf8(WorkContext& context, T value) {
+  return ValueToUtf8(context.isolate(), value) ;
+}
+
 }  // namespace internal
 }  // namespace vm
 }  // namespace v8

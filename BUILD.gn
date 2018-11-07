@@ -2445,6 +2445,8 @@ v8_source_set("v8_base") {
     "src/visitors.h",
     "src/vm-state-inl.h",
     "src/vm-state.h",
+    "src/vm/dumper.cc", # @metahash
+    "src/vm/dumper.h", # @metahash
     "src/vm/script-runner.cc", # @metahash
     "src/vm/script-runner.h", # @metahash
     "src/vm/v8-handle.cc", # @metahash

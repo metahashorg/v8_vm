@@ -18,6 +18,9 @@ const char kSwitchModeCompile[] = "compile" ;
 const char kSwitchModeDump[] = "dump" ;
 
 const char kCompilationFileExtension[] = ".cmpl" ;
+const char kContextDumpFileExtension[] = ".context-dump.json" ;
+const char kHeapDumpFileExtension[] = ".heap-dump.json" ;
+const char kHeapGraphDumpFileExtension[] = ".heap-graph-dump.json" ;
 
 enum class ModeType {
   Unknown = 0,
@@ -40,8 +43,10 @@ ModeType GetModeType(const CommandLine& cmd_line) {
          cmd_line.HasSwitch(kSwitchCompilation) ||
          cmd_line.HasSwitch(kSwitchSnapshotIn))) {
       result = ModeType::Run ;
-    } else if (cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump) {
-      ;
+    } else if (
+        cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump &&
+        cmd_line.GetArgCount() != 0) {
+      result = ModeType::Dump ;
     }
   }
 
@@ -63,7 +68,10 @@ int DoUnknown() {
       "    snap_o=<path>  Path for saving environment after script has been run (optional)\n"
       "  e.g.: v8_vm --mode=cmdrun --cmd=script_cmd.js --js=script.js --snap_o=script.shot\n"
       "        v8_vm --mode=cmdrun --cmd=script_cmd.js --cmpl=script.cmpl\n"
-      "        v8_vm --mode=cmdrun --cmd=script_cmd.js --snap_i=script1.shot --snap_o=script2.shot" ;
+      "        v8_vm --mode=cmdrun --cmd=script_cmd.js --snap_i=script1.shot --snap_o=script2.shot\n\n"
+      "  mode=dump        Create a dump by snapshot-file(s)\n"
+      "    <args>         snapshot-file path(s) (may be more than one)\n"
+      "  e.g.: v8_vm --mode=dump script.shot" ;
   printf("%s\n", usage) ;
   return 1 ;
 }
@@ -130,6 +138,29 @@ int DoRun(const CommandLine& cmd_line) {
   return 0 ;
 }
 
+int DoDump(const CommandLine& cmd_line) {
+  // Initialize V8
+  v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
+
+  for (auto it : cmd_line.GetArgs()) {
+    v8::vm::CreateContextDumpBySnapshotFromFile(
+        it.c_str(),
+        v8::vm::FormattedJson::True,
+        ChangeFileExtension(it.c_str(), kContextDumpFileExtension).c_str()) ;
+    v8::vm::CreateHeapDumpBySnapshotFromFile(
+        it.c_str(),
+        ChangeFileExtension(it.c_str(), kHeapDumpFileExtension).c_str()) ;
+    v8::vm::CreateHeapGraphDumpBySnapshotFromFile(
+        it.c_str(),
+        v8::vm::FormattedJson::True,
+        ChangeFileExtension(it.c_str(), kHeapGraphDumpFileExtension).c_str()) ;
+  }
+
+  // Deinitialize V8
+  v8::vm::DeinitializeV8() ;
+  return 0 ;
+}
+
 int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
   ModeType mode_type = GetModeType(cmd_line) ;
@@ -140,6 +171,8 @@ int main(int argc, char* argv[]) {
     result = DoCompile(cmd_line) ;
   } else if (mode_type == ModeType::Run) {
     result = DoRun(cmd_line) ;
+  } else if (mode_type == ModeType::Dump) {
+    result = DoDump(cmd_line) ;
   }
 
   return result ;

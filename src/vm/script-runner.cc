@@ -32,8 +32,8 @@ void ScriptRunner::Run() {
   result_ = script->Run(*context_).ToLocalChecked() ;
 
   // TODO: Temporary output
-  v8::String::Utf8Value utf8(*context_, result_) ;
-  printf("INFO: Result of command: %s\n", *utf8) ;
+  printf("INFO: Result of command: %s\n",
+         ValueToUtf8(*context_, result_).c_str()) ;
 }
 
 ScriptRunner* ScriptRunner::Create(

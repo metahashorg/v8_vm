@@ -20,6 +20,29 @@ static inline Local<String> Utf8ToStr(Isolate* isolate, const char* str) {
              .ToLocalChecked() ;
 }
 
+// Converts a v8::Value (e.g. v8::String) into a utf8-string
+template <class T>
+static inline std::string ValueToUtf8(Isolate* isolate, T value) {
+  Local<Value> value_as_value = T::template Cast<Value>(value) ;
+  if (value_as_value.IsEmpty()) {
+    return "" ;
+  }
+
+  Local<String> value_as_string = value_as_value->ToString() ;
+  v8::String::Utf8Value str(isolate, value_as_string) ;
+  return *str ? *str : "" ;
+}
+
+template <class T>
+static inline std::string ValueToUtf8(Local<Context> context, T value) {
+  if (context.IsEmpty()) {
+    printf("ERROR: Context is null\n") ;
+    return "" ;
+}
+
+  return ValueToUtf8(context->GetIsolate(), value) ;
+}
+
 // Temporarily sets a value into a variable
 // NOTE: Need to think of multithreading. Now here is a potential problem.
 // E.g {var:true}->{thrd1 var:false,cache:true}->{thrd2 var:false,cache:false}->
