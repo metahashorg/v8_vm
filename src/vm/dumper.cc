@@ -61,6 +61,7 @@ const char* kJsonFieldUndefinedType[] =
 const char* kJsonFieldValue[] = JSON_ARRAY_OF_FIELD(value) ;
 
 // Json value list
+const char kJsonValueFalse[] = "false" ;
 const char kJsonValueNull[] = "null" ;
 const char kJsonValueUndefined[] = R"("[undefined]")" ;
 const char kJsonValueTrue[] = "true" ;
@@ -519,6 +520,7 @@ class ValueSerializer {
  private:
   void SerializeArray(Local<Array> value, uint64_t id, JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, JsonGap& gap) ;
+  void SerializeBoolean(Local<Boolean> value, uint64_t id, JsonGap& gap) ;
   void SerializeFunction(Local<Function> value, uint64_t id, JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, JsonGap& gap) ;
@@ -675,6 +677,19 @@ void ValueSerializer::SerializeBigInt(
     *result_  << JSON_STRING(value_str) ;
   }
 
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeBoolean(
+    Local<Boolean> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::Boolean)) ;
+  *result_ << kJsonComma[gap] << child_gap ;
+  *result_ << kJsonFieldValue[gap]
+      << (value->Value() ? kJsonValueTrue : kJsonValueFalse) ;
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
@@ -903,7 +918,6 @@ void ValueSerializer::SerializeString(
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
-
 void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   ValueType value_type = GetValueType(value) ;
   if (value.IsEmpty() || value_type == ValueType::Null) {
@@ -931,6 +945,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::BigInt) {
     SerializeBigInt(Local<BigInt>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::Boolean) {
+    SerializeBoolean(Local<Boolean>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Function) {
     SerializeFunction(Local<Function>::Cast(value), id, gap) ;
@@ -966,9 +983,9 @@ std::string ValueSerializer::ValueToField(Local<Value> value, JsonGap& gap) {
 
 #ifdef DEBUG
   USE(kJsonFieldUndefinedType) ;
-  return JSON_STRING(
+  return JSON_FIELD(std::string(
       "Don't have a serializer for a field type \'" +
-      std::string(ValueTypeToUtf8(value_type)) + "\'") ;
+      std::string(ValueTypeToUtf8(value_type)) + "\'"), gap) ;
 #else
   return kJsonFieldUndefinedType[gap] ;
 #endif  // DEBUG
