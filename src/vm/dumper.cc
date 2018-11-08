@@ -41,6 +41,7 @@ const char* kJsonFieldInferredName[] = JSON_ARRAY_OF_FIELD(inferred_name) ;
 const char* kJsonFieldInternalFieldCount[] =
     JSON_ARRAY_OF_FIELD(internal_field_count) ;
 const char* kJsonFieldInternalFields[] = JSON_ARRAY_OF_FIELD(internal_fields) ;
+const char* kJsonFieldLength[] = JSON_ARRAY_OF_FIELD(length) ;
 const char* kJsonFieldName[] = JSON_ARRAY_OF_FIELD(name) ;
 const char* kJsonFieldNode[] = JSON_ARRAY_OF_FIELD(node) ;
 const char* kJsonFieldNodeCount[] = JSON_ARRAY_OF_FIELD(node_count) ;
@@ -56,7 +57,7 @@ const char* kJsonFieldScriptColumn[] = JSON_ARRAY_OF_FIELD(script_column) ;
 const char* kJsonFieldToString[] = JSON_ARRAY_OF_FIELD(to_string) ;
 const char* kJsonFieldType[] = JSON_ARRAY_OF_FIELD(type) ;
 const char* kJsonFieldUndefinedType[] =
-    JSON_ARRAY_OF_FIELD([undefined type of field]) ;
+    JSON_ARRAY_OF_FIELD([undefined field type]) ;
 const char* kJsonFieldValue[] = JSON_ARRAY_OF_FIELD(value) ;
 
 // Json value list
@@ -516,6 +517,7 @@ class ValueSerializer {
       Local<Value> value, std::ostream& result, JsonGap* gap = nullptr) ;
 
  private:
+  void SerializeArray(Local<Array> value, uint64_t id, JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, JsonGap& gap) ;
   void SerializeFunction(Local<Function> value, uint64_t id, JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, JsonGap& gap) ;
@@ -610,6 +612,52 @@ void ValueSerializer::Serialize(
   result_ = &result ;
   SerializeValue(value, *gap) ;
   result_ = nullptr ;
+}
+
+void ValueSerializer::SerializeArray(
+    Local<Array> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  JsonGap array_gap(child_gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::Array)) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
+      << value->Length() ;
+  // Serialize a array content
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldValue[gap] ;
+  if (value->Length()) {
+    bool comma = false ;
+    *result_ << kJsonLeftSquareBracket[gap] ;
+    for (uint32_t i = 0, size = value->Length(); i < size; ++i) {
+      if (comma) {
+        *result_ << kJsonComma[gap] ;
+      } else {
+        comma = true ;
+      }
+
+      *result_ << array_gap ;
+      TryCatch try_catch(context_->GetIsolate()) ;
+      v8::Local<v8::Value> array_value ;
+      if (!value->Get(context_, i).ToLocal(&array_value) &&
+          try_catch.HasCaught()) {
+        *result_ << JSON_STRING(ValueToUtf8(context_, try_catch.Exception())) ;
+        continue ;
+      }
+
+      SerializeValue(array_value, array_gap) ;
+    }
+
+    *result_ << kJsonNewLine[gap] << child_gap << kJsonRightSquareBracket[gap] ;
+  } else {
+    *result_ << kJsonEmptyArray[gap] ;
+  }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
 void ValueSerializer::SerializeBigInt(
@@ -737,14 +785,22 @@ void ValueSerializer::SerializeObject(
   *result_ << child_gap << kJsonFieldConstructorName[gap]
       << JSON_STRING(ValueToUtf8(context_, value->GetConstructorName())) ;
 
+  // Count of ignored properties
+  ValueType real_type = GetValueType(value) ;
+  uint32_t ignored_properties_count = 0 ;
+  if (id == kEmptyId && real_type == ValueType::Array) {
+    ignored_properties_count = Local<Array>::Cast(value)->Length() ;
+  }
+
   // Enumerate own properties
   v8::Local<v8::Array> property_names ;
   if (value->GetOwnPropertyNames(context_, ALL_PROPERTIES)
           .ToLocal(&property_names) &&
-      !property_names.IsEmpty() && property_names->Length()) {
+      !property_names.IsEmpty() &&
+      (property_names->Length() - ignored_properties_count) > 0) {
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldPropertyCount[gap]
-        << property_names->Length() ;
+        << (property_names->Length() - ignored_properties_count) ;
     *result_ << kJsonComma[gap] << child_gap ;
     *result_ << kJsonFieldProperties[gap] << kJsonLeftBracket[gap] ;
     bool comma = false ;
@@ -753,6 +809,17 @@ void ValueSerializer::SerializeObject(
       if (!property_names->Get(context_, i).ToLocal(&key) || key.IsEmpty()) {
         DCHECK(false) ;
         continue ;
+      }
+
+      // Check that we don't ignore it
+      if (id == kEmptyId && real_type == ValueType::Array) {
+        ValueType key_type = GetValueType(key) ;
+        if (key_type == ValueType::Int32 || key_type == ValueType::Uint32) {
+          uint32_t key_value = (uint32_t)Local<Number>::Cast(key)->Value() ;
+          if (key_value < ignored_properties_count) {
+            continue ;
+          }
+        }
       }
 
       if (comma) {
@@ -859,6 +926,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   if (value_type == ValueType::Unknown) {
     *result_ << kJsonValueUndefined ;
     return ;
+  } else if (value_type == ValueType::Array) {
+    SerializeArray(Local<Array>::Cast(value), id, gap) ;
+    return ;
   } else if (value_type == ValueType::BigInt) {
     SerializeBigInt(Local<BigInt>::Cast(value), id, gap) ;
     return ;
@@ -876,25 +946,32 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
     return ;
   }
 
-  // TODO: Write all serializers
-  // DCHECK(false) ;
-  // result << kJsonValueUndefined ;
+#ifdef DEBUG
   *result_ << JSON_STRING(
       "Don't have a serializer for \'" +
       std::string(ValueTypeToUtf8(value_type)) + "\'") ;
+#else
+  result << kJsonValueUndefined ;
+#endif  // DEBUG
 }
 
 std::string ValueSerializer::ValueToField(Local<Value> value, JsonGap& gap) {
   ValueType value_type = GetValueType(value) ;
-  if (value_type == ValueType::String || value_type == ValueType::Number) {
+  if (value_type == ValueType::String || value_type & ValueType::NumberTypes) {
     return JSON_FIELD(ValueToUtf8(context_, value), gap) ;
   } else if (value_type == ValueType::Symbol) {
     return JSON_SYMBOL_FIELD(
         ValueToUtf8(context_, Local<Symbol>::Cast(value)->Name()), gap) ;
   }
 
-  DCHECK(false) ;
+#ifdef DEBUG
+  USE(kJsonFieldUndefinedType) ;
+  return JSON_STRING(
+      "Don't have a serializer for a field type \'" +
+      std::string(ValueTypeToUtf8(value_type)) + "\'") ;
+#else
   return kJsonFieldUndefinedType[gap] ;
+#endif  // DEBUG
 }
 
 const char* EdgeTypeToUtf8(HeapGraphEdge::Type edge_type) {
