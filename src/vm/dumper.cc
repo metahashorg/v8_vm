@@ -526,6 +526,7 @@ class ValueSerializer {
   void SerializeObject(Local<Object> value, uint64_t id, JsonGap& gap) ;
   void SerializeProcessedValue(Local<Value> value, uint64_t id, JsonGap& gap) ;
   void SerializeString(Local<String> value, uint64_t id, JsonGap& gap) ;
+  void SerializeSymbol(Local<Symbol> value, uint64_t id, JsonGap& gap) ;
   void SerializeValue(Local<Value> value, JsonGap& gap) ;
 
   std::string ValueToField(Local<Value> value, JsonGap& gap) ;
@@ -918,6 +919,19 @@ void ValueSerializer::SerializeString(
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
+void ValueSerializer::SerializeSymbol(
+    Local<Symbol> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::Symbol)) ;
+  *result_ << kJsonComma[gap] << child_gap ;
+  *result_ << kJsonFieldValue[gap]
+      << JSON_STRING(ValueToUtf8(context_, value->Name())) ;
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
 void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   ValueType value_type = GetValueType(value) ;
   if (value.IsEmpty() || value_type == ValueType::Null) {
@@ -960,6 +974,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::String) {
     SerializeString(Local<String>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::Symbol) {
+    SerializeSymbol(Local<Symbol>::Cast(value), id, gap) ;
     return ;
   }
 
