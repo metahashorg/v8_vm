@@ -4,6 +4,9 @@
 
 #include "src/vm/dumper.h"
 
+#include <cmath>
+#include <limits>
+
 #include "src/api.h"
 #include "src/vm/vm-utils.h"
 
@@ -62,9 +65,12 @@ const char* kJsonFieldValue[] = JSON_ARRAY_OF_FIELD(value) ;
 
 // Json value list
 const char kJsonValueFalse[] = "false" ;
+const char kJsonValueInfinity[] = R"("Infinity")" ;
+const char kJsonValueNaN[] = R"("NaN")" ;
+const char kJsonValueNegativeInfinity[] = R"("-Infinity")" ;
 const char kJsonValueNull[] = "null" ;
-const char kJsonValueUndefined[] = R"("[undefined]")" ;
 const char kJsonValueTrue[] = "true" ;
+const char kJsonValueUndefined[] = R"("[undefined]")" ;
 
 // Json special symbol list
 const char* kJsonComma[] = { ",", ",\n" } ;
@@ -306,6 +312,10 @@ enum class ValueType : uint64_t {
 
   // Number types
   NumberTypes = Number | Int32 | Uint32,
+
+  // Primitive object types
+  PrimitiveObjectTypes = BigIntObject | BooleanObject | NumberObject |
+                         StringObject | SymbolObject,
 };
 
 ValueType GetValueType(Value* value) {
@@ -524,6 +534,8 @@ class ValueSerializer {
   void SerializeFunction(Local<Function> value, uint64_t id, JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, JsonGap& gap) ;
+  void SerializePrimitiveObject(
+      Local<Object> value, uint64_t id, JsonGap& gap) ;
   void SerializeProcessedValue(Local<Value> value, uint64_t id, JsonGap& gap) ;
   void SerializeString(Local<String> value, uint64_t id, JsonGap& gap) ;
   void SerializeSymbol(Local<Symbol> value, uint64_t id, JsonGap& gap) ;
@@ -894,6 +906,53 @@ void ValueSerializer::SerializeObject(
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
+void ValueSerializer::SerializePrimitiveObject(
+    Local<Object> value, uint64_t id, JsonGap& gap) {
+  ValueType value_type = GetValueType(value) ;
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(value_type)) ;
+  *result_ << kJsonComma[gap] << child_gap ;
+  *result_ << kJsonFieldValue[gap] ;
+
+  // Serialize value
+  if (value_type == ValueType::BigIntObject) {
+    Local<BigIntObject> real_value = Local<BigIntObject>::Cast(value) ;
+    SerializeValue(real_value->ValueOf(), child_gap) ;
+  } else if (value_type == ValueType::BooleanObject) {
+    Local<BooleanObject> real_value = Local<BooleanObject>::Cast(value) ;
+    *result_ << (real_value->ValueOf() ? kJsonValueTrue : kJsonValueFalse) ;
+  } else if (value_type == ValueType::NumberObject) {
+    Local<NumberObject> real_value = Local<NumberObject>::Cast(value) ;
+    double number_value = real_value->ValueOf() ;
+    if (std::isnan(number_value)) {
+      *result_ << kJsonValueNaN ;
+    } else if (std::isinf(number_value)) {
+      *result_ << (number_value == std::numeric_limits<double>::infinity() ?
+                   kJsonValueInfinity : kJsonValueNegativeInfinity) ;
+    } else {
+      *result_ << number_value ;
+    }
+  } else if (value_type == ValueType::StringObject) {
+    Local<StringObject> real_value = Local<StringObject>::Cast(value) ;
+    SerializeValue(real_value->ValueOf(), child_gap) ;
+  } else if (value_type == ValueType::SymbolObject) {
+    Local<SymbolObject> real_value = Local<SymbolObject>::Cast(value) ;
+    SerializeValue(real_value->ValueOf(), child_gap) ;
+  } else {
+    DCHECK(false) ;
+    *result_ << kJsonValueUndefined ;
+  }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
 void ValueSerializer::SerializeProcessedValue(
     Local<Value> value, uint64_t id, JsonGap& gap) {
   JsonGap child_gap(gap) ;
@@ -971,6 +1030,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Object) {
     SerializeObject(Local<Object>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type & ValueType::PrimitiveObjectTypes) {
+    SerializePrimitiveObject(Local<Object>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::String) {
     SerializeString(Local<String>::Cast(value), id, gap) ;
