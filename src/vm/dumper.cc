@@ -57,6 +57,7 @@ const char* kJsonFieldProto[] = JSON_ARRAY_OF_FIELD(__proto__) ;
 const char* kJsonFieldResourceName[] = JSON_ARRAY_OF_FIELD(resource_name) ;
 const char* kJsonFieldScriptLine[] = JSON_ARRAY_OF_FIELD(script_line) ;
 const char* kJsonFieldScriptColumn[] = JSON_ARRAY_OF_FIELD(script_column) ;
+const char* kJsonFieldSize[] = JSON_ARRAY_OF_FIELD(size) ;
 const char* kJsonFieldToString[] = JSON_ARRAY_OF_FIELD(to_string) ;
 const char* kJsonFieldType[] = JSON_ARRAY_OF_FIELD(type) ;
 const char* kJsonFieldUndefinedType[] =
@@ -532,6 +533,8 @@ class ValueSerializer {
   void SerializeBigInt(Local<BigInt> value, uint64_t id, JsonGap& gap) ;
   void SerializeBoolean(Local<Boolean> value, uint64_t id, JsonGap& gap) ;
   void SerializeFunction(Local<Function> value, uint64_t id, JsonGap& gap) ;
+  void SerializeKeyValueArray(Local<Array> value, JsonGap& gap) ;
+  void SerializeMap(Local<Map> value, uint64_t id, JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, JsonGap& gap) ;
   void SerializePrimitiveObject(
@@ -540,6 +543,7 @@ class ValueSerializer {
   void SerializeString(Local<String> value, uint64_t id, JsonGap& gap) ;
   void SerializeSymbol(Local<Symbol> value, uint64_t id, JsonGap& gap) ;
   void SerializeValue(Local<Value> value, JsonGap& gap) ;
+  void SerializeWeakMap(Local<Object> value, uint64_t id, JsonGap& gap) ;
 
   std::string ValueToField(Local<Value> value, JsonGap& gap) ;
 
@@ -771,6 +775,81 @@ void ValueSerializer::SerializeFunction(
     *result_ << kJsonComma[gap] << child_gap ;
     *result_ << kJsonFieldResourceName[gap] << JSON_STRING(resource_name) ;
   }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeKeyValueArray(Local<Array> value, JsonGap& gap) {
+  if (!value->Length()) {
+    *result_ << kJsonEmptyArray[gap] ;
+    return ;
+  }
+
+  DCHECK(!(value->Length() & 1)) ;
+
+  JsonGap item_gap(gap) ;
+  JsonGap key_value_gap(item_gap) ;
+  *result_ << kJsonLeftSquareBracket[gap] ;
+  bool comma = false ;
+  for (uint32_t i = 0, size = value->Length() - 1; i < size; i += 2) {
+    if (comma) {
+      *result_ << kJsonComma[gap] ;
+    } else {
+      comma = true ;
+    }
+
+    *result_ << item_gap << kJsonLeftSquareBracket[gap] ;
+
+    TryCatch try_catch(context_->GetIsolate()) ;
+
+    // Serialize key
+    *result_ << key_value_gap ;
+    v8::Local<v8::Value> key_value ;
+    if (!value->Get(context_, i).ToLocal(&key_value) && try_catch.HasCaught()) {
+      *result_ << JSON_STRING(ValueToUtf8(context_, try_catch.Exception())) ;
+    } else {
+      SerializeValue(key_value, key_value_gap) ;
+    }
+
+    *result_ << kJsonComma[gap] ;
+
+    // Serialize value
+    *result_ << key_value_gap ;
+    v8::Local<v8::Value> value_value ;
+    if (!value->Get(context_, i + 1).ToLocal(&value_value) &&
+        try_catch.HasCaught()) {
+      *result_ << JSON_STRING(ValueToUtf8(context_, try_catch.Exception())) ;
+    } else {
+      SerializeValue(value_value, key_value_gap) ;
+    }
+
+    *result_ << kJsonNewLine[gap] << item_gap << kJsonRightSquareBracket[gap] ;
+  }
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightSquareBracket[gap] ;
+}
+
+void ValueSerializer::SerializeMap(
+    Local<Map> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  JsonGap item_gap(child_gap) ;
+  JsonGap key_value_gap(item_gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::Map)) ;
+  *result_ << kJsonComma[gap] ;
+  *result_ << child_gap << kJsonFieldSize[gap] << value->Size() ;
+  *result_ << kJsonComma[gap] ;
+
+  // Serialize content
+  *result_ << child_gap << kJsonFieldValue[gap] ;
+  Local<Array> map = value->AsArray() ;
+  SerializeKeyValueArray(map, child_gap) ;
 
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
@@ -1025,6 +1104,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   } else if (value_type == ValueType::Function) {
     SerializeFunction(Local<Function>::Cast(value), id, gap) ;
     return ;
+  } else if (value_type == ValueType::Map) {
+    SerializeMap(Local<Map>::Cast(value), id, gap) ;
+    return ;
   } else if (value_type & ValueType::NumberTypes) {
     SerializeNumber(Local<Number>::Cast(value), id, gap) ;
     return ;
@@ -1040,6 +1122,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   } else if (value_type == ValueType::Symbol) {
     SerializeSymbol(Local<Symbol>::Cast(value), id, gap) ;
     return ;
+  } else if (value_type == ValueType::WeakMap) {
+    SerializeWeakMap(Local<Object>::Cast(value), id, gap) ;
+    return ;
   }
 
 #ifdef DEBUG
@@ -1049,6 +1134,40 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
 #else
   result << kJsonValueUndefined ;
 #endif  // DEBUG
+}
+
+void ValueSerializer::SerializeWeakMap(
+    Local<Object> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  JsonGap item_gap(child_gap) ;
+  JsonGap key_value_gap(item_gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::WeakMap)) ;
+  *result_ << kJsonComma[gap] ;
+
+  TryCatch try_catch(context_->GetIsolate()) ;
+
+  // Try to get content
+  Local<Array> map ;
+  bool is_key_value = false ;
+  if (!value->PreviewEntries(&is_key_value).ToLocal(&map) &&
+      try_catch.HasCaught()) {
+    *result_ << child_gap << kJsonFieldValue[gap] ;
+    *result_ << JSON_STRING(ValueToUtf8(context_, try_catch.Exception())) ;
+  } else {
+    *result_ << child_gap << kJsonFieldSize[gap] << (map->Length() / 2) ;
+    *result_ << kJsonComma[gap] ;
+    *result_ << child_gap << kJsonFieldValue[gap] ;
+    SerializeKeyValueArray(map, child_gap) ;
+  }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
 std::string ValueSerializer::ValueToField(Local<Value> value, JsonGap& gap) {
