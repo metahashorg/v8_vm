@@ -9,6 +9,7 @@
 
 #include "src/api.h"
 #include "src/vm/vm-utils.h"
+#include "src/vm/vm-value.h"
 
 // Json defines
 #define JSON_ARRAY_OF_FIELD(name) \
@@ -72,6 +73,7 @@ const char kJsonValueNaN[] = R"("NaN")" ;
 const char kJsonValueNegativeInfinity[] = R"("-Infinity")" ;
 const char kJsonValueNull[] = "null" ;
 const char kJsonValueTrue[] = "true" ;
+const char kJsonValueUnknown[] = R"("[unknown]")" ;
 const char kJsonValueUndefined[] = R"("[undefined]")" ;
 
 // Json special symbol list
@@ -207,261 +209,6 @@ const char* const JsonEscapeTable =
     "\xFC\0      \xFD\0      \xFE\0      \xFF\0      " ;
 
 static const int kJsonEscapeTableEntrySize = 8 ;
-
-// Enum of value types
-enum class ValueType : uint64_t {
-  // Unknown type of value(ECMA-262 4.3.10)
-  Unknown                   = 0,
-  // The null value (ECMA-262 4.3.11)
-  Null                      = 1,
-  // String type (ECMA-262 8.4)
-  String                    = Null << 1,
-  // Symbol
-  Symbol                    = String << 1,
-  // Function
-  Function                  = Symbol << 1,
-  // Array
-  Array                     = Function << 1,
-  // Object
-  Object                    = Array << 1,
-  // Bigint
-  BigInt                    = Object << 1,
-  // Boolean
-  Boolean                   = BigInt << 1,
-  // Number
-  Number                    = Boolean << 1,
-  // 32-bit signed integer
-  Int32                     = Number << 1,
-  // 32-bit unsigned integer
-  Uint32                    = Int32 << 1,
-  // Date
-  Date                      = Uint32 << 1,
-  // Arguments object
-  ArgumentsObject           = Date << 1,
-  // BigInt object
-  BigIntObject              = ArgumentsObject << 1,
-  // Boolean object
-  BooleanObject             = BigIntObject << 1,
-  // Number object
-  NumberObject              = BooleanObject << 1,
-  // String object
-  StringObject              = NumberObject << 1,
-  // Symbol object
-  SymbolObject              = StringObject << 1,
-  // NativeError
-  NativeError               = SymbolObject << 1,
-  // RegExp
-  RegExp                    = NativeError << 1,
-  // Async function
-  AsyncFunction             = RegExp << 1,
-  // Generator function
-  GeneratorFunction         = AsyncFunction << 1,
-  // Generator object (iterator)
-  GeneratorObject           = GeneratorFunction << 1,
-  // Promise
-  Promise                   = GeneratorObject << 1,
-  // Map
-  Map                       = Promise << 1,
-  // Set
-  Set                       = Map << 1,
-  // Map Iterator
-  MapIterator               = Set << 1,
-  // Set Iterator
-  SetIterator               = MapIterator << 1,
-  // WeakMap
-  WeakMap                   = SetIterator << 1,
-  // WeakSet
-  WeakSet                   = WeakMap << 1,
-  // ArrayBuffer
-  ArrayBuffer               = WeakSet << 1,
-  // ArrayBufferView
-  ArrayBufferView           = ArrayBuffer << 1,
-  // Uint8Array
-  Uint8Array                = ArrayBufferView << 1,
-  // Uint8ClampedArray
-  Uint8ClampedArray         = Uint8Array << 1,
-  // Int8Array
-  Int8Array                 = Uint8ClampedArray << 1,
-  // Uint16Array
-  Uint16Array               = Int8Array << 1,
-  // Int16Array
-  Int16Array                = Uint16Array << 1,
-  // Uint32Array
-  Uint32Array               = Int16Array << 1,
-  // Int32Array
-  Int32Array                = Uint32Array << 1,
-  // Float32Array
-  Float32Array              = Int32Array << 1,
-  // Float64Array
-  Float64Array              = Float32Array << 1,
-  // BigInt64Array
-  BigInt64Array             = Float64Array << 1,
-  // BigUint64Array
-  BigUint64Array            = BigInt64Array << 1,
-  // DataView
-  DataView                  = BigUint64Array << 1,
-  // SharedArrayBuffer (This is an experimental feature)
-  SharedArrayBuffer         = DataView << 1,
-  // JavaScript Proxy
-  Proxy                     = SharedArrayBuffer << 1,
-  // WebAssembly Compiled Module
-  WebAssemblyCompiledModule = Proxy << 1,
-  // Module Namespace Object
-  ModuleNamespaceObject     = WebAssemblyCompiledModule << 1,
-
-  // Array types
-  //Arrays = ;
-
-  // Number types
-  NumberTypes = Number | Int32 | Uint32,
-
-  // Primitive object types
-  PrimitiveObjectTypes = BigIntObject | BooleanObject | NumberObject |
-                         StringObject | SymbolObject,
-};
-
-ValueType GetValueType(Value* value) {
-  # define CHECK_TYPE_AND_RETURN(type) \
-      if (value->Is##type()) { return ValueType::type ; }
-
-  if (!value) {
-    DCHECK(false) ;
-    return ValueType::Unknown ;
-  }
-
-  if (value->IsUndefined()) {
-    return ValueType::Unknown ;
-  }
-
-  CHECK_TYPE_AND_RETURN(Null) ;
-  CHECK_TYPE_AND_RETURN(String) ;
-  CHECK_TYPE_AND_RETURN(Symbol) ;
-  CHECK_TYPE_AND_RETURN(Function) ;
-  CHECK_TYPE_AND_RETURN(Array) ;
-  CHECK_TYPE_AND_RETURN(BigInt) ;
-  CHECK_TYPE_AND_RETURN(Boolean) ;
-  CHECK_TYPE_AND_RETURN(Int32) ;
-  CHECK_TYPE_AND_RETURN(Uint32) ;
-  CHECK_TYPE_AND_RETURN(Date) ;
-  CHECK_TYPE_AND_RETURN(ArgumentsObject) ;
-  CHECK_TYPE_AND_RETURN(BigIntObject) ;
-  CHECK_TYPE_AND_RETURN(BooleanObject) ;
-  CHECK_TYPE_AND_RETURN(NumberObject) ;
-  CHECK_TYPE_AND_RETURN(StringObject) ;
-  CHECK_TYPE_AND_RETURN(SymbolObject) ;
-  CHECK_TYPE_AND_RETURN(NativeError) ;
-  CHECK_TYPE_AND_RETURN(RegExp) ;
-  CHECK_TYPE_AND_RETURN(AsyncFunction) ;
-  CHECK_TYPE_AND_RETURN(GeneratorFunction) ;
-  CHECK_TYPE_AND_RETURN(GeneratorObject) ;
-  CHECK_TYPE_AND_RETURN(Promise) ;
-  CHECK_TYPE_AND_RETURN(Map) ;
-  CHECK_TYPE_AND_RETURN(Set) ;
-  CHECK_TYPE_AND_RETURN(MapIterator) ;
-  CHECK_TYPE_AND_RETURN(SetIterator) ;
-  CHECK_TYPE_AND_RETURN(WeakMap) ;
-  CHECK_TYPE_AND_RETURN(WeakSet) ;
-  CHECK_TYPE_AND_RETURN(ArrayBuffer) ;
-  CHECK_TYPE_AND_RETURN(ArrayBufferView) ;
-  CHECK_TYPE_AND_RETURN(Uint8Array) ;
-  CHECK_TYPE_AND_RETURN(Uint8ClampedArray) ;
-  CHECK_TYPE_AND_RETURN(Int8Array) ;
-  CHECK_TYPE_AND_RETURN(Uint16Array) ;
-  CHECK_TYPE_AND_RETURN(Int16Array) ;
-  CHECK_TYPE_AND_RETURN(Uint32Array) ;
-  CHECK_TYPE_AND_RETURN(Int32Array) ;
-  CHECK_TYPE_AND_RETURN(Float32Array) ;
-  CHECK_TYPE_AND_RETURN(Float64Array) ;
-  CHECK_TYPE_AND_RETURN(BigInt64Array) ;
-  CHECK_TYPE_AND_RETURN(BigUint64Array) ;
-  CHECK_TYPE_AND_RETURN(DataView) ;
-  CHECK_TYPE_AND_RETURN(SharedArrayBuffer) ;
-  CHECK_TYPE_AND_RETURN(Proxy) ;
-  CHECK_TYPE_AND_RETURN(WebAssemblyCompiledModule) ;
-  CHECK_TYPE_AND_RETURN(ModuleNamespaceObject) ;
-
-  // We check some types at the end
-  // because there are many classe to inherit them
-  CHECK_TYPE_AND_RETURN(Number) ;
-  CHECK_TYPE_AND_RETURN(Object) ;
-
-  DCHECK(false) ;
-  return ValueType::Unknown ;
-}
-
-uint64_t operator &(ValueType type1, ValueType type2) {
-  return (static_cast<uint64_t>(type1) & static_cast<uint64_t>(type2)) ;
-}
-
-ValueType GetValueType(Local<Value> value) {
-  return GetValueType(value.operator ->()) ;
-}
-
-// bool IsValueType(Value* value, ValueType type) {
-//   return (GetValueType(value) & type) ;
-// }
-//
-// bool IsValueType(Local<Value> value, ValueType type) {
-//   return IsValueType(value.operator ->(), type) ;
-// }
-
-const char* ValueTypeToUtf8(ValueType type) {
-  # define TYPE_TO_STRING(ckecked_type) \
-      if (type == ValueType::ckecked_type) { return #ckecked_type ; }
-
-  TYPE_TO_STRING(Unknown) ;
-  TYPE_TO_STRING(Null) ;
-  TYPE_TO_STRING(String) ;
-  TYPE_TO_STRING(Symbol) ;
-  TYPE_TO_STRING(Function) ;
-  TYPE_TO_STRING(Array) ;
-  TYPE_TO_STRING(Object) ;
-  TYPE_TO_STRING(BigInt) ;
-  TYPE_TO_STRING(Boolean) ;
-  TYPE_TO_STRING(Number) ;
-  TYPE_TO_STRING(Int32) ;
-  TYPE_TO_STRING(Uint32) ;
-  TYPE_TO_STRING(Date) ;
-  TYPE_TO_STRING(ArgumentsObject) ;
-  TYPE_TO_STRING(BigIntObject) ;
-  TYPE_TO_STRING(BooleanObject) ;
-  TYPE_TO_STRING(NumberObject) ;
-  TYPE_TO_STRING(StringObject) ;
-  TYPE_TO_STRING(SymbolObject) ;
-  TYPE_TO_STRING(NativeError) ;
-  TYPE_TO_STRING(RegExp) ;
-  TYPE_TO_STRING(AsyncFunction) ;
-  TYPE_TO_STRING(GeneratorFunction) ;
-  TYPE_TO_STRING(GeneratorObject) ;
-  TYPE_TO_STRING(Promise) ;
-  TYPE_TO_STRING(Map) ;
-  TYPE_TO_STRING(Set) ;
-  TYPE_TO_STRING(MapIterator) ;
-  TYPE_TO_STRING(SetIterator) ;
-  TYPE_TO_STRING(WeakMap) ;
-  TYPE_TO_STRING(WeakSet) ;
-  TYPE_TO_STRING(ArrayBuffer) ;
-  TYPE_TO_STRING(ArrayBufferView) ;
-  TYPE_TO_STRING(Uint8Array) ;
-  TYPE_TO_STRING(Uint8ClampedArray) ;
-  TYPE_TO_STRING(Int8Array) ;
-  TYPE_TO_STRING(Uint16Array) ;
-  TYPE_TO_STRING(Int16Array) ;
-  TYPE_TO_STRING(Uint32Array) ;
-  TYPE_TO_STRING(Int32Array) ;
-  TYPE_TO_STRING(Float32Array) ;
-  TYPE_TO_STRING(Float64Array) ;
-  TYPE_TO_STRING(BigInt64Array) ;
-  TYPE_TO_STRING(BigUint64Array) ;
-  TYPE_TO_STRING(DataView) ;
-  TYPE_TO_STRING(SharedArrayBuffer) ;
-  TYPE_TO_STRING(Proxy) ;
-  TYPE_TO_STRING(WebAssemblyCompiledModule) ;
-  TYPE_TO_STRING(ModuleNamespaceObject) ;
-
-  DCHECK(false) ;
-  return "Unknown" ;
-}
 
 // Class-wrapper of Json gaps if we use a formatted ouput
 class JsonGap {
@@ -1097,7 +844,7 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   uint64_t id = processed_values_.size() ;
   processed_values_[obj.operator ->()] = id ;
 
-  if (value_type == ValueType::Unknown) {
+  if (value_type == ValueType::Undefined) {
     *result_ << kJsonValueUndefined ;
     return ;
   } else if (value_type == ValueType::Array) {
@@ -1142,11 +889,12 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   }
 
 #ifdef DEBUG
+  USE(kJsonValueUnknown) ;
   *result_ << JSON_STRING(
       "Don't have a serializer for \'" +
       std::string(ValueTypeToUtf8(value_type)) + "\'") ;
 #else
-  result << kJsonValueUndefined ;
+  *result_ << kJsonValueUnknown ;
 #endif  // DEBUG
 }
 
