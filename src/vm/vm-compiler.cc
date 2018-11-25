@@ -109,6 +109,28 @@ void CompileModuleFromFile(const char* module_path, const char* result_path) {
          module_path, result_path) ;
 }
 
+void CompileScript(
+    const char* script, const char* script_origin, Data& result) {
+  // Need for a full compilation
+  // TODO: Look at other flags
+  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
+  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
+
+  std::unique_ptr<WorkContext> context(WorkContext::New()) ;
+  Data script_data(Data::Type::JSScript, script_origin, script) ;
+  Local<Script> script_obj = CompileScript(*context, script_data) ;
+  if (script_obj.IsEmpty()) {
+    printf("ERROR: Can't compile the script\n") ;
+    return ;
+  }
+
+  ScriptCompiler::CachedData* cache =
+      ScriptCompiler::CreateCodeCache(script_obj->GetUnboundScript()) ;
+  result.type = Data::Type::Compilation ;
+  result.origin = script_origin ? script_origin : "" ;
+  result.CopyData(cache->data, cache->length) ;
+}
+
 void CompileScriptFromFile(const char* script_path, const char* result_path) {
   bool file_exists = false ;
   i::Vector<const char> file_content =
@@ -118,17 +140,14 @@ void CompileScriptFromFile(const char* script_path, const char* result_path) {
     return ;
   }
 
-  // Need for a full compilation
-  // TODO: Look at other flags
-  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
-  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
+  Data result ;
+  CompileScript(file_content.start(), script_path, result) ;
+  if (result.type != Data::Type::Compilation) {
+    printf("ERROR: Can't compile the script\n") ;
+  }
 
-  std::unique_ptr<WorkContext> context(WorkContext::New()) ;
-  Data script_data(Data::Type::JSScript, script_path, file_content.start()) ;
-  Local<Script> script = CompileScript(*context, script_data) ;
-  ScriptCompiler::CachedData* cache =
-      ScriptCompiler::CreateCodeCache(script->GetUnboundScript()) ;
-  i::WriteBytes(result_path, cache->data, cache->length, true) ;
+  i::WriteBytes(result_path, reinterpret_cast<const std::uint8_t*>(result.data),
+                result.size, true) ;
   printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
          script_path, result_path) ;
 }

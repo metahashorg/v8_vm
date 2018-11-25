@@ -63,9 +63,9 @@ void CreateDumpBySnapshotFromFile(
 
 void RunScriptByFile(
     vi::Data::Type file_type, const char* file_path, const char* script_path,
-    const char* out_snapshot_path /*= nullptr*/) {
+    const char* snapshot_out_path /*= nullptr*/) {
   StartupData data = { nullptr, 0 }, *pdata = nullptr ;
-  bool save_snapshot = (out_snapshot_path && strlen(out_snapshot_path)) ;
+  bool save_snapshot = (snapshot_out_path && strlen(snapshot_out_path)) ;
   if (save_snapshot) {
     pdata = &data ;
   }
@@ -82,7 +82,7 @@ void RunScriptByFile(
   // We've obtained a snapshot only after destruction of runner
   runner.reset() ;
   if (save_snapshot) {
-    i::WriteChars(out_snapshot_path, data.data, data.raw_size, true) ;
+    i::WriteChars(snapshot_out_path, data.data, data.raw_size, true) ;
     if (data.raw_size) {
       delete [] data.data ;
     }
@@ -97,6 +97,33 @@ void InitializeV8(const char* app_path) {
 
 void DeinitializeV8() {
   V8HANDLE()->Deinitialize() ;
+}
+
+void CompileScript(
+    const char* script, const char* script_origin,
+    ScriptCompiler::CachedData& result) {
+  vi::Data data ;
+  vi::CompileScript(script, script_origin, data) ;
+  if (data.type != vi::Data::Type::Compilation) {
+    printf("ERROR: Can't compile the script\n") ;
+    return ;
+  }
+
+  if (result.data != nullptr &&
+      result.buffer_policy == ScriptCompiler::CachedData::BufferOwned) {
+    delete [] result.data ;
+    result.data = nullptr ;
+  }
+
+  result.length = data.size ;
+  result.buffer_policy = ScriptCompiler::CachedData::BufferOwned ;
+  if (data.owner) {
+    result.data = reinterpret_cast<const std::uint8_t*>(data.data) ;
+    data.owner = false ;
+  } else {
+    result.data = new uint8_t[data.size] ;
+    memcpy(const_cast<uint8_t*>(result.data), data.data, data.size) ;
+  }
 }
 
 void CompileScriptFromFile(const char* script_path, const char* result_path) {
@@ -123,27 +150,60 @@ void CreateHeapGraphDumpBySnapshotFromFile(
       DumpType::HeapGraph, snapshot_path, formatted, result_path) ;
 }
 
+void RunScript(
+    const char* script, const char* script_origin /*= nullptr*/,
+    StartupData* snapshot_out /*= nullptr*/) {
+  vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
+  std::unique_ptr<vi::ScriptRunner> runner(
+      vi::ScriptRunner::Create(nullptr, script_data, snapshot_out)) ;
+  if (!runner) {
+    printf("ERROR: Can't create ScriptRunner\n") ;
+    return ;
+  }
+
+  runner->Run() ;
+}
+
 void RunScriptByJSScriptFromFile(
     const char* js_path, const char* script_path,
-    const char* out_snapshot_path /*= nullptr*/) {
+    const char* snapshot_out_path /*= nullptr*/) {
   RunScriptByFile(
-      vi::Data::Type::JSScript, js_path, script_path, out_snapshot_path) ;
+      vi::Data::Type::JSScript, js_path, script_path, snapshot_out_path) ;
 }
 
 void RunScriptByCompilationFromFile(
     const char* compilation_path, const char* script_path,
-    const char* out_snapshot_path /*= nullptr*/) {
+    const char* snapshot_out_path /*= nullptr*/) {
   RunScriptByFile(
       vi::Data::Type::Compilation, compilation_path, script_path,
-      out_snapshot_path) ;
+      snapshot_out_path) ;
+}
+
+void RunScriptBySnapshot(
+    StartupData& snapshot, const char* script,
+    const char* snapshot_origin /*= nullptr*/,
+    const char* script_origin /*= nullptr*/,
+    StartupData* snapshot_out /*= nullptr*/) {
+  vi::Data snapshot_data(
+      vi::Data::Type::Snapshot, snapshot_origin,
+      snapshot.data, snapshot.raw_size) ;
+  vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
+  std::unique_ptr<vi::ScriptRunner> runner(
+      vi::ScriptRunner::Create(&snapshot_data, script_data, snapshot_out)) ;
+  if (!runner) {
+    printf("ERROR: Can't create ScriptRunner\n") ;
+    return ;
+  }
+
+  runner->Run() ;
 }
 
 void RunScriptBySnapshotFromFile(
     const char* snapshot_path, const char* script_path,
-    const char* out_snapshot_path /*= nullptr*/) {
+    const char* snapshot_out_path /*= nullptr*/) {
   RunScriptByFile(
       vi::Data::Type::Snapshot, snapshot_path, script_path,
-      out_snapshot_path) ;
+      snapshot_out_path) ;
 }
 
 }  // namespace vm

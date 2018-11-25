@@ -26,6 +26,13 @@ void V8_EXPORT DeinitializeV8() ;
 /**
  * Compiles the script.
  */
+void V8_EXPORT CompileScript(
+    const char* script, const char* script_origin,
+    ScriptCompiler::CachedData& result) ;
+
+/**
+ * Compiles the script from file.
+ */
 void V8_EXPORT CompileScriptFromFile(
     const char* script_path, const char* result_path) ;
 
@@ -50,25 +57,40 @@ void V8_EXPORT CreateHeapGraphDumpBySnapshotFromFile(
     const char* result_path) ;
 
 /**
+ * Runs the script.
+ */
+void V8_EXPORT RunScript(
+    const char* script, const char* script_origin = nullptr,
+    StartupData* snapshot_out = nullptr) ;
+
+/**
  * Runs the script by using a js-script.
  */
 void V8_EXPORT RunScriptByJSScriptFromFile(
     const char* js_path, const char* script_path,
-    const char* out_snapshot_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) ;
 
 /**
  * Runs the script by using a previous compilation.
  */
 void V8_EXPORT RunScriptByCompilationFromFile(
     const char* compilation_path, const char* script_path,
-    const char* out_snapshot_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) ;
 
 /**
  * Runs the script by using a previous snapshot.
  */
+void V8_EXPORT RunScriptBySnapshot(
+    StartupData& snapshot, const char* script,
+    const char* snapshot_origin = nullptr, const char* script_origin = nullptr,
+    StartupData* snapshot_out = nullptr) ;
+
+/**
+ * Runs the script by using a previous snapshot from file.
+ */
 void V8_EXPORT RunScriptBySnapshotFromFile(
     const char* snapshot_path, const char* script_path,
-    const char* out_snapshot_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) ;
 
 }  // namespace vm
 }  // namespace v8

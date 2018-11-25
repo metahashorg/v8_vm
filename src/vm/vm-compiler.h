@@ -22,6 +22,9 @@ Local<Script> CompileScript(
 
 void CompileModuleFromFile(const char* module_path, const char* result_path) ;
 
+void CompileScript(
+    const char* script, const char* script_origin, Data& result) ;
+
 void CompileScriptFromFile(const char* script_path, const char* result_path) ;
 
 Local<Module> LoadModuleCompilation(

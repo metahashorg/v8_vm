@@ -202,8 +202,12 @@ struct Data {
     owner = true ;
     if (size) {
       data = new char[size] ;
-      memcpy((void*)data, data_pointer, size) ;
+      memcpy(const_cast<char*>(data), data_pointer, size) ;
     }
+  }
+
+  void CopyData(const std::uint8_t* data_pointer, int data_size) {
+    CopyData(reinterpret_cast<const char*>(data_pointer), data_size) ;
   }
 
   Data& operator =(const Data& other) {
