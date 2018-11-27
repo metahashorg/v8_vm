@@ -3475,11 +3475,11 @@ if (want_v8_shell) {
 # @metahash
 v8_executable("v8_vm") {
   sources = [
-    "vm_apps/app-utils.h",
-    "vm_apps/app-utils.cc",
-    "vm_apps/command-line.h",
-    "vm_apps/command-line.cc",
-    "vm_apps/v8-vm.cc",
+    "vm_apps/utils/app-utils.h",
+    "vm_apps/utils/app-utils.cc",
+    "vm_apps/utils/command-line.h",
+    "vm_apps/utils/command-line.cc",
+    "vm_apps/v8_vm/v8-vm.cc",
   ]
 
   configs = [

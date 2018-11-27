@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 #include "include/v8-vm.h"
-#include "vm_apps/app-utils.h"
-#include "vm_apps/command-line.h"
+#include "vm_apps/utils/app-utils.h"
+#include "vm_apps/utils/command-line.h"
 
 const char kSwitchCommand[] = "cmd" ;
 const char kSwitchCompilation[] = "cmpl" ;

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "vm_apps/app-utils.h"
+#include "vm_apps/utils/app-utils.h"
 
 std::string ChangeFileExtension(
     const char* file_name, const char* new_extension) {

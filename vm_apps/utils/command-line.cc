@@ -6,11 +6,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "vm_apps/command-line.h"
+#include "vm_apps/utils/command-line.h"
 
 #include <algorithm>
 
-#include "vm_apps/app-utils.h"
+#include "vm_apps/utils/app-utils.h"
 
 namespace {
 
