@@ -2,10 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_VM_APPS_APP_UTILS_H_
-#define V8_VM_APPS_APP_UTILS_H_
+#ifndef V8_VM_APPS_UTILS_APP_UTILS_H_
+#define V8_VM_APPS_UTILS_APP_UTILS_H_
 
 #include <string>
+
+#include "include/v8-vm.h"
+
+namespace vv = v8::vm ;
 
 // The arraysize(arr) macro returns the count of elements in an array arr. The
 // expression is a compile-time constant, and therefore can be used in defining
@@ -23,6 +27,9 @@ template <typename T, size_t N> char (&ArraySizeHelper(T (&array)[N]))[N] ;
 std::string ChangeFileExtension(
     const char* file_name, const char* new_extension) ;
 
+// Converts a C-string to a number
+std::uint16_t StringToUint16(const char* str) ;
+
 // Trims any whitespace from either end of the input string.
 //
 // The std::string versions return where whitespace was found.
@@ -38,4 +45,4 @@ TrimPositions TrimWhitespaceASCII(const std::string& input,
                                   TrimPositions positions,
                                   std::string* output) ;
 
-#endif  // V8_VM_APPS_COMMAND_LINE_H_
+#endif  // V8_VM_APPS_UTILS_APP_UTILS_H_

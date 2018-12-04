@@ -11,6 +11,51 @@
 namespace v8 {
 namespace vm {
 
+/** Errors */
+#define V8_ERR_SUCCESSED(e) ((e) >= 0)
+#define V8_ERR_FAILED(e) ((e) < 0)
+#define V8_ERR_RETURN_IF_FAILED(e) if (V8_ERR_FAILED(e)) { return (e) ; }
+
+typedef std::int32_t Error ;
+
+const Error errOk = 0x0 ;
+
+const Error errBase = 0xf0000000 ;
+
+// Common errors
+const Error errUnknown               = (errBase|0x0000001) ;
+const Error errFailed                = (errBase|0x0000002) ;
+const Error errAccessDenied          = (errBase|0x0000003) ;
+const Error errObjNotInit            = (errBase|0x0000004) ;
+const Error errTimeout               = (errBase|0x0000005) ;
+const Error errInvalidArgument       = (errBase|0x0000006) ;
+const Error errFileNotFound          = (errBase|0x0000007) ;
+const Error errPathNotFound          = (errBase|0x0000008) ;
+const Error errInsufficientResources = (errBase|0x0000009) ;
+const Error errInvalidHandle         = (errBase|0x000000a) ;
+const Error errOutOfMemory           = (errBase|0x000000b) ;
+const Error errFileNoSpace           = (errBase|0x000000c) ;
+const Error errFileExists            = (errBase|0x000000d) ;
+const Error errFilePathTooLong       = (errBase|0x000000e) ;
+const Error errNotImplemented        = (errBase|0x000000f) ;
+const Error errAborted               = (errBase|0x0000010) ;
+const Error errFileTooBig            = (errBase|0x0000011) ;
+
+// Net errors
+const Error errNetBase                 = (errBase|0x0001000) ;
+const Error errNetIOPending            = (errNetBase|0x0000001) ;
+const Error errNetInternetDisconnected = (errNetBase|0x0000002) ;
+const Error errNetConnectionReset      = (errNetBase|0x0000003) ;
+const Error errNetConnectionAborted    = (errNetBase|0x0000004) ;
+const Error errNetConnectionRefused    = (errNetBase|0x0000005) ;
+const Error errNetConnectionClosed     = (errNetBase|0x0000006) ;
+const Error errNetSocketIsConnected    = (errNetBase|0x0000007) ;
+const Error errNetAddressUnreachable   = (errNetBase|0x0000008) ;
+const Error errNetAddressInvalid       = (errNetBase|0x0000009) ;
+const Error errNetAddressInUse         = (errNetBase|0x000000a) ;
+const Error errNetMsgTooBig            = (errNetBase|0x000000b) ;
+const Error errNetSocketNotConnected   = (errNetBase|0x000000c) ;
+
 /** Enum about how to write Json */
 enum class FormattedJson {
   False = 0,

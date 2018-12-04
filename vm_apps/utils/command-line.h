@@ -6,8 +6,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_VM_APPS_COMMAND_LINE_H_
-#define V8_VM_APPS_COMMAND_LINE_H_
+#ifndef V8_VM_APPS_UTILS_COMMAND_LINE_H_
+#define V8_VM_APPS_UTILS_COMMAND_LINE_H_
 
 #include <map>
 #include <string>
@@ -98,4 +98,4 @@ class CommandLine {
   size_t begin_args_ ;
 };
 
-#endif  // V8_VM_APPS_COMMAND_LINE_H_
+#endif  // V8_VM_APPS_UTILS_COMMAND_LINE_H_

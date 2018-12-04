@@ -3473,6 +3473,85 @@ if (want_v8_shell) {
 }
 
 # @metahash
+v8_executable("v8_http_server") {
+  sources = [
+    "vm_apps/http_server/address-family.cc",
+    "vm_apps/http_server/address-family.h",
+    "vm_apps/http_server/address-list.cc",
+    "vm_apps/http_server/address-list.h",
+    "vm_apps/http_server/http-server-session.cc",
+    "vm_apps/http_server/http-server-session.h",
+    "vm_apps/http_server/ip-address.cc",
+    "vm_apps/http_server/ip-address.h",
+    "vm_apps/http_server/ip-endpoint.cc",
+    "vm_apps/http_server/ip-endpoint.h",
+    "vm_apps/http_server/net-errors.h",
+    "vm_apps/http_server/server-socket.cc",
+    "vm_apps/http_server/server-socket.h",
+    "vm_apps/http_server/sockaddr-storage.cc",
+    "vm_apps/http_server/sockaddr-storage.h",
+    "vm_apps/http_server/socket-descriptor.cc",
+    "vm_apps/http_server/socket-descriptor.h",
+    "vm_apps/http_server/socket-options.cc",
+    "vm_apps/http_server/socket-options.h",
+    "vm_apps/http_server/socket.h",
+    "vm_apps/http_server/stream-socket.h",
+    "vm_apps/http_server/sys-addrinfo.h",
+    "vm_apps/http_server/sys-byteorder.h",
+    "vm_apps/http_server/tcp-client-socket.cc",
+    "vm_apps/http_server/tcp-client-socket.h",
+    "vm_apps/http_server/tcp-server-session.cc",
+    "vm_apps/http_server/tcp-server-session.h",
+    "vm_apps/http_server/tcp-server-socket.cc",
+    "vm_apps/http_server/tcp-server-socket.h",
+    "vm_apps/http_server/tcp-server.cc",
+    "vm_apps/http_server/tcp-server.h",
+    "vm_apps/http_server/tcp-socket.h",
+    "vm_apps/http_server/v8-http-server.cc",
+    "vm_apps/utils/app-utils.h",
+    "vm_apps/utils/app-utils.cc",
+    "vm_apps/utils/command-line.h",
+    "vm_apps/utils/command-line.cc",
+  ]
+
+  configs = [
+    # Note: don't use :internal_config here because this target will get
+    # the :external_config applied to it by virtue of depending on :v8, and
+    # you can't have both applied to the same target.
+    ":internal_config_base",
+  ]
+
+  if (is_posix) {
+    sources += [
+      "vm_apps/http_server/eintr-wrapper.h",
+      "vm_apps/http_server/net-errors-posix.cc",
+      "vm_apps/http_server/socket-posix.cc",
+      "vm_apps/http_server/socket-posix.h",
+      "vm_apps/http_server/tcp-socket-posix.cc",
+      "vm_apps/http_server/tcp-socket-posix.h",
+    ]
+  } else if (is_win) {
+    sources += [
+      "vm_apps/http_server/net-errors-win.cc",
+      "vm_apps/http_server/tcp-socket-win.cc",
+      "vm_apps/http_server/tcp-socket-win.h",
+      "vm_apps/http_server/winsock-init.cc",
+      "vm_apps/http_server/winsock-init.h",
+      "vm_apps/http_server/winsock-utils.cc",
+      "vm_apps/http_server/winsock-utils.h",
+    ]
+
+    libs = [
+      "ws2_32.lib",
+    ]
+  }
+
+  deps = [
+    ":v8",
+    "//build/win:default_exe_manifest",
+  ]
+}
+
 v8_executable("v8_vm") {
   sources = [
     "vm_apps/utils/app-utils.h",

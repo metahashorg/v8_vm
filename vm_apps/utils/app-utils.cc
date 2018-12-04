@@ -20,6 +20,12 @@ const char kWhitespaceASCII[] = {
   0
 };
 
+std::uint16_t StringToUint16(const char* str) {
+  // TODO: Write more correct implementation
+  // (see Chromium base/strings/string_number_conversions.*)
+  return static_cast<std::uint16_t>(atol(str)) ;
+}
+
 template<typename Str>
 TrimPositions TrimStringT(const Str& input,
                           const typename Str::value_type* trim_chars,
