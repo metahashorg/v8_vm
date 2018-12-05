@@ -62,8 +62,10 @@ vv::Error TcpServer::Wait() {
     return vv::errObjNotInit ;
   }
 
-  // Wait main thread
-  thread_->join() ;
+  // Wait the thread
+  if (thread_->joinable()) {
+    thread_->join() ;
+  }
 
   // Wait sessions
   for (;;) {
