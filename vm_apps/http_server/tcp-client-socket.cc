@@ -71,11 +71,18 @@ std::int64_t TcpClientSocket::GetTotalReceivedBytes() const {
   return total_received_bytes_ ;
 }
 
-int TcpClientSocket::Read(char* buf, int& buf_len, Timeout timeout) {
-  return vv::errNotImplemented ;
+vv::Error TcpClientSocket::Read(
+    char* buf, std::int32_t& buf_len, Timeout timeout) {
+  vv::Error result = socket_->Read(buf, buf_len, timeout) ;
+  if (V8_ERR_SUCCESSED(result)) {
+    total_received_bytes_ += buf_len ;
+  }
+
+  return result ;
 }
-int TcpClientSocket::Write(char* buf, int& buf_len, Timeout timeout) {
-  return vv::errNotImplemented ;
+vv::Error TcpClientSocket::Write(
+    const char* buf, std::int32_t& buf_len, Timeout timeout) {
+  return socket_->Write(buf, buf_len, timeout) ;
 }
 
 vv::Error TcpClientSocket::SetReceiveBufferSize(std::int32_t size) {

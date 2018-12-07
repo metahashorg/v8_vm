@@ -169,6 +169,20 @@ bool TcpSocketPosix::IsConnectedAndIdle() const {
   return socket_ && socket_->IsConnectedAndIdle() ;
 }
 
+vv::Error TcpSocketPosix::Read(
+    char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO: DCHECK(socket_) ;
+
+  return socket_->Read(buf, buf_len, timeout) ;
+}
+
+vv::Error TcpSocketPosix::Write(
+    const char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO: DCHECK(socket_) ;
+
+  return socket_->Write(buf, buf_len, timeout) ;
+}
+
 vv::Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 

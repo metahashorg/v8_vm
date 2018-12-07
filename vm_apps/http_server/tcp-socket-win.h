@@ -53,6 +53,19 @@ class TcpSocketWin {
   bool IsConnected() const ;
   bool IsConnectedAndIdle() const ;
 
+  // Full duplex mode (reading and writing at the same time) is supported.
+
+  // Reads from the socket.
+  // Returns a net error code.
+  vv::Error Read(
+      char* buf, std::int32_t& buf_len, Timeout timeout = kInfiniteTimeout) ;
+
+  // Writes to the socket.
+  // Returns a net error code.
+  vv::Error Write(
+      const char* buf, std::int32_t& buf_len,
+      Timeout timeout = kInfiniteTimeout) ;
+
   // Copies the local tcp address into |address| and returns a net error code.
   vv::Error GetLocalAddress(IPEndPoint* address) const ;
 
@@ -81,11 +94,13 @@ class TcpSocketWin {
  private:
   SOCKET socket_ ;
   HANDLE accept_event_ ;
+  HANDLE read_event_ ;
+  HANDLE write_event_ ;
 
   // The various states that the socket could be in.
   bool waiting_connect_ ;
   bool waiting_read_ ;
-  // bool waiting_write_ ;
+  bool waiting_write_ ;
 
   std::unique_ptr<IPEndPoint> peer_address_ ;
 };

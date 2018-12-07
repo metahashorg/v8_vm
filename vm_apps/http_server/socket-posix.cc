@@ -156,11 +156,15 @@ vv::Error SocketPosix::Accept(
   fd_set set ;
   FD_ZERO(&set) ;
   FD_SET(socket_fd_, &set) ;
-  struct timeval timeout_val ;
-  timeout_val.tv_sec  = timeout / 1000 ;
-  timeout_val.tv_usec = (timeout % 1000) * 1000 ;
+  struct timeval timeout_val, *timeout_pval = nullptr ;
+  if (timeout != kInfiniteTimeout) {
+    timeout_val.tv_sec  = timeout / 1000 ;
+    timeout_val.tv_usec = (timeout % 1000) * 1000 ;
+    timeout_pval = &timeout_val ;
+  }
+
   int wait_result = HANDLE_EINTR(select(
-      socket_fd_ + 1, &set, NULL, NULL, &timeout_val)) ;
+      socket_fd_ + 1, &set, NULL, NULL, timeout_pval)) ;
   if(wait_result < 0) {
     printf("ERROR: select() returned an error\n") ;
     return MapAcceptError(errno) ;
@@ -266,6 +270,99 @@ bool SocketPosix::IsConnectedAndIdle() const {
   const int poll_result = HANDLE_EINTR(poll(&pollfd, 1, 0)) ;
   return poll_result == 0 ;
 #endif  // V8_OS_FUCHSIA
+}
+
+vv::Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO:
+  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  // DCHECK(!waiting_connect_) ;
+  // DCHECK_LT(0, buf_len) ;
+
+  // Remember a buffer length and set a result of reading to 0
+  std::int32_t local_buf_len = buf_len ;
+  buf_len = 0 ;
+
+  // Wait when we'll have something for reading
+  fd_set set ;
+  FD_ZERO(&set) ;
+  FD_SET(socket_fd_, &set) ;
+  struct timeval timeout_val, *timeout_pval = nullptr ;
+  if (timeout != kInfiniteTimeout) {
+    timeout_val.tv_sec  = timeout / 1000 ;
+    timeout_val.tv_usec = (timeout % 1000) * 1000 ;
+    timeout_pval = &timeout_val ;
+  }
+
+  int wait_result = HANDLE_EINTR(select(
+      socket_fd_ + 1, &set, NULL, NULL, timeout_pval)) ;
+  if(wait_result < 0) {
+    printf("ERROR: select() returned an error\n") ;
+    return MapAcceptError(errno) ;
+  } else if (wait_result == 0) {
+    return vv::errTimeout ;
+  }
+
+  // Try to read
+  long rv = HANDLE_EINTR(read(socket_fd_, buf, local_buf_len)) ;
+  if (rv < 0) {
+    printf("ERROR: read() returned an error\n") ;
+    return MapSystemError(errno) ;
+  }
+
+  buf_len = static_cast<std::int32_t>(rv) ;
+  return vv::errOk ;
+}
+
+vv::Error SocketPosix::Write(
+    const char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO:
+  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  // DCHECK(!waiting_connect_) ;
+  // DCHECK_LT(0, buf_len) ;
+
+  // Remember a buffer length and set a result of writing to 0
+  std::int32_t local_buf_len = buf_len ;
+  buf_len = 0 ;
+
+  // Wait when we'll be able to write
+  fd_set set ;
+  FD_ZERO(&set) ;
+  FD_SET(socket_fd_, &set) ;
+  struct timeval timeout_val, *timeout_pval = nullptr ;
+  if (timeout != kInfiniteTimeout) {
+    timeout_val.tv_sec  = timeout / 1000 ;
+    timeout_val.tv_usec = (timeout % 1000) * 1000 ;
+    timeout_pval = &timeout_val ;
+  }
+
+  int wait_result = HANDLE_EINTR(select(
+      socket_fd_ + 1, NULL, &set, NULL, timeout_pval)) ;
+  if(wait_result < 0) {
+    vv::Error net_error = MapAcceptError(errno) ;
+    printf("ERROR: select() returned an error (Net error: 0x%08x)\n",
+           net_error) ;
+    return net_error ;
+  } else if (wait_result == 0) {
+    return vv::errTimeout ;
+  }
+
+#if defined(V8_OS_LINUX) || defined(V8_OS_ANDROID)
+  // Disable SIGPIPE for this write. Although Chromium globally disables
+  // SIGPIPE, the net stack may be used in other consumers which do not do
+  // this. MSG_NOSIGNAL is a Linux-only API. On OS X, this is a setsockopt on
+  // socket creation.
+  long rv = HANDLE_EINTR(send(socket_fd_, buf, local_buf_len, MSG_NOSIGNAL)) ;
+#else
+  long rv = HANDLE_EINTR(write(socket_fd_, buf, local_buf_len)) ;
+#endif
+
+  if (rv < 0) {
+    printf("ERROR: send() returned an error\n") ;
+    return MapSystemError(errno) ;
+  }
+
+  buf_len = static_cast<std::int32_t>(rv) ;
+  return vv::errOk ;
 }
 
 vv::Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {

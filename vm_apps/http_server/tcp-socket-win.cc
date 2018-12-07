@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <mstcpip.h>
 
+#include "src/vm/vm-utils.h"
 #include "vm_apps/http_server/net-errors.h"
 #include "vm_apps/http_server/sockaddr-storage.h"
 #include "vm_apps/http_server/socket-options.h"
@@ -60,6 +61,8 @@ bool SetNonBlockingAndGetError(SOCKET fd, int* os_error) {
 TcpSocketWin::TcpSocketWin()
   : socket_(INVALID_SOCKET),
     accept_event_(WSA_INVALID_EVENT),
+    read_event_(WSA_INVALID_EVENT),
+    write_event_(WSA_INVALID_EVENT),
     waiting_connect_(false),
     waiting_read_(false) {
   EnsureWinsockInit() ;
@@ -280,6 +283,120 @@ bool TcpSocketWin::IsConnectedAndIdle() const {
   return true ;
 }
 
+vv::Error TcpSocketWin::Read(
+    char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
+  // TODO: DCHECK(!waiting_read_) ;
+
+  // Set a flag of waiting read
+  vv::internal::TemporarilySetValue<bool> waiting_read(waiting_read_, true) ;
+
+  // Remember a buffer length and set a result of reading to 0
+  std::int32_t local_buf_len = buf_len ;
+  buf_len = 0 ;
+
+  // Create a read event the first time
+  if (read_event_ == WSA_INVALID_EVENT) {
+    read_event_ = WSACreateEvent() ;
+    int os_error = WSAGetLastError() ;
+    if (read_event_ == WSA_INVALID_EVENT) {
+      printf("ERROR: WSACreateEvent() returned an error\n") ;
+      return MapSystemError(os_error) ;
+    }
+  }
+
+  // Wait when we'll have something for reading
+  WSAResetEvent(read_event_) ;
+  WSAEventSelect(socket_, read_event_, FD_READ | FD_CLOSE) ;
+  int os_error = WSAGetLastError() ;
+  int result = WSAWaitForMultipleEvents(
+      1, &read_event_, FALSE, timeout, FALSE) ;
+  os_error = WSAGetLastError() ;
+  if (result != WSA_WAIT_EVENT_0) {
+    vv::Error net_error = vv::errTimeout ;
+    if (result != WSA_WAIT_TIMEOUT) {
+      net_error = MapSystemError(os_error) ;
+    }
+
+    if (net_error != vv::errTimeout) {
+      printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
+    }
+
+    return net_error ;
+  }
+
+  // Try to read
+  result = recv(socket_, buf, local_buf_len, 0) ;
+  os_error = WSAGetLastError() ;
+  if (result == SOCKET_ERROR) {
+    vv::Error net_error = MapSystemError(os_error) ;
+    printf("ERROR: recv() returned an error\n") ;
+    return net_error ;
+  }
+
+  buf_len = result ;
+  return vv::errOk ;
+}
+
+vv::Error TcpSocketWin::Write(
+    const char* buf, std::int32_t& buf_len, Timeout timeout) {
+  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
+  // TODO: DCHECK(!waiting_write_) ;
+
+  // Set a flag of waiting read
+  vv::internal::TemporarilySetValue<bool> waiting_wtite(waiting_write_, true) ;
+
+  // Remember a buffer length and set a result of writing to 0
+  std::int32_t local_buf_len = buf_len ;
+  buf_len = 0 ;
+
+  // Create a read event the first time
+  if (write_event_ == WSA_INVALID_EVENT) {
+    write_event_ = WSACreateEvent() ;
+    int os_error = WSAGetLastError() ;
+    if (write_event_ == WSA_INVALID_EVENT) {
+      printf("ERROR: WSACreateEvent() returned an error\n") ;
+      return MapSystemError(os_error) ;
+    }
+  }
+
+  // Wait when we'll have something for reading
+  WSAResetEvent(write_event_) ;
+  WSAEventSelect(socket_, write_event_, FD_WRITE | FD_CLOSE) ;
+  int os_error = WSAGetLastError() ;
+  int result = WSAWaitForMultipleEvents(
+      1, &write_event_, FALSE, timeout, FALSE) ;
+  os_error = WSAGetLastError() ;
+  if (result != WSA_WAIT_EVENT_0) {
+    vv::Error net_error = vv::errTimeout ;
+    if (result != WSA_WAIT_TIMEOUT) {
+      net_error = MapSystemError(os_error) ;
+    }
+
+    if (net_error != vv::errTimeout) {
+      printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
+    }
+
+    return net_error ;
+  }
+
+  // Try to read
+  WSABUF write_buffer ;
+  write_buffer.len = local_buf_len ;
+  write_buffer.buf = const_cast<char*>(buf) ;
+  DWORD num = 0 ;
+  result = WSASend(socket_, &write_buffer, 1, &num, 0, NULL, NULL) ;
+  os_error = WSAGetLastError() ;
+  if (result == SOCKET_ERROR) {
+    vv::Error net_error = MapSystemError(os_error) ;
+    printf("ERROR: WSASend() returned an error\n") ;
+    return net_error ;
+  }
+
+  buf_len = num ;
+  return vv::errOk ;
+}
+
 vv::Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 
@@ -384,6 +501,16 @@ void TcpSocketWin::Close() {
   if (accept_event_ != WSA_INVALID_EVENT) {
     WSACloseEvent(accept_event_) ;
     accept_event_ = WSA_INVALID_EVENT ;
+  }
+
+  if (read_event_ != WSA_INVALID_EVENT) {
+    WSACloseEvent(read_event_) ;
+    read_event_ = WSA_INVALID_EVENT ;
+  }
+
+  if (write_event_ != WSA_INVALID_EVENT) {
+    WSACloseEvent(write_event_) ;
+    write_event_ = WSA_INVALID_EVENT ;
   }
 
   peer_address_.reset() ;

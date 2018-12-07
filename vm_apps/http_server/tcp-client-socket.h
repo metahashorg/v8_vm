@@ -62,9 +62,11 @@ class TcpClientSocket : public StreamSocket {
   // Multiple outstanding requests are not supported.
   // Full duplex mode (reading and writing at the same time) is supported.
   vv::Error Read(
-      char* buf, int& buf_len, Timeout timeout = kInfiniteTimeout) override ;
+      char* buf, std::int32_t& buf_len,
+      Timeout timeout = kInfiniteTimeout) override ;
   vv::Error Write(
-      char* buf, int& buf_len, Timeout timeout = kInfiniteTimeout) override ;
+      const char* buf, std::int32_t& buf_len,
+      Timeout timeout = kInfiniteTimeout) override ;
   vv::Error SetReceiveBufferSize(std::int32_t size) override ;
   vv::Error SetSendBufferSize(std::int32_t size) override ;
 

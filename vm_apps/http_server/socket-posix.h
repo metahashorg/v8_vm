@@ -47,6 +47,19 @@ class SocketPosix {
   bool IsConnected() const ;
   bool IsConnectedAndIdle() const ;
 
+  // Full duplex mode (reading and writing at the same time) is supported.
+
+  // Reads from the socket.
+  // Returns a net error code.
+  vv::Error Read(
+      char* buf, std::int32_t& buf_len, Timeout timeout = kInfiniteTimeout) ;
+
+  // Writes to the socket.
+  // Returns a net error code.
+  vv::Error Write(
+      const char* buf, std::int32_t& buf_len,
+      Timeout timeout = kInfiniteTimeout) ;
+
   vv::Error GetLocalAddress(SockaddrStorage* address) const ;
   vv::Error GetPeerAddress(SockaddrStorage* address) const ;
   void SetPeerAddress(const SockaddrStorage& address) ;
