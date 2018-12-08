@@ -20,6 +20,9 @@ typedef std::int32_t Error ;
 
 const Error errOk = 0x0 ;
 
+// Common warnings
+const Error wrnIncompleteOperation = 0x0000001 ;
+
 const Error errBase = 0xf0000000 ;
 
 // Common errors
@@ -40,6 +43,7 @@ const Error errFilePathTooLong       = (errBase|0x000000e) ;
 const Error errNotImplemented        = (errBase|0x000000f) ;
 const Error errAborted               = (errBase|0x0000010) ;
 const Error errFileTooBig            = (errBase|0x0000011) ;
+const Error errIncompleteOperation   = (errBase|0x0000012) ;
 
 // Net errors
 const Error errNetBase                 = (errBase|0x0001000) ;

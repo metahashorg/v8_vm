@@ -150,8 +150,9 @@ vv::Error SocketPosix::Listen(int backlog) {
 vv::Error SocketPosix::Accept(
     std::unique_ptr<SocketPosix>* socket, Timeout timeout) {
   // TODO:
-  // DCHECK_NE(kInvalidSocket, socket_fd_);
-  // DCHECK(socket);
+  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  // DCHECK(socket) ;
+  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   fd_set set ;
   FD_ZERO(&set) ;
@@ -276,7 +277,9 @@ vv::Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_) ;
   // DCHECK(!waiting_connect_) ;
+  // DCHECK_NE(nullptr, buf) ;
   // DCHECK_LT(0, buf_len) ;
+  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   // Remember a buffer length and set a result of reading to 0
   std::int32_t local_buf_len = buf_len ;
@@ -318,7 +321,9 @@ vv::Error SocketPosix::Write(
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_) ;
   // DCHECK(!waiting_connect_) ;
+  // DCHECK_NE(nullptr, buf) ;
   // DCHECK_LT(0, buf_len) ;
+  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   // Remember a buffer length and set a result of writing to 0
   std::int32_t local_buf_len = buf_len ;
