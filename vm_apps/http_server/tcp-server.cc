@@ -50,13 +50,6 @@ vv::Error TcpServer::Stop() {
   return vv::errOk ;
 }
 
-void TcpServer::OnSessionClose(TcpServerSession* session) {
-  std::unique_lock<std::mutex> locker(sessions_lock_) ;
-  sessions_.erase(session) ;
-  delete session ;
-  sessions_cv_.notify_all() ;
-}
-
 vv::Error TcpServer::Wait() {
   if (!thread_.get()) {
     return vv::errObjNotInit ;
@@ -87,6 +80,13 @@ vv::Error TcpServer::Wait() {
   return vv::errOk ;
 }
 
+void TcpServer::OnSessionClose(TcpServerSession* session) {
+  std::unique_lock<std::mutex> locker(sessions_lock_) ;
+  sessions_.erase(session) ;
+  delete session ;
+  sessions_cv_.notify_all() ;
+}
+
 void TcpServer::OnSessionError(TcpServerSession* session, vv::Error error) {}
 
 void TcpServer::Run() {
@@ -110,7 +110,6 @@ void TcpServer::Run() {
 
     if (result != vv::errTimeout) {
       printf("ERROR: TcpServer::Run() - Accept() returned an error\n") ;
-      break ;
     }
   }
 }
