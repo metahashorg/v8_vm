@@ -1,6 +1,10 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+#
+# Copyright 2018 the MetaHash project authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
 import("//build/config/android/config.gni")
 import("//build/config/arm.gni")
@@ -3484,6 +3488,7 @@ v8_executable("v8_http_server") {
     "vm_apps/http_server/http-status-code-list.h",
     "vm_apps/http_server/http-status-code.cc",
     "vm_apps/http_server/http-status-code.h",
+    "vm_apps/http_server/http-version.h",
     "vm_apps/http_server/ip-address.cc",
     "vm_apps/http_server/ip-address.h",
     "vm_apps/http_server/ip-endpoint.cc",
