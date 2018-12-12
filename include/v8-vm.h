@@ -22,6 +22,7 @@ const Error errOk = 0x0 ;
 
 // Common warnings
 const Error wrnIncompleteOperation = 0x0000001 ;
+const Error wrnObjNotInit          = 0x0000002 ;
 
 const Error errBase = 0xf0000000 ;
 
@@ -59,6 +60,8 @@ const Error errNetAddressInvalid       = (errNetBase|0x0000009) ;
 const Error errNetAddressInUse         = (errNetBase|0x000000a) ;
 const Error errNetMsgTooBig            = (errNetBase|0x000000b) ;
 const Error errNetSocketNotConnected   = (errNetBase|0x000000c) ;
+const Error errNetInvalidPackage       = (errNetBase|0x000000d) ;
+const Error errNetEntityTooLarge       = (errNetBase|0x000000e) ;
 
 /** Enum about how to write Json */
 enum class FormattedJson {

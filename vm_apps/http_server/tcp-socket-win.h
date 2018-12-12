@@ -12,6 +12,7 @@
 #include <winsock2.h>
 
 #include "include/v8-vm.h"
+#include "src/base/macros.h"
 #include "vm_apps/http_server/ip-endpoint.h"
 #include "vm_apps/http_server/socket-descriptor.h"
 #include "vm_apps/utils/app-utils.h"
@@ -103,6 +104,8 @@ class TcpSocketWin {
   bool waiting_write_ ;
 
   std::unique_ptr<IPEndPoint> peer_address_ ;
+
+  DISALLOW_COPY_AND_ASSIGN(TcpSocketWin) ;
 };
 
 #endif  // V8_VM_APPS_HTTP_SERVER_TCP_SOCKET_WIN_H_

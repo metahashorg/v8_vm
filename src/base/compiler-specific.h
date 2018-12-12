@@ -7,6 +7,28 @@
 
 #include "include/v8config.h"
 
+// @metahash
+#if defined(__GNUC__)
+#define V8_COMPILER_GCC 1
+#elif defined(_MSC_VER)
+#define V8_COMPILER_MSVC 1
+#else
+#error Please add support for your compiler in src/base/compiler-specific.h
+#endif
+
+#if defined(V8_COMPILER_MSVC)
+
+// For _Printf_format_string_.
+#include <sal.h>
+
+#else  // Not MSVC
+
+#define _Printf_format_string_
+
+#endif  // V8_COMPILER_MSVC
+
+// @metahash end
+
 // Annotate a typedef or function indicating it's ok if it's not used.
 // Use like:
 //   typedef Foo Bar ALLOW_UNUSED_TYPE;
@@ -21,7 +43,8 @@
 // |dots_param| is the one-based index of the "..." parameter.
 // For v*printf functions (which take a va_list), pass 0 for dots_param.
 // (This is undocumented but matches what the system C headers do.)
-#if defined(__GNUC__)
+// @metahash #if defined(__GNUC__)
+#if defined(V8_COMPILER_GCC)
 #define PRINTF_FORMAT(format_param, dots_param) \
   __attribute__((format(printf, format_param, dots_param)))
 #else

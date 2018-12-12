@@ -9,8 +9,10 @@
 #ifndef V8_VM_APPS_HTTP_SERVER_HTTP_STATUS_CODE_H_
 #define V8_VM_APPS_HTTP_SERVER_HTTP_STATUS_CODE_H_
 
+#include <cstdint>
+
 // HTTP status codes.
-enum HttpStatusCode {
+enum HttpStatusCode : std::int32_t {
 
 #define HTTP_STATUS(label, code, reason) HTTP_ ## label = code,
 #include "vm_apps/http_server/http-status-code-list.h"

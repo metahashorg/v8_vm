@@ -9,21 +9,14 @@
 #ifndef V8_VM_APPS_HTTP_SERVER_SYS_BYTEORDER_H_
 #define V8_VM_APPS_HTTP_SERVER_SYS_BYTEORDER_H_
 
-#if defined(__GNUC__)
-#define COMPILER_GCC 1
-#elif defined(_MSC_VER)
-#define COMPILER_MSVC 1
-#else
-#error Please add support for your compiler in vm_apps/http_server/sys-byteorder.h
-#endif
-
 #include <cstdint>
 
 #include "src/base/build_config.h"
+#include "src/base/compiler-specific.h"
 
 // Returns a value with all bytes in |x| swapped, i.e. reverses the endianness.
 inline std::uint16_t ByteSwap(std::uint16_t x) {
-#if defined(COMPILER_MSVC)
+#if defined(V8_COMPILER_MSVC)
   return _byteswap_ushort(x) ;
 #else
   return __builtin_bswap16(x) ;
@@ -31,7 +24,7 @@ inline std::uint16_t ByteSwap(std::uint16_t x) {
 }
 
 inline std::uint32_t ByteSwap(std::uint32_t x) {
-#if defined(COMPILER_MSVC)
+#if defined(V8_COMPILER_MSVC)
   return _byteswap_ulong(x) ;
 #else
   return __builtin_bswap32(x) ;
@@ -39,7 +32,7 @@ inline std::uint32_t ByteSwap(std::uint32_t x) {
 }
 
 inline uint64_t ByteSwap(std::uint64_t x) {
-#if defined(COMPILER_MSVC)
+#if defined(V8_COMPILER_MSVC)
   return _byteswap_uint64(x) ;
 #else
   return __builtin_bswap64(x) ;

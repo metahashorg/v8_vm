@@ -8,6 +8,8 @@
 #include <string>
 
 #include "include/v8-vm.h"
+#include "src/base/build_config.h"
+#include "src/base/compiler-specific.h"
 
 namespace vv = v8::vm ;
 
@@ -27,8 +29,30 @@ template <typename T, size_t N> char (&ArraySizeHelper(T (&array)[N]))[N] ;
 std::string ChangeFileExtension(
     const char* file_name, const char* new_extension) ;
 
+// Like strcasecmp for case-insensitive ASCII characters only. Returns:
+//   -1  (a < b)
+//    0  (a == b)
+//    1  (a > b)
+// (unlike strcasecmp which can return values greater or less than 1/-1).
+int CompareCaseInsensitiveASCII(const std::string& a, const std::string& b) ;
+
+// Equality for ASCII case-insensitive comparisons.
+bool EqualsCaseInsensitiveASCII(const std::string& a, const std::string& b) ;
+
+// Append result to a supplied string.
+void StringAppendF(
+    std::string* dst, _Printf_format_string_ const char* format, ...)
+    PRINTF_FORMAT(2, 3) ;
+
+// Return a C++ string given printf-like input.
+std::string StringPrintf(_Printf_format_string_ const char* format, ...)
+    PRINTF_FORMAT(1, 2) V8_WARN_UNUSED_RESULT ;
+
 // Converts a C-string to a number
 std::uint16_t StringToUint16(const char* str) ;
+
+// Converts a C-string to a number
+std::int32_t StringToInt32(const char* str) ;
 
 // Trims any whitespace from either end of the input string.
 //
