@@ -52,10 +52,16 @@ vv::Error TcpServerSession::Wait() {
   return vv::errOk ;
 }
 
-TcpServerSession::TcpServerSession(
-  std::unique_ptr<StreamSocket>& socket, Owner* owner)
+void TcpServerSession::SetClosedCallback(ClosedCallback callback) {
+  closed_callback_ = callback ;
+}
+
+void TcpServerSession::SetErrorCallback(ErrorCallback callback) {
+  error_callback_ = callback ;
+}
+
+TcpServerSession::TcpServerSession(std::unique_ptr<StreamSocket>& socket)
   : stop_flag_(false),
-    owner_(owner),
     read_and_write_attempt_count_(kDefaultReadAndWriteAttemptCount) {
   // TODO: DCHECK(socket.get()) ;
   socket_.swap(socket) ;
@@ -159,11 +165,11 @@ vv::Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
 
 void TcpServerSession::Run() {
   vv::Error result = Do() ;
-  if (owner_) {
-    if (V8_ERR_FAILED(result)) {
-      owner_->OnSessionError(this, result) ;
-    }
+  if (error_callback_ && V8_ERR_FAILED(result)) {
+    error_callback_(this, result) ;
+  }
 
-    owner_->OnSessionClose(this) ;
+  if (closed_callback_) {
+    closed_callback_(this) ;
   }
 }

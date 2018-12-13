@@ -8,7 +8,16 @@
 #include "vm_apps/http_server/tcp-server.h"
 #include "vm_apps/utils/command-line.h"
 
+namespace {
+
+// Switches
 const char kSwitchPort[] = "port" ;
+
+// Server default parameters
+const char kServerName[] = "v8-http-server/1.0" ;
+const std::int32_t kBodyBufferSize = 256 * 1024 ; // because of snapshots
+
+}  //namespace
 
 void HowToUse() {
   printf("ERROR: Specify a port of http-server\n") ;
@@ -25,12 +34,14 @@ int main(int argc, char* argv[]) {
       cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
 
   TcpServer server ;
-  vv::Error error = server.Start(server_port, HttpServerSession::New) ;
+  vv::Error error = server.Start(
+      server_port,
+      HttpServerSession::GetCreator(kServerName, kBodyBufferSize)) ;
   V8_ERR_RETURN_IF_FAILED(error) ;
 
-  char сommand(0) ;
-  while (сommand != 'q' && сommand != 'Q') {
-    std::cin >> сommand ;
+  char command(0) ;
+  while (command != 'q' && command != 'Q') {
+    std::cin >> command ;
   }
 
   error = server.Stop() ;

@@ -80,7 +80,8 @@ vv::Error TcpServer::Wait() {
   return vv::errOk ;
 }
 
-void TcpServer::OnSessionClose(TcpServerSession* session) {
+void TcpServer::OnSessionClosed(TcpServerSession* session) {
+  printf("VERBS: TcpServer::OnSessionClosed()\n") ;
   std::unique_lock<std::mutex> locker(sessions_lock_) ;
   sessions_.erase(session) ;
   delete session ;
@@ -94,8 +95,14 @@ void TcpServer::Run() {
     std::unique_ptr<StreamSocket> accepted_socket ;
     vv::Error result = socket_.Accept(&accepted_socket, kWaitForAccept) ;
     if (result == vv::errOk) {
-      TcpServerSession* session = session_creator_(accepted_socket, this) ;
+      TcpServerSession* session = session_creator_(accepted_socket) ;
       if (session) {
+        session->SetClosedCallback(std::bind(
+          &TcpServer::OnSessionClosed, std::ref(*this),
+          std::placeholders::_1)) ;
+        session->SetErrorCallback(std::bind(
+          &TcpServer::OnSessionError, std::ref(*this), std::placeholders::_1,
+          std::placeholders::_2)) ;
         vv::Error session_error = session->Start() ;
         if (V8_ERR_FAILED(session_error)) {
           delete session ;

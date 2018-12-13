@@ -15,7 +15,7 @@
 #include "vm_apps/http_server/tcp-server-session.h"
 #include "vm_apps/http_server/tcp-server-socket.h"
 
-class TcpServer : public TcpServerSession::Owner {
+class TcpServer {
  public:
   TcpServer() ;
   virtual ~TcpServer() ;
@@ -27,14 +27,14 @@ class TcpServer : public TcpServerSession::Owner {
 
   vv::Error Wait() ;
 
-  // TcpServerSession::Owner  implementation.
-  void OnSessionClose(TcpServerSession* session) override ;
-  void OnSessionError(TcpServerSession* session, vv::Error error) override ;
-
  private:
   typedef std::set<TcpServerSession*> TcpSessionArray ;
 
   void Run() ;
+
+  // Callbacks for events from a session
+  void OnSessionClosed(TcpServerSession* session) ;
+  void OnSessionError(TcpServerSession* session, vv::Error error) ;
 
   std::unique_ptr<IPEndPoint> ip_endpoint_ ;
   TcpServerSocket socket_ ;

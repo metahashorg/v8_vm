@@ -6,6 +6,7 @@
 #define V8_VM_APPS_HTTP_SERVER_TCP_SERVER_SESSION_H_
 
 #include <atomic>
+#include <functional>
 #include <thread>
 
 #include "src/base/macros.h"
@@ -14,28 +15,41 @@
 
 class TcpServerSession {
  public:
-  class Owner {
-   public:
-    virtual void OnSessionClose(TcpServerSession* session) = 0 ;
-    virtual void OnSessionError(
-      TcpServerSession* session, vv::Error error) = 0 ;
-  };
+  // Function of a session creator
+  typedef std::function<
+      TcpServerSession*(std::unique_ptr<StreamSocket>& socket)> Creator ;
 
-  typedef TcpServerSession* (*Creator)(
-      std::unique_ptr<StreamSocket>& socket, Owner* owner) ;
+  // Callback for session closed
+  typedef std::function<void(TcpServerSession* session)> ClosedCallback ;
+
+  // Callback for a session error
+  typedef std::function<
+      void(TcpServerSession* session, vv::Error error)> ErrorCallback ;
 
   virtual ~TcpServerSession() ;
 
+  // Starts tcp-server
   virtual vv::Error Start() ;
 
+  // Stops tcp-server
   virtual vv::Error Stop() ;
 
+  // Waits until tcp-server will have stopped
   virtual vv::Error Wait() ;
 
- protected:
-  TcpServerSession(std::unique_ptr<StreamSocket>& socket, Owner* owner) ;
+  // Sets callback for session closed
+  void SetClosedCallback(ClosedCallback callback) ;
 
+  // Sets callback for a session error
+  void SetErrorCallback(ErrorCallback callback) ;
+
+ protected:
+  TcpServerSession(std::unique_ptr<StreamSocket>& socket) ;
+
+  // Reads data from a socket
   vv::Error Read(char* buf, std::int32_t& buf_len, bool complete_buf = false) ;
+
+  // Writes data from a socket
   vv::Error Write(const char* buf, std::int32_t& buf_len) ;
 
   virtual vv::Error Do() = 0 ;
@@ -47,8 +61,11 @@ class TcpServerSession {
   std::atomic<bool> stop_flag_ ;
   std::unique_ptr<StreamSocket> socket_ ;
   std::unique_ptr<std::thread> thread_ ;
-  Owner* owner_ ;
   std::uint16_t read_and_write_attempt_count_ ;
+
+  // Callbacks
+  ClosedCallback closed_callback_ ;
+  ErrorCallback error_callback_ ;
 
   DISALLOW_COPY_AND_ASSIGN(TcpServerSession) ;
 };
