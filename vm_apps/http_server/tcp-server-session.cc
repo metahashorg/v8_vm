@@ -52,11 +52,11 @@ vv::Error TcpServerSession::Wait() {
   return vv::errOk ;
 }
 
-void TcpServerSession::SetClosedCallback(ClosedCallback callback) {
+void TcpServerSession::SetClosedCallback(const ClosedCallback& callback) {
   closed_callback_ = callback ;
 }
 
-void TcpServerSession::SetErrorCallback(ErrorCallback callback) {
+void TcpServerSession::SetErrorCallback(const ErrorCallback& callback) {
   error_callback_ = callback ;
 }
 

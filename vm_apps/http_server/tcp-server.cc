@@ -24,19 +24,30 @@ TcpServer::~TcpServer() {
 }
 
 vv::Error TcpServer::Start(
-    std::uint16_t port, TcpServerSession::Creator session_creator) {
+    std::uint16_t port, const TcpServerSession::Creator& session_creator) {
   if (!port || !session_creator) {
     printf("ERROR: TcpServer::Start() - invalid argument\n") ;
     return vv::errInvalidArgument ;
   }
 
+  // Remember callback of a tcp-session creation
   session_creator_ = session_creator ;
 
+  // Create ip-endpoint of tcp-server
   ip_endpoint_.reset(new IPEndPoint(IPAddress(0, 0, 0, 0), port)) ;
 
+  // Create socket and initialize it
   vv::Error result = socket_.Listen(*ip_endpoint_.get(), kListenBacklog) ;
   V8_ERR_RETURN_IF_FAILED(result) ;
 
+  // Create callbacks on session events
+  session_closed_callback_ = std::bind(
+      &TcpServer::OnSessionClosed, std::ref(*this), std::placeholders::_1) ;
+  session_error_callback_ = std::bind(
+      &TcpServer::OnSessionError, std::ref(*this), std::placeholders::_1,
+      std::placeholders::_2) ;
+
+  // Start a server thread
   thread_.reset(new std::thread(&TcpServer::Run, std::ref(*this))) ;
   return vv::errOk ;
 }
@@ -97,12 +108,8 @@ void TcpServer::Run() {
     if (result == vv::errOk) {
       TcpServerSession* session = session_creator_(accepted_socket) ;
       if (session) {
-        session->SetClosedCallback(std::bind(
-          &TcpServer::OnSessionClosed, std::ref(*this),
-          std::placeholders::_1)) ;
-        session->SetErrorCallback(std::bind(
-          &TcpServer::OnSessionError, std::ref(*this), std::placeholders::_1,
-          std::placeholders::_2)) ;
+        session->SetClosedCallback(session_closed_callback_) ;
+        session->SetErrorCallback(session_error_callback_) ;
         vv::Error session_error = session->Start() ;
         if (V8_ERR_FAILED(session_error)) {
           delete session ;

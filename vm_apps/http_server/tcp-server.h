@@ -20,12 +20,17 @@ class TcpServer {
   TcpServer() ;
   virtual ~TcpServer() ;
 
+  // Starts a tcp-server
   vv::Error Start(
-      std::uint16_t port, TcpServerSession::Creator session_creator) ;
+      std::uint16_t port, const TcpServerSession::Creator& session_creator) ;
 
+  // Stops a tcp-server
   vv::Error Stop() ;
 
+  // Waits until tcp-server will have stopped
   vv::Error Wait() ;
+
+  const IPEndPoint* ip_endpoint() const { return ip_endpoint_.get() ; }
 
  private:
   typedef std::set<TcpServerSession*> TcpSessionArray ;
@@ -43,6 +48,8 @@ class TcpServer {
   TcpSessionArray sessions_ ;
   std::mutex sessions_lock_ ;
   std::condition_variable sessions_cv_ ;
+  TcpServerSession::ClosedCallback session_closed_callback_ ;
+  TcpServerSession::ErrorCallback session_error_callback_ ;
 
   std::unique_ptr<std::thread> thread_ ;
   std::atomic<bool> stop_flag_ ;

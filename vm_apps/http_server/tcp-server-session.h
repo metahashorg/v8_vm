@@ -28,20 +28,20 @@ class TcpServerSession {
 
   virtual ~TcpServerSession() ;
 
-  // Starts tcp-server
+  // Starts tcp-session
   virtual vv::Error Start() ;
 
-  // Stops tcp-server
+  // Stops tcp-session
   virtual vv::Error Stop() ;
 
-  // Waits until tcp-server will have stopped
+  // Waits until tcp-session will have stopped
   virtual vv::Error Wait() ;
 
   // Sets callback for session closed
-  void SetClosedCallback(ClosedCallback callback) ;
+  void SetClosedCallback(const ClosedCallback& callback) ;
 
   // Sets callback for a session error
-  void SetErrorCallback(ErrorCallback callback) ;
+  void SetErrorCallback(const ErrorCallback& callback) ;
 
  protected:
   TcpServerSession(std::unique_ptr<StreamSocket>& socket) ;
