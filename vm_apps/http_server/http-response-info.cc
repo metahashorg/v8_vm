@@ -20,9 +20,11 @@ const char HttpResponseInfo::kWWWAuthenticateHeader[] = "WWW-Authenticate" ;
 
 HttpResponseInfo::HttpResponseInfo() {}
 
-HttpResponseInfo::~HttpResponseInfo() {
-  Clear() ;
+HttpResponseInfo::HttpResponseInfo(std::int32_t status_code) {
+  SetStatusCode(status_code) ;
 }
+
+HttpResponseInfo::~HttpResponseInfo() {}
 
 void HttpResponseInfo::Clear() {
   status_code_ = HTTP_OK ;

@@ -26,6 +26,7 @@ class HttpResponseInfo : public HttpPackageInfo {
   static const char kWWWAuthenticateHeader[] ;
 
   HttpResponseInfo() ;
+  HttpResponseInfo(std::int32_t status_code) ;
   ~HttpResponseInfo() override ;
 
   // Clears the object

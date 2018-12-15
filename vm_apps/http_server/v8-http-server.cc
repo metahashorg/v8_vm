@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
   TcpServer server ;
   vv::Error error = server.Start(
       server_port,
-      HttpServerSession::GetCreator(kServerName, kBodyBufferSize)) ;
+      HttpServerSession::GetCreator(nullptr, kServerName, kBodyBufferSize)) ;
   V8_ERR_RETURN_IF_FAILED(error) ;
 
   char command(0) ;

@@ -39,9 +39,7 @@ const char HttpRequestInfo::kUserAgentHeader[] = "User-Agent" ;
 
 HttpRequestInfo::HttpRequestInfo() {}
 
-HttpRequestInfo::~HttpRequestInfo() {
-  Clear() ;
-}
+HttpRequestInfo::~HttpRequestInfo() {}
 
 void HttpRequestInfo::Clear() {
   method_ = "" ;
