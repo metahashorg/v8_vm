@@ -26,34 +26,36 @@ class HttpPackageInfo {
 
   typedef std::vector<HeaderKeyValuePair> HeaderVector ;
 
-  // General header names.
-  // https://tools.ietf.org/html/rfc2616#section-4.5
-  // Field names are case-insensitive.
-  // https://tools.ietf.org/html/rfc2616#section-4.2
-  static const char kCacheControlHeader[] ;
-  static const char kConnectionHeader[] ;
-  static const char kDateHeader[] ;
-  static const char kPragmaHeader[] ;
-  static const char kTrailerHeader[] ;
-  static const char kTransferEncodingHeader[] ;
-  static const char kUpgradeHeader[] ;
-  static const char kViaHeader[] ;
-  static const char kWarningHeader[] ;
+  struct Header {
+    // General header names.
+    // https://tools.ietf.org/html/rfc2616#section-4.5
+    // Field names are case-insensitive.
+    // https://tools.ietf.org/html/rfc2616#section-4.2
+    static const char kCacheControl[] ;
+    static const char kConnection[] ;
+    static const char kDate[] ;
+    static const char kPragma[] ;
+    static const char kTrailer[] ;
+    static const char kTransferEncoding[] ;
+    static const char kUpgrade[] ;
+    static const char kVia[] ;
+    static const char kWarning[] ;
 
-  // Entity header names.
-  // https://tools.ietf.org/html/rfc2616#section-7.1
-  // Field names are case-insensitive.
-  // https://tools.ietf.org/html/rfc2616#section-4.2
-  static const char kAllowHeader[] ;
-  static const char kContentEncodingHeader[] ;
-  static const char kContentLanguageHeader[] ;
-  static const char kContentLengthHeader[] ;
-  static const char kContentLocationHeader[] ;
-  static const char kContentMD5Header[] ;
-  static const char kContentRangeHeader[] ;
-  static const char kContentTypeHeader[] ;
-  static const char kExpiresHeader[] ;
-  static const char kLastModifiedHeader[] ;
+    // Entity header names.
+    // https://tools.ietf.org/html/rfc2616#section-7.1
+    // Field names are case-insensitive.
+    // https://tools.ietf.org/html/rfc2616#section-4.2
+    static const char kAllow[] ;
+    static const char kContentEncoding[] ;
+    static const char kContentLanguage[] ;
+    static const char kContentLength[] ;
+    static const char kContentLocation[] ;
+    static const char kContentMD5[] ;
+    static const char kContentRange[] ;
+    static const char kContentType[] ;
+    static const char kExpires[] ;
+    static const char kLastModified[] ;
+  };
 
   HttpPackageInfo() ;
   virtual ~HttpPackageInfo() ;

@@ -7,16 +7,17 @@
 #include <cctype>
 
 // Response specific header names.
-const char HttpResponseInfo::kAcceptRangesHeader[] = "Accept-Ranges" ;
-const char HttpResponseInfo::kAgeHeader[] = "Age" ;
-const char HttpResponseInfo::kETagHeader[] = "ETag" ;
-const char HttpResponseInfo::kLocationHeader[] = "Location" ;
-const char HttpResponseInfo::kProxyAuthenticateHeader[] = "Proxy-Authenticate" ;
-const char HttpResponseInfo::kRetryAfterHeader[] = "Retry-After" ;
-const char HttpResponseInfo::kServerHeader[] = "Server" ;
-const char HttpResponseInfo::kSetCookieHeader[] = "Set-Cookie" ;
-const char HttpResponseInfo::kVaryHeader[] = "Vary" ;
-const char HttpResponseInfo::kWWWAuthenticateHeader[] = "WWW-Authenticate" ;
+const char HttpResponseInfo::Header::kAcceptRanges[] = "Accept-Ranges" ;
+const char HttpResponseInfo::Header::kAge[] = "Age" ;
+const char HttpResponseInfo::Header::kETag[] = "ETag" ;
+const char HttpResponseInfo::Header::kLocation[] = "Location" ;
+const char HttpResponseInfo::Header::kProxyAuthenticate[] =
+    "Proxy-Authenticate" ;
+const char HttpResponseInfo::Header::kRetryAfter[] = "Retry-After" ;
+const char HttpResponseInfo::Header::kServer[] = "Server" ;
+const char HttpResponseInfo::Header::kSetCookie[] = "Set-Cookie" ;
+const char HttpResponseInfo::Header::kVary[] = "Vary" ;
+const char HttpResponseInfo::Header::kWWWAuthenticate[] = "WWW-Authenticate" ;
 
 HttpResponseInfo::HttpResponseInfo() {}
 

@@ -9,41 +9,45 @@
 
 class HttpRequestInfo : public HttpPackageInfo {
  public:
-  // Request method names. The method is case-sensitive.
-  // https://tools.ietf.org/html/rfc2616#section-5.1.1
-  static const char kConnectMethod[] ;
-  static const char kDeleteMethod[] ;
-  static const char kGetMethod[] ;
-  static const char kHeadMethod[] ;
-  static const char kOptionsMethod[] ;
-  static const char kPostMethod[] ;
-  static const char kPutMethod[] ;
-  static const char kTraceMethod[] ;
+  struct Method {
+    // Request method names. The method is case-sensitive.
+    // https://tools.ietf.org/html/rfc2616#section-5.1.1
+    static const char kConnect[] ;
+    static const char kDelete[] ;
+    static const char kGet[] ;
+    static const char kHead[] ;
+    static const char kOptions[] ;
+    static const char kPost[] ;
+    static const char kPut[] ;
+    static const char kTrace[] ;
+  };
 
-  // Request specific header names.
-  // https://tools.ietf.org/html/rfc2616#section-5.3
-  // Field names are case-insensitive.
-  // https://tools.ietf.org/html/rfc2616#section-4.2
-  static const char kAcceptHeader[] ;
-  static const char kAcceptCharsetHeader[] ;
-  static const char kAcceptEncodingHeader[] ;
-  static const char kAcceptLanguageHeader[] ;
-  static const char kAuthorizationHeader[] ;
-  static const char kCookieHeader[] ;
-  static const char kExpectHeader[] ;
-  static const char kFromHeader[] ;
-  static const char kHostHeader[] ;
-  static const char kIfMatchHeader[] ;
-  static const char kIfModifiedSinceHeader[] ;
-  static const char kIfNoneMatchHeader[] ;
-  static const char kIfRangeHeader[] ;
-  static const char kIfUnmodifiedSinceHeader[] ;
-  static const char kMaxForwardsHeader[] ;
-  static const char kProxyAuthorizationHeader[] ;
-  static const char kRangeHeader[] ;
-  static const char kRefererHeader[] ;
-  static const char kTEHeader[] ;
-  static const char kUserAgentHeader[] ;
+  struct Header {
+    // Request specific header names.
+    // https://tools.ietf.org/html/rfc2616#section-5.3
+    // Field names are case-insensitive.
+    // https://tools.ietf.org/html/rfc2616#section-4.2
+    static const char kAccept[] ;
+    static const char kAcceptCharset[] ;
+    static const char kAcceptEncoding[] ;
+    static const char kAcceptLanguage[] ;
+    static const char kAuthorization[] ;
+    static const char kCookie[] ;
+    static const char kExpect[] ;
+    static const char kFrom[] ;
+    static const char kHost[] ;
+    static const char kIfMatch[] ;
+    static const char kIfModifiedSince[] ;
+    static const char kIfNoneMatch[] ;
+    static const char kIfRange[] ;
+    static const char kIfUnmodifiedSince[] ;
+    static const char kMaxForwards[] ;
+    static const char kProxyAuthorization[] ;
+    static const char kRange[] ;
+    static const char kReferer[] ;
+    static const char kTE[] ;
+    static const char kUserAgent[] ;
+  };
 
   HttpRequestInfo() ;
   ~HttpRequestInfo() override ;

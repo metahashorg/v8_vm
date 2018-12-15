@@ -193,7 +193,7 @@ void HttpServerSession::SetResponseDefaultHeaders() {
 
   if (!server_name_.empty()) {
     response_->SetHeaderIfMissing(
-        HttpResponseInfo::kServerHeader, server_name_) ;
+        HttpResponseInfo::Header::kServer, server_name_) ;
   }
 }
 

@@ -10,20 +10,22 @@
 
 class HttpResponseInfo : public HttpPackageInfo {
  public:
-  // Response specific header names.
-  // https://tools.ietf.org/html/rfc2616#section-6.2
-  // Field names are case-insensitive.
-  // https://tools.ietf.org/html/rfc2616#section-4.2
-  static const char kAcceptRangesHeader[] ;
-  static const char kAgeHeader[] ;
-  static const char kETagHeader[] ;
-  static const char kLocationHeader[] ;
-  static const char kProxyAuthenticateHeader[] ;
-  static const char kRetryAfterHeader[] ;
-  static const char kServerHeader[] ;
-  static const char kSetCookieHeader[] ;
-  static const char kVaryHeader[] ;
-  static const char kWWWAuthenticateHeader[] ;
+  struct Header {
+    // Response specific header names.
+    // https://tools.ietf.org/html/rfc2616#section-6.2
+    // Field names are case-insensitive.
+    // https://tools.ietf.org/html/rfc2616#section-4.2
+    static const char kAcceptRanges[] ;
+    static const char kAge[] ;
+    static const char kETag[] ;
+    static const char kLocation[] ;
+    static const char kProxyAuthenticate[] ;
+    static const char kRetryAfter[] ;
+    static const char kServer[] ;
+    static const char kSetCookie[] ;
+    static const char kVary[] ;
+    static const char kWWWAuthenticate[] ;
+  };
 
   HttpResponseInfo() ;
   HttpResponseInfo(std::int32_t status_code) ;
