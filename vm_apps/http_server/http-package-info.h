@@ -31,30 +31,30 @@ class HttpPackageInfo {
     // https://tools.ietf.org/html/rfc2616#section-4.5
     // Field names are case-insensitive.
     // https://tools.ietf.org/html/rfc2616#section-4.2
-    static const char kCacheControl[] ;
-    static const char kConnection[] ;
-    static const char kDate[] ;
-    static const char kPragma[] ;
-    static const char kTrailer[] ;
-    static const char kTransferEncoding[] ;
-    static const char kUpgrade[] ;
-    static const char kVia[] ;
-    static const char kWarning[] ;
+    static const char CacheControl[] ;
+    static const char Connection[] ;
+    static const char Date[] ;
+    static const char Pragma[] ;
+    static const char Trailer[] ;
+    static const char TransferEncoding[] ;
+    static const char Upgrade[] ;
+    static const char Via[] ;
+    static const char Warning[] ;
 
     // Entity header names.
     // https://tools.ietf.org/html/rfc2616#section-7.1
     // Field names are case-insensitive.
     // https://tools.ietf.org/html/rfc2616#section-4.2
-    static const char kAllow[] ;
-    static const char kContentEncoding[] ;
-    static const char kContentLanguage[] ;
-    static const char kContentLength[] ;
-    static const char kContentLocation[] ;
-    static const char kContentMD5[] ;
-    static const char kContentRange[] ;
-    static const char kContentType[] ;
-    static const char kExpires[] ;
-    static const char kLastModified[] ;
+    static const char Allow[] ;
+    static const char ContentEncoding[] ;
+    static const char ContentLanguage[] ;
+    static const char ContentLength[] ;
+    static const char ContentLocation[] ;
+    static const char ContentMD5[] ;
+    static const char ContentRange[] ;
+    static const char ContentType[] ;
+    static const char Expires[] ;
+    static const char LastModified[] ;
   };
 
   HttpPackageInfo() ;

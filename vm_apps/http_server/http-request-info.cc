@@ -5,37 +5,38 @@
 #include "vm_apps/http_server/http-request-info.h"
 
 // Request method names.
-const char HttpRequestInfo::Method::kConnect[] = "CONNECT" ;
-const char HttpRequestInfo::Method::kDelete[] = "DELETE" ;
-const char HttpRequestInfo::Method::kGet[] = "GET" ;
-const char HttpRequestInfo::Method::kHead[] = "HEAD" ;
-const char HttpRequestInfo::Method::kOptions[] = "OPTIONS" ;
-const char HttpRequestInfo::Method::kPost[] = "POST" ;
-const char HttpRequestInfo::Method::kPut[] = "PUT" ;
-const char HttpRequestInfo::Method::kTrace[] = "TRACE" ;
+const char HttpRequestInfo::Method::Connect[] = "CONNECT" ;
+const char HttpRequestInfo::Method::Delete[] = "DELETE" ;
+const char HttpRequestInfo::Method::Get[] = "GET" ;
+const char HttpRequestInfo::Method::Head[] = "HEAD" ;
+const char HttpRequestInfo::Method::Options[] = "OPTIONS" ;
+const char HttpRequestInfo::Method::Post[] = "POST" ;
+const char HttpRequestInfo::Method::Put[] = "PUT" ;
+const char HttpRequestInfo::Method::Trace[] = "TRACE" ;
 
 // Request specific header names.
-const char HttpRequestInfo::Header::kAccept[] = "Accept" ;
-const char HttpRequestInfo::Header::kAcceptCharset[] = "Accept-Charset" ;
-const char HttpRequestInfo::Header::kAcceptEncoding[] = "Accept-Encoding" ;
-const char HttpRequestInfo::Header::kAcceptLanguage[] = "Accept-Language" ;
-const char HttpRequestInfo::Header::kAuthorization[] = "Authorization" ;
-const char HttpRequestInfo::Header::kCookie[] = "Cookie" ;
-const char HttpRequestInfo::Header::kExpect[] = "Expect" ;
-const char HttpRequestInfo::Header::kFrom[] = "From" ;
-const char HttpRequestInfo::Header::kHost[] = "Host" ;
-const char HttpRequestInfo::Header::kIfMatch[] = "If-Match" ;
-const char HttpRequestInfo::Header::kIfModifiedSince[] = "If-Modified-Since" ;
-const char HttpRequestInfo::Header::kIfNoneMatch[] = "If-None-Match" ;
-const char HttpRequestInfo::Header::kIfRange[] = "If-Range" ;
-const char HttpRequestInfo::Header::kIfUnmodifiedSince[] = "If-Unmodified-Since" ;
-const char HttpRequestInfo::Header::kMaxForwards[] = "Max-Forwards" ;
-const char HttpRequestInfo::Header::kProxyAuthorization[] =
+const char HttpRequestInfo::Header::Accept[] = "Accept" ;
+const char HttpRequestInfo::Header::AcceptCharset[] = "Accept-Charset" ;
+const char HttpRequestInfo::Header::AcceptEncoding[] = "Accept-Encoding" ;
+const char HttpRequestInfo::Header::AcceptLanguage[] = "Accept-Language" ;
+const char HttpRequestInfo::Header::Authorization[] = "Authorization" ;
+const char HttpRequestInfo::Header::Cookie[] = "Cookie" ;
+const char HttpRequestInfo::Header::Expect[] = "Expect" ;
+const char HttpRequestInfo::Header::From[] = "From" ;
+const char HttpRequestInfo::Header::Host[] = "Host" ;
+const char HttpRequestInfo::Header::IfMatch[] = "If-Match" ;
+const char HttpRequestInfo::Header::IfModifiedSince[] = "If-Modified-Since" ;
+const char HttpRequestInfo::Header::IfNoneMatch[] = "If-None-Match" ;
+const char HttpRequestInfo::Header::IfRange[] = "If-Range" ;
+const char HttpRequestInfo::Header::IfUnmodifiedSince[] =
+    "If-Unmodified-Since" ;
+const char HttpRequestInfo::Header::MaxForwards[] = "Max-Forwards" ;
+const char HttpRequestInfo::Header::ProxyAuthorization[] =
     "Proxy-Authorization" ;
-const char HttpRequestInfo::Header::kRange[] = "Range" ;
-const char HttpRequestInfo::Header::kReferer[] = "Referer" ;
-const char HttpRequestInfo::Header::kTE[] = "TE" ;
-const char HttpRequestInfo::Header::kUserAgent[] = "User-Agent" ;
+const char HttpRequestInfo::Header::Range[] = "Range" ;
+const char HttpRequestInfo::Header::Referer[] = "Referer" ;
+const char HttpRequestInfo::Header::TE[] = "TE" ;
+const char HttpRequestInfo::Header::UserAgent[] = "User-Agent" ;
 
 HttpRequestInfo::HttpRequestInfo() {}
 
@@ -61,7 +62,7 @@ void HttpRequestInfo::Clear() {
 std::string HttpRequestInfo::ToString() const {
   std::string output = StringPrintf(
       "%s %s HTTP/%d.%d\r\n",
-      method_.empty() ? Method::kGet : method_.c_str(),
+      method_.empty() ? Method::Get : method_.c_str(),
       uri_.empty() ? "/" : uri_.c_str(),
       http_version().major_value(), http_version().minor_value()) ;
   output += HttpPackageInfo::ToString() ;
@@ -141,7 +142,7 @@ void HttpRequestInfo::UpdateInfoByHeader(
     const std::string& key, const std::string& value, bool deleted) {
   HttpPackageInfo::UpdateInfoByHeader(key, value, deleted) ;
 
-  if (EqualsCaseInsensitiveASCII(key, Header::kHost)) {
+  if (EqualsCaseInsensitiveASCII(key, Header::Host)) {
     if (deleted) {
       host_ = "" ;
     } else {

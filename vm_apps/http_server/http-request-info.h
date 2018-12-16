@@ -12,14 +12,14 @@ class HttpRequestInfo : public HttpPackageInfo {
   struct Method {
     // Request method names. The method is case-sensitive.
     // https://tools.ietf.org/html/rfc2616#section-5.1.1
-    static const char kConnect[] ;
-    static const char kDelete[] ;
-    static const char kGet[] ;
-    static const char kHead[] ;
-    static const char kOptions[] ;
-    static const char kPost[] ;
-    static const char kPut[] ;
-    static const char kTrace[] ;
+    static const char Connect[] ;
+    static const char Delete[] ;
+    static const char Get[] ;
+    static const char Head[] ;
+    static const char Options[] ;
+    static const char Post[] ;
+    static const char Put[] ;
+    static const char Trace[] ;
   };
 
   struct Header {
@@ -27,26 +27,26 @@ class HttpRequestInfo : public HttpPackageInfo {
     // https://tools.ietf.org/html/rfc2616#section-5.3
     // Field names are case-insensitive.
     // https://tools.ietf.org/html/rfc2616#section-4.2
-    static const char kAccept[] ;
-    static const char kAcceptCharset[] ;
-    static const char kAcceptEncoding[] ;
-    static const char kAcceptLanguage[] ;
-    static const char kAuthorization[] ;
-    static const char kCookie[] ;
-    static const char kExpect[] ;
-    static const char kFrom[] ;
-    static const char kHost[] ;
-    static const char kIfMatch[] ;
-    static const char kIfModifiedSince[] ;
-    static const char kIfNoneMatch[] ;
-    static const char kIfRange[] ;
-    static const char kIfUnmodifiedSince[] ;
-    static const char kMaxForwards[] ;
-    static const char kProxyAuthorization[] ;
-    static const char kRange[] ;
-    static const char kReferer[] ;
-    static const char kTE[] ;
-    static const char kUserAgent[] ;
+    static const char Accept[] ;
+    static const char AcceptCharset[] ;
+    static const char AcceptEncoding[] ;
+    static const char AcceptLanguage[] ;
+    static const char Authorization[] ;
+    static const char Cookie[] ;
+    static const char Expect[] ;
+    static const char From[] ;
+    static const char Host[] ;
+    static const char IfMatch[] ;
+    static const char IfModifiedSince[] ;
+    static const char IfNoneMatch[] ;
+    static const char IfRange[] ;
+    static const char IfUnmodifiedSince[] ;
+    static const char MaxForwards[] ;
+    static const char ProxyAuthorization[] ;
+    static const char Range[] ;
+    static const char Referer[] ;
+    static const char TE[] ;
+    static const char UserAgent[] ;
   };
 
   HttpRequestInfo() ;

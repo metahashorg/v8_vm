@@ -15,16 +15,16 @@ class HttpResponseInfo : public HttpPackageInfo {
     // https://tools.ietf.org/html/rfc2616#section-6.2
     // Field names are case-insensitive.
     // https://tools.ietf.org/html/rfc2616#section-4.2
-    static const char kAcceptRanges[] ;
-    static const char kAge[] ;
-    static const char kETag[] ;
-    static const char kLocation[] ;
-    static const char kProxyAuthenticate[] ;
-    static const char kRetryAfter[] ;
-    static const char kServer[] ;
-    static const char kSetCookie[] ;
-    static const char kVary[] ;
-    static const char kWWWAuthenticate[] ;
+    static const char AcceptRanges[] ;
+    static const char Age[] ;
+    static const char ETag[] ;
+    static const char Location[] ;
+    static const char ProxyAuthenticate[] ;
+    static const char RetryAfter[] ;
+    static const char Server[] ;
+    static const char SetCookie[] ;
+    static const char Vary[] ;
+    static const char WWWAuthenticate[] ;
   };
 
   HttpResponseInfo() ;

@@ -167,27 +167,27 @@ bool HeadersIterator::GetNext() {
 }  // namespace
 
 // General header names.
-const char HttpPackageInfo::Header::kCacheControl[] = "Cache-Control" ;
-const char HttpPackageInfo::Header::kConnection[] = "Connection" ;
-const char HttpPackageInfo::Header::kDate[] = "Date" ;
-const char HttpPackageInfo::Header::kPragma[] = "Pragma" ;
-const char HttpPackageInfo::Header::kTrailer[] = "Trailer" ;
-const char HttpPackageInfo::Header::kTransferEncoding[] = "Transfer-Encoding" ;
-const char HttpPackageInfo::Header::kUpgrade[] = "Upgrade" ;
-const char HttpPackageInfo::Header::kVia[] = "Via" ;
-const char HttpPackageInfo::Header::kWarning[] = "Warning" ;
+const char HttpPackageInfo::Header::CacheControl[] = "Cache-Control" ;
+const char HttpPackageInfo::Header::Connection[] = "Connection" ;
+const char HttpPackageInfo::Header::Date[] = "Date" ;
+const char HttpPackageInfo::Header::Pragma[] = "Pragma" ;
+const char HttpPackageInfo::Header::Trailer[] = "Trailer" ;
+const char HttpPackageInfo::Header::TransferEncoding[] = "Transfer-Encoding" ;
+const char HttpPackageInfo::Header::Upgrade[] = "Upgrade" ;
+const char HttpPackageInfo::Header::Via[] = "Via" ;
+const char HttpPackageInfo::Header::Warning[] = "Warning" ;
 
 // Entity header names.
-const char HttpPackageInfo::Header::kAllow[] = "Allow" ;
-const char HttpPackageInfo::Header::kContentEncoding[] = "Content-Encoding" ;
-const char HttpPackageInfo::Header::kContentLanguage[] = "Content-Language" ;
-const char HttpPackageInfo::Header::kContentLength[] = "Content-Length" ;
-const char HttpPackageInfo::Header::kContentLocation[] = "Content-Location" ;
-const char HttpPackageInfo::Header::kContentMD5[] = "Content-MD5" ;
-const char HttpPackageInfo::Header::kContentRange[] = "Content-Range" ;
-const char HttpPackageInfo::Header::kContentType[] = "Content-Type" ;
-const char HttpPackageInfo::Header::kExpires[] = "Expires" ;
-const char HttpPackageInfo::Header::kLastModified[] = "Last-Modified" ;
+const char HttpPackageInfo::Header::Allow[] = "Allow" ;
+const char HttpPackageInfo::Header::ContentEncoding[] = "Content-Encoding" ;
+const char HttpPackageInfo::Header::ContentLanguage[] = "Content-Language" ;
+const char HttpPackageInfo::Header::ContentLength[] = "Content-Length" ;
+const char HttpPackageInfo::Header::ContentLocation[] = "Content-Location" ;
+const char HttpPackageInfo::Header::ContentMD5[] = "Content-MD5" ;
+const char HttpPackageInfo::Header::ContentRange[] = "Content-Range" ;
+const char HttpPackageInfo::Header::ContentType[] = "Content-Type" ;
+const char HttpPackageInfo::Header::Expires[] = "Expires" ;
+const char HttpPackageInfo::Header::LastModified[] = "Last-Modified" ;
 
 HttpPackageInfo::HeaderKeyValuePair::HeaderKeyValuePair() {
 }
@@ -385,9 +385,9 @@ void HttpPackageInfo::SetBody(
   body_error_ = vv::errOk ;
 
   if (body_size >= 0) {
-    SetHeader(Header::kContentLength, StringPrintf("%d", body_size_)) ;
+    SetHeader(Header::ContentLength, StringPrintf("%d", body_size_)) ;
   } else {
-    RemoveHeader(Header::kContentLength) ;
+    RemoveHeader(Header::ContentLength) ;
   }
 }
 
@@ -444,7 +444,7 @@ vv::Error HttpPackageInfo::ParseImpl(
 
 void HttpPackageInfo::UpdateInfoByHeader(
     const std::string& key, const std::string& value, bool deleted) {
-  if (EqualsCaseInsensitiveASCII(key, Header::kContentLength)) {
+  if (EqualsCaseInsensitiveASCII(key, Header::ContentLength)) {
     if (!deleted && !value.empty() && std::isdigit(value[0])) {
       content_length_ = StringToInt32(value.c_str()) ;
     } else {
