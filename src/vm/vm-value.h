@@ -5,7 +5,7 @@
 #ifndef V8_VM_VM_VALUE_H_
 #define V8_VM_VM_VALUE_H_
 
-#include "src/vm/vm-utils.h"
+#include "src/vm/utils/vm-utils.h"
 
 namespace v8 {
 namespace vm {

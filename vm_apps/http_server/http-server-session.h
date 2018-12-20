@@ -15,7 +15,7 @@ class HttpServerSession : public TcpServerSession {
  public:
    // Handler of a session
    typedef std::function<
-       vv::Error(const HttpRequestInfo& request, HttpResponseInfo& response)>
+       vv::Error(HttpRequestInfo& request, HttpResponseInfo& response)>
        SessionHandler ;
 
   // Default buffer size for reading/writing a body

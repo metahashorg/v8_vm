@@ -10,8 +10,10 @@
 #include "include/v8-vm.h"
 #include "src/base/build_config.h"
 #include "src/base/compiler-specific.h"
+#include "src/vm/utils/string-printf.h"
 
 namespace vv = v8::vm ;
+namespace vvi = vv::internal ;
 
 // The arraysize(arr) macro returns the count of elements in an array arr. The
 // expression is a compile-time constant, and therefore can be used in defining
@@ -38,21 +40,6 @@ int CompareCaseInsensitiveASCII(const std::string& a, const std::string& b) ;
 
 // Equality for ASCII case-insensitive comparisons.
 bool EqualsCaseInsensitiveASCII(const std::string& a, const std::string& b) ;
-
-// Append result to a supplied string.
-void StringAppendF(
-    std::string* dst, _Printf_format_string_ const char* format, ...)
-    PRINTF_FORMAT(2, 3) ;
-
-// Return a C++ string given printf-like input.
-std::string StringPrintf(_Printf_format_string_ const char* format, ...)
-    PRINTF_FORMAT(1, 2) V8_WARN_UNUSED_RESULT ;
-
-// Converts a C-string to a number
-std::uint16_t StringToUint16(const char* str) ;
-
-// Converts a C-string to a number
-std::int32_t StringToInt32(const char* str) ;
 
 // Trims any whitespace from either end of the input string.
 //

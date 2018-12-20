@@ -45,9 +45,23 @@ const Error errNotImplemented        = (errBase|0x000000f) ;
 const Error errAborted               = (errBase|0x0000010) ;
 const Error errFileTooBig            = (errBase|0x0000011) ;
 const Error errIncompleteOperation   = (errBase|0x0000012) ;
+const Error errUnsupportedType       = (errBase|0x0000013) ;
+const Error errNotEnoughData         = (errBase|0x0000014) ;
+
+// Json errors
+const Error errJsonBase                    = (errBase|0x0001000) ;
+const Error errJsonInvalidEscape           = (errJsonBase|0x0000001) ;
+const Error errJsonSyntaxError             = (errJsonBase|0x0000002) ;
+const Error errJsonUnexpectedToken         = (errJsonBase|0x0000003) ;
+const Error errJsonTrailingComma           = (errJsonBase|0x0000004) ;
+const Error errJsonTooMuchNesting          = (errJsonBase|0x0000005) ;
+const Error errJsonUnexpectedDataAfterRoot = (errJsonBase|0x0000006) ;
+const Error errJsonUnsupportedEncoding     = (errJsonBase|0x0000007) ;
+const Error errJsonUnquotedDictionaryKey   = (errJsonBase|0x0000008) ;
+const Error errJsonInappropriateType       = (errJsonBase|0x0000009) ;
 
 // Net errors
-const Error errNetBase                 = (errBase|0x0001000) ;
+const Error errNetBase                 = (errBase|0x0002000) ;
 const Error errNetIOPending            = (errNetBase|0x0000001) ;
 const Error errNetInternetDisconnected = (errNetBase|0x0000002) ;
 const Error errNetConnectionReset      = (errNetBase|0x0000003) ;
@@ -62,6 +76,8 @@ const Error errNetMsgTooBig            = (errNetBase|0x000000b) ;
 const Error errNetSocketNotConnected   = (errNetBase|0x000000c) ;
 const Error errNetInvalidPackage       = (errNetBase|0x000000d) ;
 const Error errNetEntityTooLarge       = (errNetBase|0x000000e) ;
+
+std::string V8_EXPORT ErrorToString(Error error) ;
 
 /** Enum about how to write Json */
 enum class FormattedJson {

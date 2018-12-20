@@ -6,7 +6,9 @@
 
 #include "vm_apps/http_server/http-server-session.h"
 #include "vm_apps/http_server/tcp-server.h"
+#include "vm_apps/http_server/v8-http-server-session.h"
 #include "vm_apps/utils/command-line.h"
+#include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
 
@@ -30,13 +32,19 @@ int main(int argc, char* argv[]) {
     return 1 ;
   }
 
-  std::uint16_t server_port = StringToUint16(
-      cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
+  std::uint16_t server_port = 0 ;
+  if (!StringToUint16(
+          cmd_line.GetSwitchValueNative(kSwitchPort).c_str(), &server_port)) {
+    printf("ERROR: Server port is ivalid (Port: %s)\n",
+           cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
+    return vv::errInvalidArgument ;
+  }
 
   TcpServer server ;
   vv::Error error = server.Start(
       server_port,
-      HttpServerSession::GetCreator(nullptr, kServerName, kBodyBufferSize)) ;
+      HttpServerSession::GetCreator(
+          V8HttpServerSession::ProcessSession, kServerName, kBodyBufferSize)) ;
   V8_ERR_RETURN_IF_FAILED(error) ;
 
   char command(0) ;

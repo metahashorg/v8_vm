@@ -6,7 +6,9 @@
 
 #include <cctype>
 
+#include "src/vm/utils/string-printf.h"
 #include "vm_apps/utils/app-utils.h"
+#include "vm_apps/utils/string-number-conversions.h"
 #include "vm_apps/utils/string-tokenizer.h"
 
 #define HTTP_LWS " \t"
@@ -385,7 +387,7 @@ void HttpPackageInfo::SetBody(
   body_error_ = vv::errOk ;
 
   if (body_size >= 0) {
-    SetHeader(Header::ContentLength, StringPrintf("%d", body_size_)) ;
+    SetHeader(Header::ContentLength, vvi::StringPrintf("%d", body_size_)) ;
   } else {
     RemoveHeader(Header::ContentLength) ;
   }
@@ -400,9 +402,10 @@ std::string HttpPackageInfo::ToString() const {
   for (HeaderVector::const_iterator it = headers_.begin();
        it != headers_.end(); ++it) {
     if (!it->value.empty()) {
-      StringAppendF(&output, "%s: %s\r\n", it->key.c_str(), it->value.c_str()) ;
+      vvi::StringAppendF(
+          &output, "%s: %s\r\n", it->key.c_str(), it->value.c_str()) ;
     } else {
-      StringAppendF(&output, "%s:\r\n", it->key.c_str()) ;
+      vvi::StringAppendF(&output, "%s:\r\n", it->key.c_str()) ;
     }
   }
 
@@ -445,9 +448,8 @@ vv::Error HttpPackageInfo::ParseImpl(
 void HttpPackageInfo::UpdateInfoByHeader(
     const std::string& key, const std::string& value, bool deleted) {
   if (EqualsCaseInsensitiveASCII(key, Header::ContentLength)) {
-    if (!deleted && !value.empty() && std::isdigit(value[0])) {
-      content_length_ = StringToInt32(value.c_str()) ;
-    } else {
+    if (deleted || value.empty() || !std::isdigit(value[0]) ||
+        !StringToInt32(value.c_str(), &content_length_)) {
       content_length_ = -1 ;
     }
   }

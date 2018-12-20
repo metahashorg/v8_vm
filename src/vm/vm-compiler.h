@@ -6,7 +6,7 @@
 #define V8_VM_VM_COMPILER_H_
 
 #include "include/v8.h"
-#include "src/vm/vm-utils.h"
+#include "src/vm/utils/vm-utils.h"
 
 namespace v8 {
 namespace vm {

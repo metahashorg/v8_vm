@@ -8,9 +8,10 @@
 
 #include "src/vm/dumper.h"
 #include "src/vm/script-runner.h"
+#include "src/vm/utils/string-printf.h"
+#include "src/vm/utils/vm-utils.h"
 #include "src/vm/v8-handle.h"
 #include "src/vm/vm-compiler.h"
-#include "src/vm/vm-utils.h"
 
 namespace vi = v8::vm::internal ;
 
@@ -90,6 +91,45 @@ void RunScriptByFile(
 }
 
 }  // namespace
+
+std::string ErrorToString(Error error) {
+  const char* msg = "" ;
+  switch(error) {
+    // TODO: Add other error codes
+    case errJsonInvalidEscape:
+      msg = "Json: Invalid escape sequence." ;
+      break ;
+    case errJsonSyntaxError:
+      msg = "Json: Syntax error." ;
+      break ;
+    case errJsonUnexpectedToken:
+      msg = "Json: Unexpected token." ;
+      break ;
+    case errJsonTrailingComma:
+      msg = "Json: Trailing comma not allowed." ;
+      break ;
+    case errJsonTooMuchNesting:
+      msg = "Json: Too much nesting." ;
+      break ;
+    case errJsonUnexpectedDataAfterRoot:
+      msg = "Json: Unexpected data after root element." ;
+      break ;
+    case errJsonUnsupportedEncoding:
+      msg = "Json: Unsupported encoding. JSON must be UTF-8." ;
+      break ;
+    case errJsonUnquotedDictionaryKey:
+      msg = "Json: Dictionary keys must be quoted." ;
+      break ;
+    case errJsonInappropriateType:
+      msg = "Json: Field has an inappropriate type." ;
+      break ;
+    default:
+      msg = "Error occurred." ;
+      break ;
+  }
+
+  return vi::StringPrintf("%s Error code: 0x%08x.", msg, error) ;
+}
 
 void InitializeV8(const char* app_path) {
   V8HANDLE()->Initialize(app_path) ;

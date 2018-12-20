@@ -7,7 +7,7 @@
 
 #include "include/v8.h"
 #include "src/base/macros.h"
-#include "src/vm/vm-utils.h"
+#include "src/vm/utils/vm-utils.h"
 
 namespace v8 {
 namespace vm {

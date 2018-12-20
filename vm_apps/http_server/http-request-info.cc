@@ -4,6 +4,8 @@
 
 #include "vm_apps/http_server/http-request-info.h"
 
+#include "src/vm/utils/string-printf.h"
+
 // Request method names.
 const char HttpRequestInfo::Method::Connect[] = "CONNECT" ;
 const char HttpRequestInfo::Method::Delete[] = "DELETE" ;
@@ -60,7 +62,7 @@ void HttpRequestInfo::Clear() {
 }
 
 std::string HttpRequestInfo::ToString() const {
-  std::string output = StringPrintf(
+  std::string output = vvi::StringPrintf(
       "%s %s HTTP/%d.%d\r\n",
       method_.empty() ? Method::Get : method_.c_str(),
       uri_.empty() ? "/" : uri_.c_str(),

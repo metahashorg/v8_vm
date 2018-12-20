@@ -9,7 +9,6 @@
 #include "src/globals.h"
 #include "src/utils.h"
 #include "src/vm/v8-handle.h"
-#include "src/vm/vm-utils.h"
 #include "src/vm/work-context.h"
 
 namespace v8 {

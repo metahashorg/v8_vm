@@ -6,6 +6,9 @@
 
 #include <cctype>
 
+#include "src/vm/utils/string-printf.h"
+#include "vm_apps/utils/string-number-conversions.h"
+
 // Response specific header names.
 const char HttpResponseInfo::Header::AcceptRanges[] = "Accept-Ranges" ;
 const char HttpResponseInfo::Header::Age[] = "Age" ;
@@ -53,7 +56,7 @@ vv::Error HttpResponseInfo::SetStatusCode(std::int32_t status_code) {
 }
 
 std::string HttpResponseInfo::ToString() const {
-  std::string output = StringPrintf(
+  std::string output = vvi::StringPrintf(
       "HTTP/%d.%d %d %s\r\n",
       http_version().major_value(), http_version().minor_value(),
       status_code_, GetHttpReasonPhrase(status_code_)) ;
@@ -95,9 +98,11 @@ vv::Error HttpResponseInfo::ParseImpl(
     ++status_code_end ;
   }
 
-  if (response != status_code_end) {
-    SetStatusCode(StringToInt32(
-        std::string(response, status_code_end).c_str())) ;
+  std::int32_t status_code = HTTP_OK ;
+  if (response != status_code_end &&
+      StringToInt32(
+          std::string(response, status_code_end).c_str(), &status_code)) {
+    SetStatusCode(status_code) ;
   } else {
     printf("WARN: Response status is omitted; assuming 200 OK\n") ;
     SetStatusCode(HTTP_OK) ;

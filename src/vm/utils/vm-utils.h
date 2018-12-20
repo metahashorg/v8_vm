@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef V8_VM_VM_UTILS_H_
-#define V8_VM_VM_UTILS_H_
+#ifndef V8_VM_UTILS_VM_UTILS_H_
+#define V8_VM_UTILS_VM_UTILS_H_
 
 #include <cstring>
 
@@ -145,7 +145,7 @@ static inline std::string ValueToUtf8(Local<Context> context, T value) {
 template<typename T>
 class TemporarilySetValue {
  public:
-  explicit TemporarilySetValue(T& variable, T value)
+  explicit TemporarilySetValue(T& variable, const T& value)
       : variable_(variable), cache_(value) {
     std::swap(variable_, cache_) ;
   }
@@ -159,6 +159,27 @@ class TemporarilySetValue {
 
   T& variable_ ;
   T cache_ ;
+};
+
+// Temporarily changes values of two variables
+// NOTE: It has the same problem that TemporarilySetValue has
+template<typename T>
+class TemporarilyChangeValues {
+ public:
+  explicit TemporarilyChangeValues(T& var1, T& var2)
+      : var1_(var1), var2_(var2) {
+    std::swap(var1_, var2_) ;
+  }
+
+  ~TemporarilyChangeValues() {
+    std::swap(var1_, var2_) ;
+  }
+
+ private:
+  TemporarilyChangeValues() = delete ;
+
+  T& var1_ ;
+  T& var2_ ;
 };
 
 // We need some structure of a file content and so on for using during calls.
@@ -232,4 +253,4 @@ struct Data {
 }  // namespace vm
 }  // namespace v8
 
-#endif  // V8_VM_VM_UTILS_H_
+#endif  // V8_VM_UTILS_VM_UTILS_H_

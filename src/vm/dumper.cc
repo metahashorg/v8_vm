@@ -8,7 +8,7 @@
 #include <limits>
 
 #include "src/api.h"
-#include "src/vm/vm-utils.h"
+#include "src/vm/utils/vm-utils.h"
 #include "src/vm/vm-value.h"
 
 // Json defines
