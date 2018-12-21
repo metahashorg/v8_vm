@@ -62,7 +62,7 @@ void CreateDumpBySnapshotFromFile(
       snapshot_path, result_path) ;
 }
 
-void RunScriptByFile(
+Error RunScriptByFile(
     vi::Data::Type file_type, const char* file_path, const char* script_path,
     const char* snapshot_out_path /*= nullptr*/) {
   StartupData data = { nullptr, 0 }, *pdata = nullptr ;
@@ -71,14 +71,19 @@ void RunScriptByFile(
     pdata = &data ;
   }
 
-  std::unique_ptr<vi::ScriptRunner> runner(vi::ScriptRunner::CreateByFiles(
-      file_type, file_path, script_path, pdata)) ;
-  if (!runner) {
+  std::unique_ptr<vi::ScriptRunner> runner ;
+  Error result = vi::ScriptRunner::CreateByFiles(
+      file_type, file_path, script_path, runner, pdata) ;
+  if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
-    return ;
+    return result ;
   }
 
-  runner->Run() ;
+  result = runner->Run() ;
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Script run is failed\n") ;
+    return result ;
+  }
 
   // We've obtained a snapshot only after destruction of runner
   runner.reset() ;
@@ -88,6 +93,8 @@ void RunScriptByFile(
       delete [] data.data ;
     }
   }
+
+  return errOk ;
 }
 
 }  // namespace
@@ -139,22 +146,24 @@ void DeinitializeV8() {
   V8HANDLE()->Deinitialize() ;
 }
 
-void CompileScript(
+Error CompileScript(
     const char* script, const char* script_origin,
     ScriptCompiler::CachedData& result) {
   vi::Data data ;
-  vi::CompileScript(script, script_origin, data) ;
-  if (data.type != vi::Data::Type::Compilation) {
+  Error res = vi::CompileScript(script, script_origin, data) ;
+  if (V8_ERR_FAILED(res)) {
     printf("ERROR: Can't compile the script\n") ;
-    return ;
+    return res ;
   }
 
+  // Clean a result
   if (result.data != nullptr &&
       result.buffer_policy == ScriptCompiler::CachedData::BufferOwned) {
     delete [] result.data ;
     result.data = nullptr ;
   }
 
+  // Save a compilation into a result
   result.length = data.size ;
   result.buffer_policy = ScriptCompiler::CachedData::BufferOwned ;
   if (data.owner) {
@@ -164,10 +173,12 @@ void CompileScript(
     result.data = new uint8_t[data.size] ;
     memcpy(const_cast<uint8_t*>(result.data), data.data, data.size) ;
   }
+
+  return errOk ;
 }
 
-void CompileScriptFromFile(const char* script_path, const char* result_path) {
-  vi::CompileScriptFromFile(script_path, result_path) ;
+Error CompileScriptFromFile(const char* script_path, const char* result_path) {
+  return vi::CompileScriptFromFile(script_path, result_path) ;
 }
 
 void CreateContextDumpBySnapshotFromFile(
@@ -190,36 +201,37 @@ void CreateHeapGraphDumpBySnapshotFromFile(
       DumpType::HeapGraph, snapshot_path, formatted, result_path) ;
 }
 
-void RunScript(
+Error RunScript(
     const char* script, const char* script_origin /*= nullptr*/,
     StartupData* snapshot_out /*= nullptr*/) {
   vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
-  std::unique_ptr<vi::ScriptRunner> runner(
-      vi::ScriptRunner::Create(nullptr, script_data, snapshot_out)) ;
-  if (!runner) {
+  std::unique_ptr<vi::ScriptRunner> runner ;
+  Error result = vi::ScriptRunner::Create(
+      nullptr, script_data, runner, snapshot_out) ;
+  if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
-    return ;
+    return result ;
   }
 
-  runner->Run() ;
+  return runner->Run() ;
 }
 
-void RunScriptByJSScriptFromFile(
+Error RunScriptByJSScriptFromFile(
     const char* js_path, const char* script_path,
     const char* snapshot_out_path /*= nullptr*/) {
-  RunScriptByFile(
+  return RunScriptByFile(
       vi::Data::Type::JSScript, js_path, script_path, snapshot_out_path) ;
 }
 
-void RunScriptByCompilationFromFile(
+Error RunScriptByCompilationFromFile(
     const char* compilation_path, const char* script_path,
     const char* snapshot_out_path /*= nullptr*/) {
-  RunScriptByFile(
+  return RunScriptByFile(
       vi::Data::Type::Compilation, compilation_path, script_path,
       snapshot_out_path) ;
 }
 
-void RunScriptBySnapshot(
+Error RunScriptBySnapshot(
     StartupData& snapshot, const char* script,
     const char* snapshot_origin /*= nullptr*/,
     const char* script_origin /*= nullptr*/,
@@ -228,20 +240,21 @@ void RunScriptBySnapshot(
       vi::Data::Type::Snapshot, snapshot_origin,
       snapshot.data, snapshot.raw_size) ;
   vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
-  std::unique_ptr<vi::ScriptRunner> runner(
-      vi::ScriptRunner::Create(&snapshot_data, script_data, snapshot_out)) ;
-  if (!runner) {
+  std::unique_ptr<vi::ScriptRunner> runner ;
+  Error result = vi::ScriptRunner::Create(
+      &snapshot_data, script_data, runner, snapshot_out) ;
+  if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
-    return ;
+    return result ;
   }
 
-  runner->Run() ;
+  return runner->Run() ;
 }
 
-void RunScriptBySnapshotFromFile(
+Error RunScriptBySnapshotFromFile(
     const char* snapshot_path, const char* script_path,
     const char* snapshot_out_path /*= nullptr*/) {
-  RunScriptByFile(
+  return RunScriptByFile(
       vi::Data::Type::Snapshot, snapshot_path, script_path,
       snapshot_out_path) ;
 }

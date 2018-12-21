@@ -80,15 +80,20 @@ int DoCompile(const CommandLine& cmd_line) {
   // Initialize V8
   v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
 
+  bool error = false ;
   for (auto it : cmd_line.GetArgs()) {
-    v8::vm::CompileScriptFromFile(
+    v8::vm::Error result = v8::vm::CompileScriptFromFile(
         it.c_str(),
         ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
+    if (V8_ERR_FAILED(result)) {
+      printf("ERROR: File \'%s\' hasn't been compiled.\n", it.c_str()) ;
+      error = true ;
+    }
   }
 
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
-  return 0 ;
+  return (error ? v8::vm::errIncompleteOperation : 0) ;
 }
 
 int DoRun(const CommandLine& cmd_line) {
@@ -115,27 +120,33 @@ int DoRun(const CommandLine& cmd_line) {
     out_snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotOut) ;
   }
 
+  v8::vm::Error result = v8::vm::errOk ;
   if (snapshot_path.length()) {
-    v8::vm::RunScriptBySnapshotFromFile(
+    result = v8::vm::RunScriptBySnapshotFromFile(
         snapshot_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else if (compilation_path.length()) {
-    v8::vm::RunScriptByCompilationFromFile(
+    result = v8::vm::RunScriptByCompilationFromFile(
         compilation_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else if (js_path.length()) {
-    v8::vm::RunScriptByJSScriptFromFile(
+    result = v8::vm::RunScriptByJSScriptFromFile(
         js_path.c_str(), cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else {
     return DoUnknown() ;
   }
 
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Run of a command script is failed. (File: %s)\n",
+           cmd_line.GetSwitchValueNative(kSwitchCommand).c_str()) ;
+  }
+
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
-  return 0 ;
+  return (result != v8::vm::errOk ? result : 0) ;
 }
 
 int DoDump(const CommandLine& cmd_line) {

@@ -27,29 +27,38 @@ const Error wrnObjNotInit          = 0x0000002 ;
 const Error errBase = 0xf0000000 ;
 
 // Common errors
-const Error errUnknown               = (errBase|0x0000001) ;
-const Error errFailed                = (errBase|0x0000002) ;
-const Error errAccessDenied          = (errBase|0x0000003) ;
-const Error errObjNotInit            = (errBase|0x0000004) ;
-const Error errTimeout               = (errBase|0x0000005) ;
-const Error errInvalidArgument       = (errBase|0x0000006) ;
-const Error errFileNotFound          = (errBase|0x0000007) ;
-const Error errPathNotFound          = (errBase|0x0000008) ;
-const Error errInsufficientResources = (errBase|0x0000009) ;
-const Error errInvalidHandle         = (errBase|0x000000a) ;
-const Error errOutOfMemory           = (errBase|0x000000b) ;
-const Error errFileNoSpace           = (errBase|0x000000c) ;
-const Error errFileExists            = (errBase|0x000000d) ;
-const Error errFilePathTooLong       = (errBase|0x000000e) ;
-const Error errNotImplemented        = (errBase|0x000000f) ;
-const Error errAborted               = (errBase|0x0000010) ;
-const Error errFileTooBig            = (errBase|0x0000011) ;
-const Error errIncompleteOperation   = (errBase|0x0000012) ;
-const Error errUnsupportedType       = (errBase|0x0000013) ;
-const Error errNotEnoughData         = (errBase|0x0000014) ;
+const Error errCommonBase            = (errBase|0x0001000) ;
+const Error errUnknown               = (errCommonBase|0x0000001) ;
+const Error errFailed                = (errCommonBase|0x0000002) ;
+const Error errAccessDenied          = (errCommonBase|0x0000003) ;
+const Error errObjNotInit            = (errCommonBase|0x0000004) ;
+const Error errTimeout               = (errCommonBase|0x0000005) ;
+const Error errInvalidArgument       = (errCommonBase|0x0000006) ;
+const Error errFileNotFound          = (errCommonBase|0x0000007) ;
+const Error errPathNotFound          = (errCommonBase|0x0000008) ;
+const Error errInsufficientResources = (errCommonBase|0x0000009) ;
+const Error errInvalidHandle         = (errCommonBase|0x000000a) ;
+const Error errOutOfMemory           = (errCommonBase|0x000000b) ;
+const Error errFileNoSpace           = (errCommonBase|0x000000c) ;
+const Error errFileExists            = (errCommonBase|0x000000d) ;
+const Error errFilePathTooLong       = (errCommonBase|0x000000e) ;
+const Error errNotImplemented        = (errCommonBase|0x000000f) ;
+const Error errAborted               = (errCommonBase|0x0000010) ;
+const Error errFileTooBig            = (errCommonBase|0x0000011) ;
+const Error errIncompleteOperation   = (errCommonBase|0x0000012) ;
+const Error errUnsupportedType       = (errCommonBase|0x0000013) ;
+const Error errNotEnoughData         = (errCommonBase|0x0000014) ;
+const Error errFileNotExists         = (errCommonBase|0x0000015) ;
+const Error errFileEmpty             = (errCommonBase|0x0000016) ;
+
+// JS errors
+const Error errJSBase          = (errBase|0x0002000) ;
+const Error errJSUnknown       = (errJSBase|0x0000001) ;
+const Error errJSException     = (errJSBase|0x0000002) ;
+const Error errJSCacheRejected = (errJSBase|0x0000003) ;
 
 // Json errors
-const Error errJsonBase                    = (errBase|0x0001000) ;
+const Error errJsonBase                    = (errBase|0x0004000) ;
 const Error errJsonInvalidEscape           = (errJsonBase|0x0000001) ;
 const Error errJsonSyntaxError             = (errJsonBase|0x0000002) ;
 const Error errJsonUnexpectedToken         = (errJsonBase|0x0000003) ;
@@ -61,7 +70,7 @@ const Error errJsonUnquotedDictionaryKey   = (errJsonBase|0x0000008) ;
 const Error errJsonInappropriateType       = (errJsonBase|0x0000009) ;
 
 // Net errors
-const Error errNetBase                 = (errBase|0x0002000) ;
+const Error errNetBase                 = (errBase|0x0008000) ;
 const Error errNetIOPending            = (errNetBase|0x0000001) ;
 const Error errNetInternetDisconnected = (errNetBase|0x0000002) ;
 const Error errNetConnectionReset      = (errNetBase|0x0000003) ;
@@ -94,15 +103,15 @@ void V8_EXPORT DeinitializeV8() ;
 /**
  * Compiles the script.
  */
-void V8_EXPORT CompileScript(
+Error V8_EXPORT CompileScript(
     const char* script, const char* script_origin,
-    ScriptCompiler::CachedData& result) ;
+    ScriptCompiler::CachedData& result) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Compiles the script from file.
  */
-void V8_EXPORT CompileScriptFromFile(
-    const char* script_path, const char* result_path) ;
+Error V8_EXPORT CompileScriptFromFile(
+    const char* script_path, const char* result_path) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Creates a context dump by a snapshot
@@ -127,38 +136,38 @@ void V8_EXPORT CreateHeapGraphDumpBySnapshotFromFile(
 /**
  * Runs the script.
  */
-void V8_EXPORT RunScript(
+Error V8_EXPORT RunScript(
     const char* script, const char* script_origin = nullptr,
-    StartupData* snapshot_out = nullptr) ;
+    StartupData* snapshot_out = nullptr) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Runs the script by using a js-script.
  */
-void V8_EXPORT RunScriptByJSScriptFromFile(
+Error V8_EXPORT RunScriptByJSScriptFromFile(
     const char* js_path, const char* script_path,
-    const char* snapshot_out_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Runs the script by using a previous compilation.
  */
-void V8_EXPORT RunScriptByCompilationFromFile(
+Error V8_EXPORT RunScriptByCompilationFromFile(
     const char* compilation_path, const char* script_path,
-    const char* snapshot_out_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Runs the script by using a previous snapshot.
  */
-void V8_EXPORT RunScriptBySnapshot(
+Error V8_EXPORT RunScriptBySnapshot(
     StartupData& snapshot, const char* script,
     const char* snapshot_origin = nullptr, const char* script_origin = nullptr,
-    StartupData* snapshot_out = nullptr) ;
+    StartupData* snapshot_out = nullptr) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Runs the script by using a previous snapshot from file.
  */
-void V8_EXPORT RunScriptBySnapshotFromFile(
+Error V8_EXPORT RunScriptBySnapshotFromFile(
     const char* snapshot_path, const char* script_path,
-    const char* snapshot_out_path = nullptr) ;
+    const char* snapshot_out_path = nullptr) V8_WARN_UNUSED_RESULT ;
 
 }  // namespace vm
 }  // namespace v8

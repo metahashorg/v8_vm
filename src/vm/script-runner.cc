@@ -19,27 +19,55 @@ ScriptRunner::~ScriptRunner() {
   context_.reset() ;
 }
 
-void ScriptRunner::Run() {
+Error ScriptRunner::Run() {
   // Get script from cache
-  Local<Script> script = CompileScript(
-      *context_, script_data_, script_cache_.get()) ;
-  if (script.IsEmpty()){
-    printf("ERROR: Command script hasn't been compiled\n") ;
-    return ;
+  Local<Script> script ;
+  Error result = CompileScript(
+      *context_, script_data_, script, script_cache_.get()) ;
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Command script hasn't been compiled.\n") ;
+    return result ;
+  }
+
+  if (script_cache_->rejected) {
+    printf("ERROR: Command script compilation is corrupted\n") ;
+    return errJSCacheRejected ;
+  }
+
+  if (script.IsEmpty()) {
+    printf("ERROR: Unknown error occurred"
+           "during comilation of command script.\n") ;
+    return errJSUnknown ;
   }
 
   // Run script
-  result_ = script->Run(*context_).ToLocalChecked() ;
+  TryCatch try_catch(*context_) ;
+  if (!script->Run(*context_).ToLocal(&result_)) {
+    Error result = errJSUnknown ;
+    if (try_catch.HasCaught()) {
+      result = errJSException ;
+      printf("ERROR: Exception occurred "
+             "during a script running. (Message: %s)\n",
+             ValueToUtf8(*context_, try_catch.Exception()).c_str()) ;
+    } else {
+      printf("ERROR: Unknown error occurred during a script running.") ;
+    }
+
+    return result ;
+  }
 
   // TODO: Temporary output
   printf("INFO: Result of command: %s\n",
          ValueToUtf8(*context_, result_).c_str()) ;
+  return errOk ;
 }
 
-ScriptRunner* ScriptRunner::Create(
+Error ScriptRunner::Create(
     const Data* data, const Data& script_data,
-    StartupData* snapshot_out /*= nullptr*/) {
+    std::unique_ptr<ScriptRunner>& runner, StartupData* snapshot_out) {
   DCHECK_EQ(Data::Type::JSScript, script_data.type) ;
+
+  Error res = errOk ;
 
   // Create ScriptRunner and load a main script
   std::unique_ptr<ScriptRunner> result ;
@@ -51,63 +79,98 @@ ScriptRunner* ScriptRunner::Create(
       result.reset(new ScriptRunner(nullptr, snapshot_out)) ;
 
       // Compile a main script
-      result->main_script_ = CompileScript(*result->context_, *data) ;
-      if (result->main_script_.IsEmpty()) {
-        printf("ERROR: Main script compiling've ended failure\n") ;
-        return nullptr ;
+      res = CompileScript(*result->context_, *data, result->main_script_) ;
+      if (V8_ERR_FAILED(res)) {
+        printf("ERROR: Main script hasn't been compiled.\n") ;
+        return res ;
       }
 
-      // We need to run a main script for using it
-      result->main_script_->Run(*result->context_).ToLocalChecked() ;
+      if (result->main_script_.IsEmpty()) {
+        printf("ERROR: Main script compiling've ended failure\n") ;
+        return errJSUnknown ;
+      }
     } else if (data->type == Data::Type::Compilation) {
       // Create ScriptRunner
       result.reset(new ScriptRunner(nullptr, snapshot_out)) ;
 
       // Load compilation
-      result->main_script_ = LoadScriptCompilation(*result->context_, *data) ;
-      if (result->main_script_.IsEmpty()) {
-        printf("ERROR: Main script loading've ended failure\n") ;
-        return nullptr ;
+      res = LoadScriptCompilation(
+          *result->context_, *data, result->main_script_) ;
+      if (V8_ERR_FAILED(res)) {
+        printf("ERROR: Main script hasn't been loaded.\n") ;
+        return res ;
       }
 
-      // We need to run a main script for using it
-      result->main_script_->Run(*result->context_).ToLocalChecked() ;
+      if (result->main_script_.IsEmpty()) {
+        printf("ERROR: Main script loading've ended failure\n") ;
+        return errJSUnknown ;
+      }
     } else if (data->type == Data::Type::Snapshot) {
       // Create ScriptRunner
       StartupData snapshot = { data->data, data->size } ;
       result.reset(new ScriptRunner(&snapshot, snapshot_out)) ;
     } else {
       printf("ERROR: Arguments of \'%s\' are wrong.\n", __FUNCTION__) ;
-      return nullptr ;
+      return errInvalidArgument ;
+    }
+  }
+
+  // We need to run a main script for using it
+  if (data->type == Data::Type::JSScript ||
+      data->type == Data::Type::Compilation) {
+    TryCatch try_catch(*result->context_) ;
+    Local<Value> run_result ;
+    if (!result->main_script_->Run(*result->context_).ToLocal(&run_result)) {
+      res = errJSUnknown ;
+      if (try_catch.HasCaught()) {
+        res = errJSException ;
+        printf("ERROR: Exception occurred "
+               "during a main script running. (Message: %s)\n",
+               ValueToUtf8(*result->context_, try_catch.Exception()).c_str()) ;
+      } else {
+        printf("ERROR: Unknown error occurred "
+               "during a main script running.") ;
+      }
+
+      return res ;
     }
   }
 
   // Compile a command script and save a cache of it
-  Local<Script> script = CompileScript(*result->context_, script_data) ;
+  Local<Script> script ;
+  res = CompileScript(*result->context_, script_data, script) ;
+  if (V8_ERR_FAILED(res)) {
+    printf("ERROR: Command script hasn't been compiled. "
+           "(Script origin: %s)\n", script_data.origin.c_str()) ;
+    return res ;
+  }
+
+  if (script.IsEmpty()) {
+    printf("ERROR: Command script compiling've ended failure. "
+           "(Script origin: %s)\n", script_data.origin.c_str()) ;
+    return errJSUnknown ;
+  }
+
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
       script->GetUnboundScript())) ;
-  if (script.IsEmpty()) {
-    printf("ERROR: Main script compiling've ended failure "
-           "(Script origin: %s)\n", script_data.origin.c_str()) ;
-    return nullptr ;
-  }
 
   // Remember origin and source of script
   result->script_data_ = script_data ;
   result->script_data_.CopyData(script_data.data, script_data.size) ;
-  return result.release() ;
+  std::swap(runner, result) ;
+  return errOk ;
 }
 
-ScriptRunner* ScriptRunner::CreateByFiles(
+Error ScriptRunner::CreateByFiles(
     Data::Type file_type, const char* file_path, const char* script_path,
-    StartupData* snapshot_out /*= nullptr*/) {
+    std::unique_ptr<ScriptRunner>& runner, StartupData* snapshot_out) {
   // Load a script
   bool file_exists = false ;
   i::Vector<const char> script_source =
       i::ReadFile(script_path, &file_exists, true) ;
   if (!file_exists || script_source.size() == 0) {
     printf("ERROR: Script file doesn't exist or is empty (%s)\n", script_path) ;
-    return nullptr ;
+    return (file_exists ? errFileEmpty : errFileNotExists) ;
   }
 
   // Load a file content
@@ -118,7 +181,7 @@ ScriptRunner* ScriptRunner::CreateByFiles(
     if (!file_exists || script_source.size() == 0) {
       printf("ERROR: Main script file doesn't exist or is empty (%s)\n",
              script_path) ;
-      return nullptr ;
+      return (file_exists ? errFileEmpty : errFileNotExists) ;
     }
 
     data.data = main_script_source.start() ;
@@ -130,15 +193,15 @@ ScriptRunner* ScriptRunner::CreateByFiles(
     data.owner = true ;
     if (data.size == 0) {
       printf("ERROR: File doesn't exist or is empty (%s)\n", file_path) ;
-      return nullptr ;
+      return errFileNotExists ;
     }
   } else if (file_type != Data::Type::None) {
     printf("ERROR: Arguments of \'%s\' are wrong.\n", __FUNCTION__) ;
-    return nullptr ;
+    return errInvalidArgument ;
   }
 
   Data script_data(Data::Type::JSScript, script_path, script_source.start()) ;
-  return Create(&data, script_data, snapshot_out) ;
+  return Create(&data, script_data, runner, snapshot_out) ;
 }
 
 ScriptRunner::ScriptRunner(

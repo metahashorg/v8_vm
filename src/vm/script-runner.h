@@ -5,7 +5,7 @@
 #ifndef V8_VM_SCRIPT_RUNNER_H_
 #define V8_VM_SCRIPT_RUNNER_H_
 
-#include "include/v8.h"
+#include "include/v8-vm.h"
 #include "src/base/macros.h"
 #include "src/vm/utils/vm-utils.h"
 #include "src/vm/work-context.h"
@@ -20,14 +20,16 @@ class ScriptRunner {
   ~ScriptRunner() ;
 
   // Run a command script (can be called many times)
-  void Run() ;
+  Error Run() ;
 
-  static ScriptRunner* Create(
+  static Error Create(
       const Data* data, const Data& script,
+      std::unique_ptr<ScriptRunner>& runner,
       StartupData* snapshot_out = nullptr) ;
 
-  static ScriptRunner* CreateByFiles(
+  static Error CreateByFiles(
       Data::Type file_type, const char* file_path, const char* script_path,
+      std::unique_ptr<ScriptRunner>& runner,
       StartupData* snapshot_out = nullptr) ;
 
  private:

@@ -5,33 +5,34 @@
 #ifndef V8_VM_VM_COMPILER_H_
 #define V8_VM_VM_COMPILER_H_
 
-#include "include/v8.h"
+#include "include/v8-vm.h"
 #include "src/vm/utils/vm-utils.h"
 
 namespace v8 {
 namespace vm {
 namespace internal {
 
-Local<Module> CompileModule(
-    Isolate* isolate, const Data& module_data,
+Error CompileModule(
+    Isolate* isolate, const Data& module_data, Local<Module>& module,
     ScriptCompiler::CachedData* cache = nullptr) ;
 
-Local<Script> CompileScript(
-    Local<Context> context, const Data& script_data,
+Error CompileScript(
+    Local<Context> context, const Data& script_data, Local<Script>& script,
     ScriptCompiler::CachedData* cache = nullptr) ;
 
-void CompileModuleFromFile(const char* module_path, const char* result_path) ;
+Error CompileModuleFromFile(const char* module_path, const char* result_path) ;
 
-void CompileScript(
+Error CompileScript(
     const char* script, const char* script_origin, Data& result) ;
 
-void CompileScriptFromFile(const char* script_path, const char* result_path) ;
+Error CompileScriptFromFile(const char* script_path, const char* result_path) ;
 
-Local<Module> LoadModuleCompilation(
-    Isolate* isolate, const Data& compilation_data) ;
+Error LoadModuleCompilation(
+    Isolate* isolate, const Data& compilation_data, Local<Module>& module) ;
 
-Local<Script> LoadScriptCompilation(
-    Local<Context> context, const Data& compilation_data) ;
+Error LoadScriptCompilation(
+    Local<Context> context, const Data& compilation_data,
+    Local<Script>& script) ;
 
 }  // namespace internal
 }  // namespace vm
