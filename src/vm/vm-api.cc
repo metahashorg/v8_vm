@@ -204,6 +204,8 @@ void CreateHeapGraphDumpBySnapshotFromFile(
 Error RunScript(
     const char* script, const char* script_origin /*= nullptr*/,
     StartupData* snapshot_out /*= nullptr*/) {
+  printf("VERBS: v8::vm::RunScript().\n") ;
+
   vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
   std::unique_ptr<vi::ScriptRunner> runner ;
   Error result = vi::ScriptRunner::Create(
@@ -213,7 +215,15 @@ Error RunScript(
     return result ;
   }
 
-  return runner->Run() ;
+  result = runner->Run() ;
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Script run is failed\n") ;
+    return result ;
+  }
+
+  // We've obtained a snapshot only after destruction of runner
+  runner.reset() ;
+  return result ;
 }
 
 Error RunScriptByJSScriptFromFile(

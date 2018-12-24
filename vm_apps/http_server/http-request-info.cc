@@ -71,7 +71,7 @@ std::string HttpRequestInfo::ToString() const {
   return output ;
 }
 
-vv::Error HttpRequestInfo::ParseImpl(
+vv::Error HttpRequestInfo::ParseInternal(
     const char* request, std::int32_t size, bool owned) {
   raw_request_ = request ;
   raw_request_size_ = size ;
@@ -131,7 +131,7 @@ vv::Error HttpRequestInfo::ParseImpl(
   // Parse http-headers
   std::int32_t headers_size =
       size - static_cast<std::int32_t>(headers - raw_request_) ;
-  result = HttpPackageInfo::ParseImpl(headers, headers_size, false) ;
+  result = HttpPackageInfo::ParseInternal(headers, headers_size, false) ;
   if (V8_ERR_FAILED(result)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
     return result ;

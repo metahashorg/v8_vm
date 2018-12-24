@@ -11,10 +11,17 @@
 
 class V8HttpServerSession {
  public:
+  enum class Method {
+    Unknown = 0,
+    Compile = 1,
+    CmdRun = 2,
+  };
+
   struct Request {
     std::uint64_t id = 0 ;
-    std::string method ;
+    Method method = Method::Unknown ;
     std::string address ;
+    std::vector<std::uint8_t> state ;
     struct {
       std::uint64_t value = 0 ;
       std::uint64_t fees = 0 ;
@@ -37,10 +44,23 @@ class V8HttpServerSession {
 
   vv::Error Do() ;
 
+  // Compiles script
+  vv::Error CompileScript() ;
+
+  // Create a address
+  vv::Error CreateAddress() ;
+
+  // Runs a command script
+  vv::Error RunCommandScript() ;
+
+  vv::Error WriteResponseBody() ;
+
   HttpRequestInfo& http_request_ ;
   HttpResponseInfo& http_response_ ;
 
   std::unique_ptr<Request> request_ ;
+  std::string response_state_ ;
+  std::string response_address_ ;
 
   DISALLOW_COPY_AND_ASSIGN(V8HttpServerSession) ;
 };

@@ -74,7 +74,7 @@ class HttpRequestInfo : public HttpPackageInfo {
 
  protected:
    // Initializes the object by raw data
-  vv::Error ParseImpl(
+  vv::Error ParseInternal(
       const char* request, std::int32_t size, bool owned = false) override ;
 
   void UpdateInfoByHeader(

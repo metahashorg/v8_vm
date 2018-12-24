@@ -33,8 +33,7 @@ class ScriptRunner {
       StartupData* snapshot_out = nullptr) ;
 
  private:
-  ScriptRunner(
-      StartupData* snapshot = nullptr, StartupData* snapshot_out = nullptr) ;
+  ScriptRunner(StartupData* snapshot, StartupData* snapshot_out) ;
 
   Data script_data_ ;
   std::unique_ptr<WorkContext> context_ ;

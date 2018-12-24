@@ -19,6 +19,18 @@ const char kSwitchPort[] = "port" ;
 const char kServerName[] = "v8-http-server/1.0" ;
 const std::int32_t kBodyBufferSize = 256 * 1024 ; // because of snapshots
 
+// Wrapper for to initialize V8
+class V8Initializer {
+ public:
+  V8Initializer(const char* app_path) {
+    vv::InitializeV8(app_path) ;
+  }
+
+  ~V8Initializer() {
+    vv::DeinitializeV8() ;
+  }
+};
+
 }  //namespace
 
 void HowToUse() {
@@ -40,6 +52,10 @@ int main(int argc, char* argv[]) {
     return vv::errInvalidArgument ;
   }
 
+  // Initialize V8
+  V8Initializer v8_initializer(cmd_line.GetProgram().c_str()) ;
+
+  // Start server
   TcpServer server ;
   vv::Error error = server.Start(
       server_port,
@@ -52,9 +68,11 @@ int main(int argc, char* argv[]) {
     std::cin >> command ;
   }
 
+  // Stop server
   error = server.Stop() ;
   V8_ERR_RETURN_IF_FAILED(error) ;
 
+  // Wait for server has stopped
   error = server.Wait() ;
   V8_ERR_RETURN_IF_FAILED(error) ;
 

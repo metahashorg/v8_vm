@@ -20,6 +20,8 @@ ScriptRunner::~ScriptRunner() {
 }
 
 Error ScriptRunner::Run() {
+  printf("VERBS: v8::vm::internal::ScriptRunner::Run().\n") ;
+
   // Get script from cache
   Local<Script> script ;
   Error result = CompileScript(
@@ -65,6 +67,7 @@ Error ScriptRunner::Run() {
 Error ScriptRunner::Create(
     const Data* data, const Data& script_data,
     std::unique_ptr<ScriptRunner>& runner, StartupData* snapshot_out) {
+  printf("VERBS: v8::vm::internal::ScriptRunner::Create().\n") ;
   DCHECK_EQ(Data::Type::JSScript, script_data.type) ;
 
   Error res = errOk ;
@@ -72,7 +75,7 @@ Error ScriptRunner::Create(
   // Create ScriptRunner and load a main script
   std::unique_ptr<ScriptRunner> result ;
   if (!data || data->type == Data::Type::None) {
-    result.reset(new ScriptRunner()) ;
+    result.reset(new ScriptRunner(nullptr, snapshot_out)) ;
   } else {
     if (data->type == Data::Type::JSScript) {
       // Create ScriptRunner
@@ -116,8 +119,8 @@ Error ScriptRunner::Create(
   }
 
   // We need to run a main script for using it
-  if (data->type == Data::Type::JSScript ||
-      data->type == Data::Type::Compilation) {
+  if (data && (data->type == Data::Type::JSScript ||
+      data->type == Data::Type::Compilation)) {
     TryCatch try_catch(*result->context_) ;
     Local<Value> run_result ;
     if (!result->main_script_->Run(*result->context_).ToLocal(&run_result)) {
@@ -204,9 +207,7 @@ Error ScriptRunner::CreateByFiles(
   return Create(&data, script_data, runner, snapshot_out) ;
 }
 
-ScriptRunner::ScriptRunner(
-    StartupData* snapshot /*= nullptr*/,
-    StartupData* snapshot_out /*= nullptr*/)
+ScriptRunner::ScriptRunner(StartupData* snapshot, StartupData* snapshot_out)
   : context_(WorkContext::New(snapshot, snapshot_out)) {}
 
 }  // namespace internal

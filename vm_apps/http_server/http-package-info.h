@@ -102,7 +102,10 @@ class HttpPackageInfo {
   // Sets body information
   void SetBody(const char* body, std::int32_t body_size, bool owned = false) ;
 
-  // Set body information by first request of it
+  // Sets body information as string
+  void SetBody(const std::string& body) ;
+
+  // Sets body information by first request of it
   typedef std::function<vv::Error(const char*&, std::int32_t&, bool& owned)>
       BodyGetter ;
   void SetBody(BodyGetter getter) ;
@@ -126,7 +129,7 @@ class HttpPackageInfo {
   static bool IsToken(const std::string& string) ;
 
  protected:
-  virtual vv::Error ParseImpl(
+  virtual vv::Error ParseInternal(
     const char* headers, std::int32_t size, bool owned) ;
 
   virtual void UpdateInfoByHeader(
@@ -135,6 +138,7 @@ class HttpPackageInfo {
  private:
   HeaderVector::iterator FindHeader(const std::string& key) ;
   HeaderVector::const_iterator FindHeader(const std::string& key) const ;
+  void SetBodyInternal(const char* body, std::int32_t body_size, bool owned) ;
 
   HttpVersion http_version_ = HttpVersion(1, 1) ;
 
@@ -148,6 +152,7 @@ class HttpPackageInfo {
 
   // Body data
   const char* body_ = nullptr ;
+  std::unique_ptr<std::string> body_str_ ;
   std::int32_t content_length_ = -1 ;
   std::int32_t body_size_ = 0 ;
   bool body_owned_ = false ;

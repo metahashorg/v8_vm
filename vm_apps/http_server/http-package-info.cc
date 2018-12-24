@@ -222,6 +222,7 @@ void HttpPackageInfo::Clear() {
   }
 
   body_ = nullptr ;
+  body_str_.reset() ;
   content_length_ = -1 ;
   body_size_ = 0 ;
   body_owned_ = false ;
@@ -232,7 +233,7 @@ void HttpPackageInfo::Clear() {
 vv::Error HttpPackageInfo::Parse(
     const char* data, std::int32_t size, bool owned) {
   Clear() ;
-  return ParseImpl(data, size, owned) ;
+  return ParseInternal(data, size, owned) ;
 }
 
 vv::Error HttpPackageInfo::ParseHttpVersion(
@@ -381,16 +382,20 @@ vv::Error HttpPackageInfo::GetBody(const char*& body, std::int32_t& body_size) {
 
 void HttpPackageInfo::SetBody(
     const char* body, std::int32_t body_size, bool owned) {
-  body_ = body ;
-  body_size_ = body_size ;
-  body_owned_ = owned ;
-  body_error_ = vv::errOk ;
+  body_str_.reset() ;
+  SetBodyInternal(body, body_size, owned) ;
+}
 
-  if (body_size >= 0) {
-    SetHeader(Header::ContentLength, vvi::StringPrintf("%d", body_size_)) ;
+void HttpPackageInfo::SetBody(const std::string& body) {
+  if (body_str_) {
+    *body_str_ = body ;
   } else {
-    RemoveHeader(Header::ContentLength) ;
+    body_str_.reset(new std::string(body)) ;
   }
+
+  SetBodyInternal(
+      body_str_->c_str(), static_cast<std::int32_t>(body_str_->length()),
+      false) ;
 }
 
 void HttpPackageInfo::SetBody(BodyGetter getter) {
@@ -413,7 +418,7 @@ std::string HttpPackageInfo::ToString() const {
   return output ;
 }
 
-vv::Error HttpPackageInfo::ParseImpl(
+vv::Error HttpPackageInfo::ParseInternal(
     const char* headers, std::int32_t size, bool owned) {
   raw_headers_ = headers ;
   raw_headers_size_ = size ;
@@ -491,4 +496,22 @@ HttpPackageInfo::FindHeader(const std::string& key) const {
   }
 
   return headers_.end() ;
+}
+
+void HttpPackageInfo::SetBodyInternal(
+    const char* body, std::int32_t body_size, bool owned) {
+  if (body_ && body_owned_) {
+    delete [] body_ ;
+  }
+
+  body_ = body ;
+  body_size_ = body_size ;
+  body_owned_ = owned ;
+  body_error_ = vv::errOk ;
+
+  if (body_size >= 0) {
+    SetHeader(Header::ContentLength, vvi::StringPrintf("%d", body_size_)) ;
+  } else {
+    RemoveHeader(Header::ContentLength) ;
+  }
 }

@@ -68,6 +68,9 @@ class RequestParser {
       std::unique_ptr<V8HttpServerSession::Request>& result) ;
 
  private:
+  // Parse a method
+  vv::Error ParseMethod(const std::string& method) ;
+
   // Parse a transaction
   vv::Error ParseTransaction(const char* val, std::size_t size) ;
 
@@ -99,7 +102,10 @@ class RequestParser {
   static const char kFunction[] ;
   static const char kId[] ;
   static const char kMethod[] ;
+  static const char kState[] ;
   static const char kTransaction[] ;
+  static const char kCompileMethod[] ;
+  static const char kCmdRunMethod[] ;
   static const char* kRequestProcessedFields[] ;
   static const char* kTransactionProcessedFields[] ;
 
@@ -114,9 +120,12 @@ const char RequestParser::kCode[] = "code" ;
 const char RequestParser::kFunction[] = "function" ;
 const char RequestParser::kId[] = "id" ;
 const char RequestParser::kMethod[] = "method" ;
+const char RequestParser::kState[] = "state" ;
 const char RequestParser::kTransaction[] = "transaction" ;
+const char RequestParser::kCompileMethod[] = "compile" ;
+const char RequestParser::kCmdRunMethod[] = "cmdrun" ;
 const char* RequestParser::kRequestProcessedFields[] = {
-    kAddress, kId, kMethod, kTransaction } ;
+    kAddress, kId, kMethod, kState, kTransaction } ;
 const char* RequestParser::kTransactionProcessedFields[] = {
     kFunction, kMethod, kCode } ;
 
@@ -174,6 +183,11 @@ vv::Error RequestParser::Parse(
 
   // Check that we have all items
   for (int i = 0; i < processed_fileds_count_; ++i) {
+    if (request_->method != V8HttpServerSession::Method::CmdRun &&
+        processed_fileds_[i] == kState) {
+      continue ;
+    }
+
     if (processed_.find(processed_fileds_[i]) == processed_.end()) {
       printf("ERROR: Field |%s| is absent.\n", processed_fileds_[i]) ;
       return vv::errNotEnoughData ;
@@ -183,6 +197,20 @@ vv::Error RequestParser::Parse(
   // Save a result
   std::swap(result, request_) ;
   return vv::errOk ;
+}
+
+vv::Error RequestParser::ParseMethod(const std::string& method) {
+  vv::Error result = vv::errOk ;
+  if (method == kCompileMethod) {
+    request_->method = V8HttpServerSession::Method::Compile ;
+  } else if (method == kCmdRunMethod) {
+    request_->method = V8HttpServerSession::Method::CmdRun ;
+  } else {
+    printf("ERROR: Unknown method - \'%s\'\n", method.c_str()) ;
+    result = vv::errInvalidArgument ;
+  }
+
+  return result ;
 }
 
 vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
@@ -263,6 +291,11 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   // Check that we have all items
   for (int i = 0; i < processed_fileds_count_; ++i) {
     if (processed_.find(processed_fileds_[i]) == processed_.end()) {
+      if (request_->method != V8HttpServerSession::Method::Compile &&
+          processed_fileds_[i] == kCode) {
+        continue ;
+      }
+
       printf("ERROR: Field |%s| of a transaction data is absent.\n",
              processed_fileds_[i]) ;
       return vv::errNotEnoughData ;
@@ -286,7 +319,10 @@ vv::Error RequestParser::OnNull() {
     }
   }
 
-  nesting_.pop_back() ;
+  if (nesting_.back() != kStartArray) {
+    nesting_.pop_back() ;
+  }
+
   return vv::errOk ;
 }
 
@@ -304,7 +340,10 @@ vv::Error RequestParser::OnBoolean(bool val) {
     }
   }
 
-  nesting_.pop_back() ;
+  if (nesting_.back() != kStartArray) {
+    nesting_.pop_back() ;
+  }
+
   return vv::errOk ;
 }
 
@@ -327,7 +366,10 @@ vv::Error RequestParser::OnInteger(std::int64_t val) {
     }
   }
 
-  nesting_.pop_back() ;
+  if (nesting_.back() != kStartArray) {
+    nesting_.pop_back() ;
+  }
+
   return vv::errOk ;
 }
 
@@ -345,7 +387,10 @@ vv::Error RequestParser::OnDouble(double val) {
     }
   }
 
-  nesting_.pop_back() ;
+  if (nesting_.back() != kStartArray) {
+    nesting_.pop_back() ;
+  }
+
   return vv::errOk ;
 }
 
@@ -369,10 +414,21 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
     if (transaction_processing_) {
       request_->transaction.data.method.assign(val, size) ;
     } else {
-      request_->method.assign(val, size) ;
+      vv::Error result = ParseMethod(std::string(val, size)) ;
+      if (V8_ERR_FAILED(result)) {
+        printf("ERROR: ParseMethod() is failed.\n") ;
+        return result ;
+      }
     }
 
     processed_.insert(kMethod) ;
+  } else if (nesting_.back() == kState) {
+    if (!HexStringToBytes(std::string(val, size), &request_->state)) {
+      printf("ERROR: Can't parse a previous state.\n") ;
+      return vv::errInvalidArgument ;
+    }
+
+    processed_.insert(kState) ;
   } else if (nesting_.back() == kTransaction) {
     vv::Error result = ParseTransaction(val, size) ;
     if (V8_ERR_FAILED(result)) {
@@ -390,7 +446,10 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
     }
   }
 
-  nesting_.pop_back() ;
+  if (nesting_.back() != kStartArray) {
+    nesting_.pop_back() ;
+  }
+
   return vv::errOk ;
 }
 
@@ -411,7 +470,7 @@ vv::Error RequestParser::OnEndMap() {
   }
 
   nesting_.pop_back() ;
-  if (!nesting_.empty()) {
+  if (!nesting_.empty() && nesting_.back() != kStartArray) {
     nesting_.pop_back() ;
   }
 
@@ -430,7 +489,7 @@ vv::Error RequestParser::OnEndArray() {
   }
 
   nesting_.pop_back() ;
-  if (!nesting_.empty()) {
+  if (!nesting_.empty() && nesting_.back() != kStartArray) {
     nesting_.pop_back() ;
   }
 
@@ -479,6 +538,107 @@ vv::Error V8HttpServerSession::Do() {
     printf("ERROR: parser.Parse() is failed\n") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
     return vv::errOk ;
+  }
+
+  if (request_->method == Method::Compile) {
+    result = CompileScript() ;
+  } else if (request_->method == Method::CmdRun) {
+    result = RunCommandScript() ;
+  } else {
+    printf("ERROR: Unknown method.\n") ;
+    http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
+    return vv::errOk ;
+  }
+
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Can't execute a js-script.\n") ;
+    http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
+    return vv::errOk ;
+  }
+
+  result = WriteResponseBody() ;
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Can't write a response body.\n") ;
+    http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
+    return vv::errOk ;
+  }
+
+  return vv::errOk ;
+}
+
+vv::Error V8HttpServerSession::CompileScript() {
+  printf("VERBS: V8HttpServerSession::CompileScript().\n") ;
+
+  v8::StartupData data = { nullptr, 0 } ;
+  vv::Error result = vv::RunScript(
+    request_->transaction.data.code.c_str(), request_->address.c_str(), &data) ;
+  if (data.raw_size) {
+    response_state_ = HexEncode(data.data, data.raw_size) ;
+    delete [] data.data ;
+  }
+
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: vv::RunScript() is failed.\n") ;
+    return result ;
+  }
+
+  result = CreateAddress() ;
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: Can't create a address.\n") ;
+    return result ;
+  }
+
+  return vv::errOk ;
+}
+
+vv::Error V8HttpServerSession::CreateAddress() {
+  response_address_ = request_->address ;
+  return vv::errOk ;
+}
+
+vv::Error V8HttpServerSession::RunCommandScript() {
+  v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
+                            static_cast<int>(request_->state.size()) } ;
+  v8::StartupData data = { nullptr, 0 } ;
+  vv::Error result = vv::RunScriptBySnapshot(
+      state, "", request_->address.c_str(), request_->address.c_str(), &data) ;
+  if (data.raw_size) {
+    response_state_ = HexEncode(data.data, data.raw_size) ;
+    delete [] data.data ;
+  }
+
+  if (V8_ERR_FAILED(result)) {
+    printf("ERROR: vv::RunScriptBySnapshot() is failed.\n") ;
+    return result ;
+  }
+
+  return vv::errOk ;
+}
+
+vv::Error V8HttpServerSession::WriteResponseBody() {
+  static const char kBodyWithAddress[] =
+      "{\n"
+      "  \"id\": %d,\n"
+      "  \"result\": {\n"
+      "    \"address\": \"%s\",\n"
+      "    \"state\": \"%s\"\n"
+      "  }\n"
+      "}" ;
+  static const char kBodyWithoutAddress[] =
+      "{\n"
+      "  \"id\": %d,\n"
+      "  \"result\": {\n"
+      "    \"state\": \"%s\"\n"
+      "  }\n"
+      "}" ;
+
+  if (response_address_.length()) {
+    http_response_.SetBody(vvi::StringPrintf(
+        kBodyWithAddress, request_->id, response_address_.c_str(),
+        response_state_.c_str())) ;
+  } else {
+    http_response_.SetBody(vvi::StringPrintf(
+        kBodyWithoutAddress, request_->id, response_state_.c_str())) ;
   }
 
   return vv::errOk ;

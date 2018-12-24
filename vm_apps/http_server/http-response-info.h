@@ -46,7 +46,7 @@ class HttpResponseInfo : public HttpPackageInfo {
 
  protected:
   // Initializes the object by raw data
-  vv::Error ParseImpl(
+  vv::Error ParseInternal(
       const char* response, std::int32_t size, bool owned = false) override ;
 
  private:
