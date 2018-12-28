@@ -168,6 +168,7 @@ class RequestParser {
   std::set<std::string> processed_ ;
   bool transaction_processing_ = false ;
   const char* params_beginning_ = nullptr ;
+  std::size_t params_nesting_ = -1 ;
   const char** processed_fileds_ = nullptr ;
   std::int32_t processed_fileds_count_ = -1 ;
 
@@ -571,9 +572,10 @@ vv::Error RequestParser::OnEndMap() {
 }
 
 vv::Error RequestParser::OnStartArray(const char* raw_pos) {
-  if (transaction_processing_ && !nesting_.empty() &&
+  if (transaction_processing_ && !params_beginning_&& !nesting_.empty() &&
       nesting_.back() == kParams) {
     params_beginning_ = raw_pos ;
+    params_nesting_ = nesting_.size() + 1 ;
   }
 
   nesting_.emplace_back(kStartArray) ;
@@ -586,7 +588,7 @@ vv::Error RequestParser::OnEndArray(const char* raw_pos) {
     return vv::errJsonUnexpectedToken ;
   }
 
-  if (params_beginning_) {
+  if (params_beginning_ && nesting_.size() == params_nesting_) {
     request_->transaction.data.params.assign(params_beginning_ + 1, raw_pos) ;
     params_beginning_ = nullptr ;
     processed_.insert(kParams) ;
@@ -656,7 +658,9 @@ vv::Error V8HttpServerSession::Do() {
 
   if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't execute a js-script.\n") ;
-    http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
+    http_response_.SetStatusCode(
+        result == vv::errNetInvalidPackage ? HTTP_BAD_REQUEST :
+                                             HTTP_INTERNAL_SERVER_ERROR) ;
     return vv::errOk ;
   }
 
@@ -681,6 +685,11 @@ vv::Error V8HttpServerSession::CompileScript() {
     script += vvi::StringPrintf(
         script_template, request_->transaction.data.function.c_str(),
         request_->transaction.data.params.c_str()) ;
+  }
+
+  if (!script.length()) {
+    printf("ERROR: Script is absent.\n") ;
+    return vv::errNetInvalidPackage ;
   }
 
   printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
@@ -722,6 +731,11 @@ vv::Error V8HttpServerSession::RunCommandScript() {
     script += vvi::StringPrintf(
         script_template, request_->transaction.data.function.c_str(),
         request_->transaction.data.params.c_str()) ;
+  }
+
+  if (!script.length()) {
+    printf("ERROR: Script is absent.\n") ;
+    return vv::errNetInvalidPackage ;
   }
 
   printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
