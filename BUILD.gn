@@ -3481,6 +3481,14 @@ if (want_v8_shell) {
 
 # @metahash
 v8_executable("v8_http_server") {
+  include_dirs = [
+    "vm_apps/third_party/boringssl/src/include",
+  ]
+
+  defines = [
+    "memset_s(W,WL,V,OL)=memset(W,V,OL)", # for keccak-tiny
+  ]
+
   sources = [
     "src/vm/utils/scoped-clear-errno.h",
     "third_party/icu/source/common/unicode/utf16.h",
@@ -3531,9 +3539,6 @@ v8_executable("v8_http_server") {
     "vm_apps/http_server/v8-http-server-session.cc",
     "vm_apps/http_server/v8-http-server-session.h",
     "vm_apps/http_server/v8-http-server.cc",
-    "vm_apps/third_party/dmg_fp/dmg_fp.h",
-    "vm_apps/third_party/dmg_fp/dtoa.cc",
-    "vm_apps/third_party/dmg_fp/g_fmt.cc",
     "vm_apps/utils/app-utils.cc",
     "vm_apps/utils/app-utils.h",
     "vm_apps/utils/command-line.cc",
@@ -3543,6 +3548,21 @@ v8_executable("v8_http_server") {
     "vm_apps/utils/string-number-conversions.cc",
     "vm_apps/utils/string-number-conversions.h",
     "vm_apps/utils/string-tokenizer.h",
+  ]
+
+  # Third party sources
+  sources += [
+    "vm_apps/third_party/boringssl/src/include/openssl/sha.h",
+    "vm_apps/third_party/dmg_fp/dmg_fp.h",
+    "vm_apps/third_party/dmg_fp/dtoa.cc",
+    "vm_apps/third_party/dmg_fp/g_fmt.cc",
+    "vm_apps/third_party/keccak-tiny/keccak-tiny.c",
+    "vm_apps/third_party/keccak-tiny/keccak-tiny.h",
+    "vm_apps/third_party/metagate/src/ethtx/const.h",
+    "vm_apps/third_party/metagate/src/ethtx/rlp.cpp",
+    "vm_apps/third_party/metagate/src/ethtx/rlp.h",
+    "vm_apps/third_party/metagate/src/ethtx/utils2.cpp",
+    "vm_apps/third_party/metagate/src/ethtx/utils2.h",
   ]
 
   configs = [
@@ -3587,6 +3607,7 @@ v8_executable("v8_http_server") {
   deps = [
     ":v8",
     "//build/win:default_exe_manifest",
+    "//vm_apps/third_party/boringssl:boringssl",
   ]
 }
 

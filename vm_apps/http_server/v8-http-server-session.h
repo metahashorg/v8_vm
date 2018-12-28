@@ -20,7 +20,8 @@ class V8HttpServerSession {
   struct Request {
     std::uint64_t id = 0 ;
     Method method = Method::Unknown ;
-    std::string address ;
+    std::string address_str ;
+    std::vector<std::uint8_t> address ;
     std::vector<std::uint8_t> state ;
     struct {
       std::uint64_t value = 0 ;
@@ -46,9 +47,6 @@ class V8HttpServerSession {
 
   // Compiles script
   vv::Error CompileScript() ;
-
-  // Create a address
-  vv::Error CreateAddress() ;
 
   // Runs a command script
   vv::Error RunCommandScript() ;

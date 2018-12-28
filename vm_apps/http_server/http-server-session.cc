@@ -209,6 +209,9 @@ vv::Error HttpServerSession::Do() {
     return result ;
   }
 
+  printf("INFO: Host: \'%s\' Uri:\'%s\'\n",
+         request_->host().c_str(), request_->uri().c_str()) ;
+
   // Call a handler if it exists
   if (session_handler_) {
     result = session_handler_(*request_, *response_) ;

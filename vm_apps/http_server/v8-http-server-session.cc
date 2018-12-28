@@ -9,11 +9,84 @@
 
 #include "include/v8-vm.h"
 #include "src/vm/utils/vm-utils.h"
+#include "vm_apps/third_party/boringssl/src/include/openssl/sha.h"
+#include "vm_apps/third_party/keccak-tiny/keccak-tiny.h"
+#include "vm_apps/third_party/metagate/src/ethtx/rlp.h"
+#include "vm_apps/third_party/metagate/src/ethtx/utils2.h"
 #include "vm_apps/utils/app-utils.h"
 #include "vm_apps/utils/json-sax-parser.h"
 #include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
+
+const std::size_t kAddressLength = 25 ;
+
+vv::Error CreateAddress(
+    const std::vector<std::uint8_t>& data, int nonce,
+    std::string& result) {
+  std::vector<std::string> fields ;
+  fields.push_back(std::string(
+      reinterpret_cast<const char*>(&data.at(0)), data.size())) ;
+  if (nonce > 0) {
+    fields.push_back(IntToRLP(nonce)) ;
+  } else {
+    fields.push_back("") ;
+  }
+
+  std::string rlpenc = RLP(fields) ;
+  uint8_t hash[SHA256_DIGEST_LENGTH] ;
+  if (sha3_256(hash, SHA256_DIGEST_LENGTH, (const uint8_t*)rlpenc.data(),
+               rlpenc.size())) {
+    printf("ERROR: sha3_256() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  // Form the first 21 bytes of an address
+  uint8_t address[kAddressLength] = {0} ;
+  address[0] = 0x08 ;
+  memcpy(address + 1, hash + 12, 20) ;
+  // Calculate sha256 from the first 21 bytes of an address
+  SHA256_CTX sha256_context ;
+  if (!SHA256_Init(&sha256_context)) {
+    printf("ERROR: SHA256_Init() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  if (!SHA256_Update(&sha256_context, address, 21)) {
+    printf("ERROR: SHA256_Update() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  if (!SHA256_Final(hash, &sha256_context)) {
+    printf("ERROR: SHA256_Final() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  // Calculate sha256 from previous hash
+  if (!SHA256_Init(&sha256_context)) {
+    printf("ERROR: SHA256_Init() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  if (!SHA256_Update(&sha256_context, hash, SHA256_DIGEST_LENGTH)) {
+    printf("ERROR: SHA256_Update() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  if (!SHA256_Final(hash, &sha256_context)) {
+    printf("ERROR: SHA256_Update() is failed\n") ;
+    return vv::errUnknown ;
+  }
+
+  // Set a checksum
+  address[21] = hash[0] ;
+  address[22] = hash[1] ;
+  address[23] = hash[2] ;
+  address[24] = hash[3] ;
+  // Save result
+  result = "0x" + HexEncode(address, kAddressLength) ;
+  return vv::errOk ;
+}
 
 template<typename T>
 vv::Error ReadInt(
@@ -68,6 +141,9 @@ class RequestParser {
       std::unique_ptr<V8HttpServerSession::Request>& result) ;
 
  private:
+   // Parse a address
+   vv::Error ParseAddress(const char* val, std::size_t size) ;
+
   // Parse a method
   vv::Error ParseMethod(const std::string& method) ;
 
@@ -108,9 +184,6 @@ class RequestParser {
   static const char kCmdRunMethod[] ;
   static const char* kRequestProcessedFields[] ;
   static const char* kTransactionProcessedFields[] ;
-
-  // Transaction constants
-  static const std::size_t kAddressLength ;
 };
 
 const char RequestParser::kStartMap[] = "{" ;
@@ -128,8 +201,6 @@ const char* RequestParser::kRequestProcessedFields[] = {
     kAddress, kId, kMethod, kState, kTransaction } ;
 const char* RequestParser::kTransactionProcessedFields[] = {
     kFunction, kMethod, kCode } ;
-
-const std::size_t RequestParser::kAddressLength = 25 ;
 
 RequestParser::RequestParser() {
   callbacks_.null_callback = std::bind(
@@ -196,6 +267,21 @@ vv::Error RequestParser::Parse(
 
   // Save a result
   std::swap(result, request_) ;
+  return vv::errOk ;
+}
+
+vv::Error RequestParser::ParseAddress(const char* val, std::size_t size) {
+  if (size < 2 || val[0] != '0' || val[1] != 'x') {
+    printf("ERROR: |address| has a invalid format.\n") ;
+    return vv::errInvalidArgument ;
+  }
+
+  if (!HexStringToBytes(std::string(val + 2 , size - 2), &request_->address)) {
+    printf("ERROR: |address| has a corrupted value.\n") ;
+    return vv::errInvalidArgument ;
+  }
+
+  request_->address_str.assign(val, size) ;
   return vv::errOk ;
 }
 
@@ -402,7 +488,12 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
   }
 
   if (nesting_.back() == kAddress) {
-    request_->address.assign(val, size) ;
+    vv::Error result = ParseAddress(val, size) ;
+    if (V8_ERR_FAILED(result)) {
+      printf("ERROR: ParseAddress() is failed.\n") ;
+      return result ;
+    }
+
     processed_.insert(kAddress) ;
   } else if (nesting_.back() == kCode) {
     request_->transaction.data.code.assign(val, size) ;
@@ -571,7 +662,8 @@ vv::Error V8HttpServerSession::CompileScript() {
 
   v8::StartupData data = { nullptr, 0 } ;
   vv::Error result = vv::RunScript(
-    request_->transaction.data.code.c_str(), request_->address.c_str(), &data) ;
+      request_->transaction.data.code.c_str(), request_->address_str.c_str(),
+      &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
     delete [] data.data ;
@@ -582,7 +674,9 @@ vv::Error V8HttpServerSession::CompileScript() {
     return result ;
   }
 
-  result = CreateAddress() ;
+  result = CreateAddress(
+      request_->address, static_cast<int>(request_->transaction.nonce),
+      response_address_) ;
   if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't create a address.\n") ;
     return result ;
@@ -591,17 +685,13 @@ vv::Error V8HttpServerSession::CompileScript() {
   return vv::errOk ;
 }
 
-vv::Error V8HttpServerSession::CreateAddress() {
-  response_address_ = request_->address ;
-  return vv::errOk ;
-}
-
 vv::Error V8HttpServerSession::RunCommandScript() {
   v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
                             static_cast<int>(request_->state.size()) } ;
   v8::StartupData data = { nullptr, 0 } ;
   vv::Error result = vv::RunScriptBySnapshot(
-      state, "", request_->address.c_str(), request_->address.c_str(), &data) ;
+      state, "", request_->address_str.c_str(), request_->address_str.c_str(),
+      &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
     delete [] data.data ;
@@ -634,11 +724,12 @@ vv::Error V8HttpServerSession::WriteResponseBody() {
 
   if (response_address_.length()) {
     http_response_.SetBody(vvi::StringPrintf(
-        kBodyWithAddress, request_->id, response_address_.c_str(),
+        kBodyWithAddress, (std::int32_t)request_->id, response_address_.c_str(),
         response_state_.c_str())) ;
   } else {
     http_response_.SetBody(vvi::StringPrintf(
-        kBodyWithoutAddress, request_->id, response_state_.c_str())) ;
+        kBodyWithoutAddress, (std::int32_t)request_->id,
+        response_state_.c_str())) ;
   }
 
   return vv::errOk ;
