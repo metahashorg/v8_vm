@@ -1,0 +1,11 @@
+Name: keccak-tiny
+URL: https://github.com/coruus/keccak-tiny
+Version: git
+License: CC0
+License File: http://creativecommons.org/publicdomain/zero/1.0/
+License Android Compatible:
+Security Critical: yes
+
+Description:
+An implementation of the FIPS-202-defined SHA-3 and SHAKE functions
+in 120 cloc (156 lines). One C file, one header.
