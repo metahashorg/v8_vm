@@ -27,10 +27,10 @@ class V8HttpServerSession {
       std::uint64_t value = 0 ;
       std::uint64_t fees = 0 ;
       std::uint64_t nonce = 0 ;
-      std::string data_str ;
       struct {
         std::string method ;
         std::string function ;
+        std::string params ;
         std::string code ;
       } data ;
     } transaction ;

@@ -159,14 +159,15 @@ class RequestParser {
   vv::Error OnStartMap() ;
   vv::Error OnMapKey(const char* val, std::size_t size) ;
   vv::Error OnEndMap() ;
-  vv::Error OnStartArray() ;
-  vv::Error OnEndArray() ;
+  vv::Error OnStartArray(const char* raw_pos) ;
+  vv::Error OnEndArray(const char* raw_pos) ;
 
   JsonSaxParser::Callbacks callbacks_ ;
   std::unique_ptr<V8HttpServerSession::Request> request_ ;
   std::deque<std::string> nesting_ ;
   std::set<std::string> processed_ ;
   bool transaction_processing_ = false ;
+  const char* params_beginning_ = nullptr ;
   const char** processed_fileds_ = nullptr ;
   std::int32_t processed_fileds_count_ = -1 ;
 
@@ -178,6 +179,7 @@ class RequestParser {
   static const char kFunction[] ;
   static const char kId[] ;
   static const char kMethod[] ;
+  static const char kParams[] ;
   static const char kState[] ;
   static const char kTransaction[] ;
   static const char kCompileMethod[] ;
@@ -193,6 +195,7 @@ const char RequestParser::kCode[] = "code" ;
 const char RequestParser::kFunction[] = "function" ;
 const char RequestParser::kId[] = "id" ;
 const char RequestParser::kMethod[] = "method" ;
+const char RequestParser::kParams[] = "params" ;
 const char RequestParser::kState[] = "state" ;
 const char RequestParser::kTransaction[] = "transaction" ;
 const char RequestParser::kCompileMethod[] = "compile" ;
@@ -200,7 +203,7 @@ const char RequestParser::kCmdRunMethod[] = "cmdrun" ;
 const char* RequestParser::kRequestProcessedFields[] = {
     kAddress, kId, kMethod, kState, kTransaction } ;
 const char* RequestParser::kTransactionProcessedFields[] = {
-    kFunction, kMethod, kCode } ;
+    kFunction, kParams, kMethod, kCode } ;
 
 RequestParser::RequestParser() {
   callbacks_.null_callback = std::bind(
@@ -222,9 +225,9 @@ RequestParser::RequestParser() {
   callbacks_.end_map_callback = std::bind(
       &RequestParser::OnEndMap, std::ref(*this)) ;
   callbacks_.start_array_callback = std::bind(
-      &RequestParser::OnStartArray, std::ref(*this)) ;
+      &RequestParser::OnStartArray, std::ref(*this), std::placeholders::_1) ;
   callbacks_.end_array_callback = std::bind(
-      &RequestParser::OnEndArray, std::ref(*this)) ;
+      &RequestParser::OnEndArray, std::ref(*this), std::placeholders::_1) ;
 }
 
 vv::Error RequestParser::Parse(
@@ -351,9 +354,6 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
     return vv::errInvalidArgument ;
   }
 
-  request_->transaction.data_str.assign(
-      reinterpret_cast<const char*>(position), data_size) ;
-
   // Parse transaction.data
   vvi::TemporarilySetValue<std::deque<std::string>> nesting(
       nesting_, std::deque<std::string>()) ;
@@ -367,8 +367,8 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
       processed_fileds_count_, arraysize(kTransactionProcessedFields)) ;
       JsonSaxParser parser(callbacks_, JsonSaxParser::JSON_PARSE_RFC) ;
   result = parser.Parse(
-      request_->transaction.data_str.c_str(),
-      static_cast<std::int32_t>(request_->transaction.data_str.length())) ;
+      reinterpret_cast<const char*>(position),
+      static_cast<std::int32_t>(data_size)) ;
   if (V8_ERR_FAILED(result)) {
     printf("ERROR: Can't have parsed a transaction data of the request\n") ;
     return result ;
@@ -377,8 +377,10 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   // Check that we have all items
   for (int i = 0; i < processed_fileds_count_; ++i) {
     if (processed_.find(processed_fileds_[i]) == processed_.end()) {
-      if (request_->method != V8HttpServerSession::Method::Compile &&
-          processed_fileds_[i] == kCode) {
+      if ((request_->method != V8HttpServerSession::Method::Compile &&
+           processed_fileds_[i] == kCode) ||
+          processed_fileds_[i] == kFunction ||
+          processed_fileds_[i] == kParams) {
         continue ;
       }
 
@@ -568,15 +570,26 @@ vv::Error RequestParser::OnEndMap() {
   return vv::errOk ;
 }
 
-vv::Error RequestParser::OnStartArray() {
+vv::Error RequestParser::OnStartArray(const char* raw_pos) {
+  if (transaction_processing_ && !nesting_.empty() &&
+      nesting_.back() == kParams) {
+    params_beginning_ = raw_pos ;
+  }
+
   nesting_.emplace_back(kStartArray) ;
   return vv::errOk ;
 }
 
-vv::Error RequestParser::OnEndArray() {
+vv::Error RequestParser::OnEndArray(const char* raw_pos) {
   if (nesting_.empty() || nesting_.back() != kStartArray) {
     printf("ERROR: Unexpected end of array.\n") ;
     return vv::errJsonUnexpectedToken ;
+  }
+
+  if (params_beginning_) {
+    request_->transaction.data.params.assign(params_beginning_ + 1, raw_pos) ;
+    params_beginning_ = nullptr ;
+    processed_.insert(kParams) ;
   }
 
   nesting_.pop_back() ;
@@ -658,12 +671,24 @@ vv::Error V8HttpServerSession::Do() {
 }
 
 vv::Error V8HttpServerSession::CompileScript() {
+  static const char script_template[] = ";\ncontract = new %s(%s);" ;
+
   printf("VERBS: V8HttpServerSession::CompileScript().\n") ;
 
+  // Create script
+  std::string script = request_->transaction.data.code ;
+  if (request_->transaction.data.function.length()) {
+    script += vvi::StringPrintf(
+        script_template, request_->transaction.data.function.c_str(),
+        request_->transaction.data.params.c_str()) ;
+  }
+
+  printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
+
+  // Run script
   v8::StartupData data = { nullptr, 0 } ;
   vv::Error result = vv::RunScript(
-      request_->transaction.data.code.c_str(), request_->address_str.c_str(),
-      &data) ;
+      script.c_str(), request_->address_str.c_str(), &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
     delete [] data.data ;
@@ -674,6 +699,7 @@ vv::Error V8HttpServerSession::CompileScript() {
     return result ;
   }
 
+  // Create an address of a new contract
   result = CreateAddress(
       request_->address, static_cast<int>(request_->transaction.nonce),
       response_address_) ;
@@ -686,12 +712,27 @@ vv::Error V8HttpServerSession::CompileScript() {
 }
 
 vv::Error V8HttpServerSession::RunCommandScript() {
+  static const char script_template[] = "contract.%s(%s);" ;
+
+  printf("VERBS: V8HttpServerSession::RunCommandScript().\n") ;
+
+  // Create script
+  std::string script = request_->transaction.data.code ;
+  if (request_->transaction.data.function.length()) {
+    script += vvi::StringPrintf(
+        script_template, request_->transaction.data.function.c_str(),
+        request_->transaction.data.params.c_str()) ;
+  }
+
+  printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
+
+  // Run script
   v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
                             static_cast<int>(request_->state.size()) } ;
   v8::StartupData data = { nullptr, 0 } ;
   vv::Error result = vv::RunScriptBySnapshot(
-      state, "", request_->address_str.c_str(), request_->address_str.c_str(),
-      &data) ;
+      state, script.c_str(), request_->address_str.c_str(),
+      request_->address_str.c_str(), &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
     delete [] data.data ;

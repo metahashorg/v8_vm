@@ -41,8 +41,8 @@ class JsonSaxParser {
     std::function<vv::Error(const char*, std::size_t)>
         map_key_callback = nullptr ;
     std::function<vv::Error()> end_map_callback = nullptr ;
-    std::function<vv::Error()> start_array_callback = nullptr ;
-    std::function<vv::Error()> end_array_callback = nullptr ;
+    std::function<vv::Error(const char*)> start_array_callback = nullptr ;
+    std::function<vv::Error(const char*)> end_array_callback = nullptr ;
   };
 
   explicit JsonSaxParser(const Callbacks& callbacks, int options) ;

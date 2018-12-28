@@ -432,7 +432,7 @@ vv::Error JsonSaxParser::ConsumeList() {
   }
 
   if (callbacks_.start_array_callback) {
-    vv::Error result = callbacks_.start_array_callback() ;
+    vv::Error result = callbacks_.start_array_callback(pos_) ;
     if (V8_ERR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
@@ -464,7 +464,7 @@ vv::Error JsonSaxParser::ConsumeList() {
   }
 
   if (callbacks_.end_array_callback) {
-    vv::Error result = callbacks_.end_array_callback() ;
+    vv::Error result = callbacks_.end_array_callback(pos_) ;
     if (V8_ERR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
