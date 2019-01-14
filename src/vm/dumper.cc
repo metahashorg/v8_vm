@@ -4,10 +4,14 @@
 
 #include "src/vm/dumper.h"
 
+#include <cctype>
 #include <cmath>
 #include <limits>
+#include <map>
+#include <set>
 
 #include "src/api.h"
+#include "src/handles-inl.h"
 #include "src/vm/utils/vm-utils.h"
 #include "src/vm/vm-value.h"
 

@@ -721,7 +721,7 @@ vv::Error V8HttpServerSession::CompileScript() {
 }
 
 vv::Error V8HttpServerSession::RunCommandScript() {
-  static const char script_template[] = "contract.%s(%s);" ;
+  static const char script_template[] = ";\ncontract.%s(%s);" ;
 
   printf("VERBS: V8HttpServerSession::RunCommandScript().\n") ;
 

@@ -11,18 +11,18 @@ namespace v8 {
 namespace vm {
 namespace internal {
 
-#define VALUE_ENUM_ITEM_LIST(V) \
-  V Undefined, ENUM_BIT_NO_PARENT, "The undefined value (ECMA-262 4.3.10)") \
-  V Null, ENUM_BIT_NO_PARENT, "The null value (ECMA-262 4.3.11)") \
-  V String, ENUM_BIT_NO_PARENT, "String type (ECMA-262 8.4)") \
-  V Symbol, ENUM_BIT_NO_PARENT, "Symbol") \
-  V Object, ENUM_BIT_NO_PARENT, "Array") \
+#define V8_VALUE_ENUM_ITEM_LIST(V) \
+  V Undefined, V8_ENUM_BIT_NO_PARENT, "The undefined value (ECMA-262 4.3.10)") \
+  V Null, V8_ENUM_BIT_NO_PARENT, "The null value (ECMA-262 4.3.11)") \
+  V String, V8_ENUM_BIT_NO_PARENT, "String type (ECMA-262 8.4)") \
+  V Symbol, V8_ENUM_BIT_NO_PARENT, "Symbol") \
+  V Object, V8_ENUM_BIT_NO_PARENT, "Array") \
   V Function, Object, "Function") \
   V Array, Object, "Array") \
-  V BigInt, ENUM_BIT_NO_PARENT, "Bigint") \
-  V Boolean, ENUM_BIT_NO_PARENT, "Boolean") \
-  V Number, ENUM_BIT_NO_PARENT, "Number") \
-  V External, ENUM_BIT_NO_PARENT, "External") \
+  V BigInt, V8_ENUM_BIT_NO_PARENT, "Bigint") \
+  V Boolean, V8_ENUM_BIT_NO_PARENT, "Boolean") \
+  V Number, V8_ENUM_BIT_NO_PARENT, "Number") \
+  V External, V8_ENUM_BIT_NO_PARENT, "External") \
   V Int32, Number, "32-bit signed integer") \
   V Uint32, Number, "32-bit unsigned integer") \
   V Date, Object, "Date") \
@@ -32,7 +32,7 @@ namespace internal {
   V NumberObject, Object, "Number object") \
   V StringObject, Object, "String object") \
   V SymbolObject, Object, "Symbol object") \
-  V NativeError, ENUM_BIT_NO_PARENT, "NativeError") \
+  V NativeError, V8_ENUM_BIT_NO_PARENT, "NativeError") \
   V RegExp, Object, "RegExp") \
   V AsyncFunction, Function, "Async function") \
   V GeneratorFunction, Object, "Generator function") \
@@ -64,31 +64,31 @@ namespace internal {
   V WebAssemblyCompiledModule, Object, "WebAssemblyCompiledModule") \
   V ModuleNamespaceObject, Object, "Module Namespace Object")
 
-ENUM_BIT_DECLARE_HELPER(ValueType, std::uint64_t, VALUE_ENUM_ITEM_LIST)
+V8_ENUM_BIT_DECLARE_HELPER(ValueType, std::uint64_t, V8_VALUE_ENUM_ITEM_LIST)
 
 enum class ValueType : std::uint64_t {
   Unknown = 0,
 
-  ENUM_BIT_DECLARE_ITEMS_WITH_PARENT(ValueType, VALUE_ENUM_ITEM_LIST)
+  V8_ENUM_BIT_DECLARE_ITEMS_WITH_PARENT(ValueType, V8_VALUE_ENUM_ITEM_LIST)
 
   // Number types
-  NumberTypes = ENUM_BIT_GET_ITEM_BIT(ValueType, Number) |
-                ENUM_BIT_GET_ITEM_BIT(ValueType, Int32) |
-                ENUM_BIT_GET_ITEM_BIT(ValueType, Uint32),
+  NumberTypes = V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Number) |
+                V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Int32) |
+                V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Uint32),
 
   // Primitive object types
-  PrimitiveObjectTypes = ENUM_BIT_GET_ITEM_BIT(ValueType, BigIntObject) |
-                         ENUM_BIT_GET_ITEM_BIT(ValueType, BooleanObject) |
-                         ENUM_BIT_GET_ITEM_BIT(ValueType, NumberObject) |
-                         ENUM_BIT_GET_ITEM_BIT(ValueType, StringObject) |
-                         ENUM_BIT_GET_ITEM_BIT(ValueType, SymbolObject),
+  PrimitiveObjectTypes = V8_ENUM_BIT_GET_ITEM_BIT(ValueType, BigIntObject) |
+                         V8_ENUM_BIT_GET_ITEM_BIT(ValueType, BooleanObject) |
+                         V8_ENUM_BIT_GET_ITEM_BIT(ValueType, NumberObject) |
+                         V8_ENUM_BIT_GET_ITEM_BIT(ValueType, StringObject) |
+                         V8_ENUM_BIT_GET_ITEM_BIT(ValueType, SymbolObject),
 };
 
-ENUM_BIT_OPERATORS_DECLARATION(ValueType)
+V8_ENUM_BIT_OPERATORS_DECLARATION(ValueType)
 
 static inline ValueType GetValueType(Value* value) {
-  #define CHECK_VALUE_TYPE(val, result, type, ...) \
-    if (val->Is##type() && ENUM_BIT_IS_PARENT(result,  ValueType::type)) { \
+  #define V8_CHECK_VALUE_TYPE(val, result, type, ...) \
+    if (val->Is##type() && V8_ENUM_BIT_IS_PARENT(result,  ValueType::type)) { \
       result = ValueType::type ; \
     }
 
@@ -98,8 +98,8 @@ static inline ValueType GetValueType(Value* value) {
   }
 
   ValueType result = ValueType::Unknown ;
-  ENUM_INVOKE_ON_LIST_WITH_ARGS(
-      CHECK_VALUE_TYPE, VALUE_ENUM_ITEM_LIST, value, result)
+  V8_ENUM_INVOKE_ON_LIST_WITH_ARGS(
+      V8_CHECK_VALUE_TYPE, V8_VALUE_ENUM_ITEM_LIST, value, result)
 
   DCHECK_NE(ValueType::Unknown, result) ;
   return result ;
@@ -110,10 +110,11 @@ static inline ValueType GetValueType(Local<Value> value) {
 }
 
 static inline const char* ValueTypeToUtf8(ValueType type) {
-  #define TYPE_TO_STRING(ckecked_type, type, ...) \
+  #define V8_TYPE_TO_STRING(ckecked_type, type, ...) \
     if (ckecked_type == ValueType::type) { return #type ; }
 
-  ENUM_INVOKE_ON_LIST_WITH_ARGS(TYPE_TO_STRING, VALUE_ENUM_ITEM_LIST, type)
+  V8_ENUM_INVOKE_ON_LIST_WITH_ARGS(
+      V8_TYPE_TO_STRING, V8_VALUE_ENUM_ITEM_LIST, type)
 
   DCHECK(false) ;
   return "Unknown" ;

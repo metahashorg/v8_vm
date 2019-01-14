@@ -6,6 +6,7 @@
 
 #include <fstream>
 
+#include "src/utils.h"
 #include "src/vm/dumper.h"
 #include "src/vm/script-runner.h"
 #include "src/vm/utils/string-printf.h"

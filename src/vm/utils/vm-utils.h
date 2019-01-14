@@ -7,101 +7,102 @@
 
 #include <cstring>
 
-#include "src/handles.h"
-#include "src/handles-inl.h"
-
 // Helpful macros for a declaration of big enums
-#define ENUM_COMMA ,
-#define ENUM_LEFT_BRACKET (
+#define V8_ENUM_COMMA ,
+#define V8_ENUM_LEFT_BRACKET (
 
-#define ENUM_RECOMPOSE_ARGS(...) __VA_ARGS__
+#define V8_ENUM_RECOMPOSE_ARGS(...) __VA_ARGS__
 
-#define ENUM_INVOKE_ON_LIST_WITH_ARGS(fun, item_list, ...) \
-  item_list(fun ENUM_LEFT_BRACKET ENUM_RECOMPOSE_ARGS(__VA_ARGS__) ENUM_COMMA)
+#define V8_ENUM_INVOKE_ON_LIST_WITH_ARGS(fun, item_list, ...) \
+  item_list(fun V8_ENUM_LEFT_BRACKET V8_ENUM_RECOMPOSE_ARGS(__VA_ARGS__) \
+            V8_ENUM_COMMA)
 
-#define ENUM_INVOKE_ON_LIST(fun, item_list) \
-  item_list(fun ENUM_LEFT_BRACKET)
+#define V8_ENUM_INVOKE_ON_LIST(fun, item_list) \
+  item_list(fun V8_ENUM_LEFT_BRACKET)
 
-#define ENUM_BIT_NO_PARENT 0
+#define V8_ENUM_BIT_NO_PARENT 0
 
-#define ENUM_BIT_HELPER_ITEM(enum_name, name, ...) \
+#define V8_ENUM_BIT_HELPER_ITEM(enum_name, name, ...) \
   enum_name ## _BitEnumHelper_ ## name
 
-#define ENUM_BIT_HELPER_ITEM_DECLARATION(enum_name, name, ...) \
-  ENUM_BIT_HELPER_ITEM(enum_name, name),
+#define V8_ENUM_BIT_HELPER_ITEM_DECLARATION(enum_name, name, ...) \
+  V8_ENUM_BIT_HELPER_ITEM(enum_name, name),
 
-#define ENUM_BIT_TYPE_NAME(enum_name) enum_name ## _BitEnumHelper_type
+#define V8_ENUM_BIT_TYPE_NAME(enum_name) enum_name ## _BitEnumHelper_type
 
-#define ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, number) \
-  (static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(number))
+#define V8_ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, number) \
+  (static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(number))
 
-#define ENUM_BIT_GET_ITEM_BIT(enum_name, item_name) \
-  (ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, 1) << enum_name ## _BitEnumHelper:: \
-      ENUM_BIT_HELPER_ITEM(enum_name, item_name))
+#define V8_ENUM_BIT_GET_ITEM_BIT(enum_name, item_name) \
+  (V8_ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, 1) << \
+    enum_name ## _BitEnumHelper:: V8_ENUM_BIT_HELPER_ITEM(enum_name, item_name))
 
-#define ENUM_BIT_ITEM(enum_name, name, ...) \
-  name = ENUM_BIT_GET_ITEM_BIT(enum_name, name),
+#define V8_ENUM_BIT_ITEM(enum_name, name, ...) \
+  name = V8_ENUM_BIT_GET_ITEM_BIT(enum_name, name),
 
-#define ENUM_BIT_ITEM_WITH_PARENT(enum_name, name, parent, ...) \
-  name = ENUM_BIT_GET_ITEM_BIT(enum_name, name) | parent,
+#define V8_ENUM_BIT_ITEM_WITH_PARENT(enum_name, name, parent, ...) \
+  name = V8_ENUM_BIT_GET_ITEM_BIT(enum_name, name) | parent,
 
-#define ENUM_BIT_DECLARE_HELPER(enum_name, type, item_list) \
-  typedef type ENUM_BIT_TYPE_NAME(enum_name) ; \
+#define V8_ENUM_BIT_DECLARE_HELPER(enum_name, type, item_list) \
+  typedef type V8_ENUM_BIT_TYPE_NAME(enum_name) ; \
   enum enum_name ## _BitEnumHelper : type { \
-    ENUM_INVOKE_ON_LIST_WITH_ARGS(ENUM_BIT_HELPER_ITEM_DECLARATION, \
+    V8_ENUM_INVOKE_ON_LIST_WITH_ARGS(V8_ENUM_BIT_HELPER_ITEM_DECLARATION, \
         item_list, enum_name) \
     enum_name ## _BitEnumHelper_ ## Count, \
   }; \
   static_assert(enum_name ## _BitEnumHelper_ ## Count <= (sizeof(type) * 8), \
                 "Too many items. To use a bigger type.") ;
 
-#define ENUM_BIT_DECLARE_ITEMS(enum_name, item_list) \
-  ENUM_INVOKE_ON_LIST_WITH_ARGS(ENUM_BIT_ITEM, item_list, enum_name)
+#define V8_ENUM_BIT_DECLARE_ITEMS(enum_name, item_list) \
+  V8_ENUM_INVOKE_ON_LIST_WITH_ARGS(V8_ENUM_BIT_ITEM, item_list, enum_name)
 
-#define ENUM_BIT_DECLARE_ITEMS_WITH_PARENT(enum_name, item_list) \
-  ENUM_INVOKE_ON_LIST_WITH_ARGS(ENUM_BIT_ITEM_WITH_PARENT, item_list, enum_name)
+#define V8_ENUM_BIT_DECLARE_ITEMS_WITH_PARENT(enum_name, item_list) \
+  V8_ENUM_INVOKE_ON_LIST_WITH_ARGS( \
+    V8_ENUM_BIT_ITEM_WITH_PARENT, item_list, enum_name)
 
-#define ENUM_BIT_ALL_ITEM_COUNT(enum_name) \
+#define V8_ENUM_BIT_ALL_ITEM_COUNT(enum_name) \
   (enum_name ## _BitEnumHelper_ ## Count)
 
-#define ENUM_BIT_ALL_ITEM_MASK(enum_name) \
-  (~((~ ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, 0)) << \
+#define V8_ENUM_BIT_ALL_ITEM_MASK(enum_name) \
+  (~((~ V8_ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, 0)) << \
       enum_name ## _BitEnumHelper_ ## Count))
 
-#define ENUM_BIT_IS_PARENT(val, item) (!(val & (~item)))
+#define V8_ENUM_BIT_IS_PARENT(val, item) (!(val & (~item)))
 
-#define ENUM_BIT_IS_CHILD(val, item) (!((~val) & item))
+#define V8_ENUM_BIT_IS_CHILD(val, item) (!((~val) & item))
 
-#define ENUM_BIT_GET_PARENT(enum_name, item_name) \
-  static_cast<enum_name>((~ ENUM_BIT_GET_ITEM_BIT(enum_name, item_name)) & \
+#define V8_ENUM_BIT_GET_PARENT(enum_name, item_name) \
+  static_cast<enum_name>((~ V8_ENUM_BIT_GET_ITEM_BIT(enum_name, item_name)) & \
                          enum_name :: item_name)
 
-#define ENUM_BIT_OPERATORS_DECLARATION(enum_name) \
-  ENUM_BIT_TYPE_NAME(enum_name) operator ~(enum_name val) { \
-    return (~static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val)) ; \
+#define V8_ENUM_BIT_OPERATORS_DECLARATION(enum_name) \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator ~(enum_name val) { \
+    return (~static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val)) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator &(enum_name val1, enum_name val2) { \
-    return (static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val1) & \
-            static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val2)) ; \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator &( \
+      enum_name val1, enum_name val2) { \
+    return (static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val1) & \
+            static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val2)) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator &( \
-      enum_name val1, ENUM_BIT_TYPE_NAME(enum_name) val2) { \
-    return (static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val1) & val2) ; \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator &( \
+      enum_name val1, V8_ENUM_BIT_TYPE_NAME(enum_name) val2) { \
+    return (static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val1) & val2) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator &( \
-      ENUM_BIT_TYPE_NAME(enum_name) val1, enum_name val2) { \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator &( \
+      V8_ENUM_BIT_TYPE_NAME(enum_name) val1, enum_name val2) { \
     return (val2 & val1) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator |(enum_name val1, enum_name val2) { \
-    return (static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val1) | \
-            static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val2)) ; \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator |( \
+      enum_name val1, enum_name val2) { \
+    return (static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val1) | \
+            static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val2)) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator |( \
-      enum_name val1, ENUM_BIT_TYPE_NAME(enum_name) val2) { \
-    return (static_cast<ENUM_BIT_TYPE_NAME(enum_name)>(val1) | val2) ; \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator |( \
+      enum_name val1, V8_ENUM_BIT_TYPE_NAME(enum_name) val2) { \
+    return (static_cast<V8_ENUM_BIT_TYPE_NAME(enum_name)>(val1) | val2) ; \
   } \
-  ENUM_BIT_TYPE_NAME(enum_name) operator |( \
-      ENUM_BIT_TYPE_NAME(enum_name) val1, enum_name val2) { \
+  V8_ENUM_BIT_TYPE_NAME(enum_name) operator |( \
+      V8_ENUM_BIT_TYPE_NAME(enum_name) val1, enum_name val2) { \
     return (val2 | val1) ; \
   }
 
