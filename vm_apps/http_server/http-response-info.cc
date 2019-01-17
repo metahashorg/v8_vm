@@ -40,19 +40,19 @@ void HttpResponseInfo::Clear() {
   raw_response_ = nullptr ;
   raw_response_size_ = 0 ;
   raw_response_owned_ = false ;
-  raw_response_error_ = vv::errObjNotInit ;
+  raw_response_error_ = errObjNotInit ;
 
   HttpPackageInfo::Clear() ;
 }
 
-vv::Error HttpResponseInfo::SetStatusCode(std::int32_t status_code) {
+Error HttpResponseInfo::SetStatusCode(std::int32_t status_code) {
   if (status_code < 100 || status_code > 599) {
     printf("ERROR: SetStatusCode is failed.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   status_code_ = static_cast<HttpStatusCode>(status_code) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 std::string HttpResponseInfo::ToString() const {
@@ -64,25 +64,25 @@ std::string HttpResponseInfo::ToString() const {
   return output ;
 }
 
-vv::Error HttpResponseInfo::ParseInternal(
+Error HttpResponseInfo::ParseInternal(
     const char* response, std::int32_t size, bool owned) {
   raw_response_ = response ;
   raw_response_size_ = size ;
   raw_response_owned_ = owned ;
-  raw_response_error_ = vv::errOk ;
+  raw_response_error_ = errOk ;
 
   // Find http-headers
   const char* headers = std::find(response, response + size, '\r') ;
   if ((response + size - headers) < 2 || headers[1] != '\n') {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   headers += 2 ;
 
   // Read http-version
-  vv::Error result = ParseHttpVersion(response, headers) ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = ParseHttpVersion(response, headers) ;
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
   }
 
@@ -112,7 +112,7 @@ vv::Error HttpResponseInfo::ParseInternal(
   std::int32_t headers_size =
       size - static_cast<std::int32_t>(headers - raw_response_) ;
   result = HttpPackageInfo::ParseInternal(headers, headers_size, false) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
     return result ;
   }

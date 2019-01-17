@@ -12,6 +12,6 @@
 #include "vm_apps/http_server/socket-descriptor.h"
 #include "vm_apps/utils/app-utils.h"
 
-vv::Error MapSystemError(SystemErrorCode os_error) ;
+Error MapSystemError(SystemErrorCode os_error) ;
 
 #endif  // V8_VM_APPS_HTTP_SERVER_NET_ERRORS_H_

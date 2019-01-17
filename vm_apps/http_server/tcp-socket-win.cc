@@ -72,7 +72,7 @@ TcpSocketWin::~TcpSocketWin() {
   Close() ;
 }
 
-vv::Error TcpSocketWin::Open(AddressFamily family) {
+Error TcpSocketWin::Open(AddressFamily family) {
   // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_) ;
   // TODO: DCHECK_EQ(socket_, INVALID_SOCKET) ;
 
@@ -85,16 +85,16 @@ vv::Error TcpSocketWin::Open(AddressFamily family) {
   }
 
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    vv::Error result = MapSystemError(os_error) ;
+    Error result = MapSystemError(os_error) ;
     printf("ERROR: SetNonBlocking() returned an error\n") ;
     Close() ;
     return result ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::AdoptConnectedSocket(
+Error TcpSocketWin::AdoptConnectedSocket(
     SocketDescriptor socket, const IPEndPoint& peer_address) {
   // TODO: DCHECK_EQ(socket_, INVALID_SOCKET);
 
@@ -102,17 +102,17 @@ vv::Error TcpSocketWin::AdoptConnectedSocket(
 
   int os_error ;
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    int result = MapSystemError(os_error) ;
+    Error result = MapSystemError(os_error) ;
     printf("ERROR: SetNonBlocking() returned an error\n") ;
     Close() ;
     return result ;
   }
 
   peer_address_.reset(new IPEndPoint(peer_address)) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
+Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
   // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_) ;
   // TODO: DCHECK_EQ(socket_, INVALID_SOCKET) ;
 
@@ -120,7 +120,7 @@ vv::Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
 
   int os_error ;
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    int result = MapSystemError(os_error) ;
+    Error result = MapSystemError(os_error) ;
     printf("ERROR: SetNonBlocking() returned an error\n") ;
     Close() ;
     return result ;
@@ -129,16 +129,16 @@ vv::Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
   // |core_| is not needed for sockets that are used to accept connections.
   // The operation here is more like Open but with an existing socket.
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::Bind(const IPEndPoint& address) {
+Error TcpSocketWin::Bind(const IPEndPoint& address) {
   // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   // TODO: DCHECK_NE(socket_, INVALID_SOCKET);
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
   int result = bind(socket_, storage.addr, storage.addr_len) ;
@@ -148,10 +148,10 @@ vv::Error TcpSocketWin::Bind(const IPEndPoint& address) {
     return MapSystemError(os_error) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::Listen(int backlog) {
+Error TcpSocketWin::Listen(int backlog) {
   // TODO: DCHECK_GT(backlog, 0) ;
   // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
   // TODO: DCHECK_EQ(accept_event_, WSA_INVALID_EVENT) ;
@@ -170,10 +170,10 @@ vv::Error TcpSocketWin::Listen(int backlog) {
     return MapSystemError(os_error) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::Accept(
+Error TcpSocketWin::Accept(
     std::unique_ptr<TcpSocketWin>* socket, IPEndPoint* address,
     Timeout timeout) {
   // TODO: DCHECK(socket) ;
@@ -188,12 +188,12 @@ vv::Error TcpSocketWin::Accept(
       1, &accept_event_, FALSE, timeout, FALSE) ;
   os_error = WSAGetLastError() ;
   if (result != WSA_WAIT_EVENT_0) {
-    vv::Error net_error = vv::errTimeout ;
+    Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
       net_error = MapSystemError(os_error) ;
     }
 
-    if (net_error != vv::errTimeout) {
+    if (net_error != errTimeout) {
       printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
     }
 
@@ -204,7 +204,7 @@ vv::Error TcpSocketWin::Accept(
   SOCKET new_socket = accept(socket_, storage.addr, &storage.addr_len) ;
   os_error = WSAGetLastError() ;
   if (new_socket < 0) {
-    int net_error = MapSystemError(os_error) ;
+    Error net_error = MapSystemError(os_error) ;
     printf("ERROR: accept() returned an error\n") ;
     return net_error ;
   }
@@ -216,22 +216,22 @@ vv::Error TcpSocketWin::Accept(
       printf("ERROR: closesocket() returned an error\n") ;
     }
 
-    int net_error = vv::errNetAddressInvalid ;
+    Error net_error = errNetAddressInvalid ;
     printf("ERROR: ip_end_point.FromSockAddr() returned a failure\n") ;
     return net_error;
   }
 
   std::unique_ptr<TcpSocketWin> tcp_socket(new TcpSocketWin()) ;
-  vv::Error adopt_result =
+  Error adopt_result =
       tcp_socket->AdoptConnectedSocket(new_socket, ip_end_point) ;
-  if (adopt_result != vv::errOk) {
+  if (adopt_result != errOk) {
     printf("ERROR: tcp_socket->AdoptConnectedSocket() returned an error\n") ;
     return adopt_result ;
   }
 
   *socket = std::move(tcp_socket) ;
   *address = ip_end_point ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 bool TcpSocketWin::IsConnected() const {
@@ -283,8 +283,7 @@ bool TcpSocketWin::IsConnectedAndIdle() const {
   return true ;
 }
 
-vv::Error TcpSocketWin::Read(
-    char* buf, std::int32_t& buf_len, Timeout timeout) {
+Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
   // TODO: DCHECK(!waiting_read_) ;
 
@@ -313,12 +312,12 @@ vv::Error TcpSocketWin::Read(
       1, &read_event_, FALSE, timeout, FALSE) ;
   os_error = WSAGetLastError() ;
   if (result != WSA_WAIT_EVENT_0) {
-    vv::Error net_error = vv::errTimeout ;
+    Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
       net_error = MapSystemError(os_error) ;
     }
 
-    if (net_error != vv::errTimeout) {
+    if (net_error != errTimeout) {
       printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
     }
 
@@ -329,16 +328,16 @@ vv::Error TcpSocketWin::Read(
   result = recv(socket_, buf, local_buf_len, 0) ;
   os_error = WSAGetLastError() ;
   if (result == SOCKET_ERROR) {
-    vv::Error net_error = MapSystemError(os_error) ;
+    Error net_error = MapSystemError(os_error) ;
     printf("ERROR: recv() returned an error\n") ;
     return net_error ;
   }
 
   buf_len = result ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::Write(
+Error TcpSocketWin::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
   // TODO: DCHECK(!waiting_write_) ;
@@ -368,12 +367,12 @@ vv::Error TcpSocketWin::Write(
       1, &write_event_, FALSE, timeout, FALSE) ;
   os_error = WSAGetLastError() ;
   if (result != WSA_WAIT_EVENT_0) {
-    vv::Error net_error = vv::errTimeout ;
+    Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
       net_error = MapSystemError(os_error) ;
     }
 
-    if (net_error != vv::errTimeout) {
+    if (net_error != errTimeout) {
       printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
     }
 
@@ -388,16 +387,16 @@ vv::Error TcpSocketWin::Write(
   result = WSASend(socket_, &write_buffer, 1, &num, 0, NULL, NULL) ;
   os_error = WSAGetLastError() ;
   if (result == SOCKET_ERROR) {
-    vv::Error net_error = MapSystemError(os_error) ;
+    Error net_error = MapSystemError(os_error) ;
     printf("ERROR: WSASend() returned an error\n") ;
     return net_error ;
   }
 
   buf_len = num ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
+Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 
   SockaddrStorage storage ;
@@ -408,23 +407,23 @@ vv::Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
   }
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
     printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-int TcpSocketWin::GetPeerAddress(IPEndPoint* address) const {
+Error TcpSocketWin::GetPeerAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
   if (!IsConnected()) {
-    return vv::errNetSocketNotConnected ;
+    return errNetSocketNotConnected ;
   }
 
   *address = *peer_address_ ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::SetDefaultOptionsForServer() {
+Error TcpSocketWin::SetDefaultOptionsForServer() {
   return SetExclusiveAddrUse() ;
 }
 
@@ -433,7 +432,7 @@ void TcpSocketWin::SetDefaultOptionsForClient() {
   SetTCPKeepAlive(socket_, true, kTCPKeepAliveSeconds) ;
 }
 
-vv::Error TcpSocketWin::SetExclusiveAddrUse() {
+Error TcpSocketWin::SetExclusiveAddrUse() {
   // On Windows, a bound end point can be hijacked by another process by
   // setting SO_REUSEADDR. Therefore a Windows-only option SO_EXCLUSIVEADDRUSE
   // was introduced in Windows NT 4.0 SP4. If the socket that is bound to the
@@ -458,14 +457,14 @@ vv::Error TcpSocketWin::SetExclusiveAddrUse() {
     return MapSystemError(errno) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketWin::SetReceiveBufferSize(std::int32_t size) {
+Error TcpSocketWin::SetReceiveBufferSize(std::int32_t size) {
   return SetSocketReceiveBufferSize(socket_, size) ;
 }
 
-vv::Error TcpSocketWin::SetSendBufferSize(std::int32_t size) {
+Error TcpSocketWin::SetSendBufferSize(std::int32_t size) {
   return SetSocketSendBufferSize(socket_, size) ;
 }
 
@@ -474,7 +473,7 @@ bool TcpSocketWin::SetKeepAlive(bool enable, int delay) {
 }
 
 bool TcpSocketWin::SetNoDelay(bool no_delay) {
-  return SetTCPNoDelay(socket_, no_delay) == vv::errOk ;
+  return SetTCPNoDelay(socket_, no_delay) == errOk ;
 }
 
 void TcpSocketWin::Close() {

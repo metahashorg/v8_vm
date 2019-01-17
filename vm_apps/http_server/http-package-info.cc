@@ -215,7 +215,7 @@ void HttpPackageInfo::Clear() {
   raw_headers_ = nullptr ;
   raw_headers_size_ = 0 ;
   raw_headers_owned_ = false ;
-  raw_headers_error_ = vv::errObjNotInit ;
+  raw_headers_error_ = errObjNotInit ;
 
   if (body_ && body_owned_) {
     delete [] body_ ;
@@ -226,37 +226,36 @@ void HttpPackageInfo::Clear() {
   content_length_ = -1 ;
   body_size_ = 0 ;
   body_owned_ = false ;
-  body_error_ = vv::wrnObjNotInit ;
+  body_error_ = wrnObjNotInit ;
   body_getter_ = nullptr ;
 }
 
-vv::Error HttpPackageInfo::Parse(
-    const char* data, std::int32_t size, bool owned) {
+Error HttpPackageInfo::Parse(const char* data, std::int32_t size, bool owned) {
   Clear() ;
   return ParseInternal(data, size, owned) ;
 }
 
-vv::Error HttpPackageInfo::ParseHttpVersion(
+Error HttpPackageInfo::ParseHttpVersion(
     const char* str_begin, const char* str_end) {
   // RFC2616 sec 3.1: HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT
   const char* p = str_begin ;
   if ((str_end - str_begin) < 8 ||
       !EqualsCaseInsensitiveASCII(std::string(str_begin, 4), "http")) {
     printf("ERROR: ParseHttpVersion is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   p += 4 ;
 
   if (*p != '/') {
     printf("ERROR: HTTP version is omitted (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   const char* dot = std::find(p, str_end, '.') ;
   if (dot == str_end) {
     printf("ERROR: HTTP version is malformed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   ++p ;  // from / to first digit.
@@ -264,14 +263,14 @@ vv::Error HttpPackageInfo::ParseHttpVersion(
 
   if (!std::isdigit(*p) || !std::isdigit(*dot)) {
     printf("ERROR: HTTP version is malformed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   uint16_t major = *p - '0' ;
   uint16_t minor = *dot - '0' ;
 
   SetHttpVersion(HttpVersion(major, minor)) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 void HttpPackageInfo::SetHttpVersion(const HttpVersion& http_version) {
@@ -313,7 +312,7 @@ void HttpPackageInfo::RemoveHeader(const std::string& key) {
   }
 }
 
-vv::Error HttpPackageInfo::SetHeader(
+Error HttpPackageInfo::SetHeader(
     const std::string& key, const std::string& value) {
   // TODO:
   // DCHECK(IsValidHeaderName(key)) ;
@@ -322,7 +321,7 @@ vv::Error HttpPackageInfo::SetHeader(
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
     printf("ERROR: SetHeader is failed (key: \'%s\' value: \'%s\')\n",
            key.c_str(), value.c_str()) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   HeaderVector::iterator it = FindHeader(key) ;
@@ -333,10 +332,10 @@ vv::Error HttpPackageInfo::SetHeader(
   }
 
   UpdateInfoByHeader(key, value) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error HttpPackageInfo::SetHeaderIfMissing(
+Error HttpPackageInfo::SetHeaderIfMissing(
     const std::string& key, const std::string& value) {
   // TODO:
   // DCHECK(IsValidHeaderName(key)) ;
@@ -345,7 +344,7 @@ vv::Error HttpPackageInfo::SetHeaderIfMissing(
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
     printf("ERROR: SetHeaderIfMissing is failed (key: \'%s\' value: \'%s\')\n",
            key.c_str(), value.c_str()) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   HeaderVector::iterator it = FindHeader(key) ;
@@ -354,19 +353,19 @@ vv::Error HttpPackageInfo::SetHeaderIfMissing(
     UpdateInfoByHeader(key, value) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error HttpPackageInfo::GetBody(const char*& body, std::int32_t& body_size) {
-  // TODO: DCHECK(body_error_ != vv::wrnObjNotInit || body_getter_) ;
+Error HttpPackageInfo::GetBody(const char*& body, std::int32_t& body_size) {
+  // TODO: DCHECK(body_error_ != wrnObjNotInit || body_getter_) ;
 
-  if (body_error_ == vv::wrnObjNotInit && body_getter_) {
+  if (body_error_ == wrnObjNotInit && body_getter_) {
     const char* local_body = nullptr ;
     std::int32_t local_body_size = 0 ;
     bool local_body_owned = 0 ;
-    vv::Error local_body_error = body_getter_(
+    Error local_body_error = body_getter_(
         local_body, local_body_size, local_body_owned) ;
-    if (V8_ERR_SUCCESSED(body_error_)) {
+    if (V8_ERROR_SUCCESS(body_error_)) {
       SetBody(local_body, local_body_size, local_body_owned) ;
     } else {
       SetBody(nullptr, -1, false) ;
@@ -418,22 +417,22 @@ std::string HttpPackageInfo::ToString() const {
   return output ;
 }
 
-vv::Error HttpPackageInfo::ParseInternal(
+Error HttpPackageInfo::ParseInternal(
     const char* headers, std::int32_t size, bool owned) {
   raw_headers_ = headers ;
   raw_headers_size_ = size ;
   raw_headers_owned_ = owned ;
-  raw_headers_error_ = vv::errOk ;
+  raw_headers_error_ = errOk ;
 
   // Ensure the headers end with '\r\n'.
   if (raw_headers_size_ < 2 ||
       raw_headers_[raw_headers_size_ - 2] != '\r' ||
       raw_headers_[raw_headers_size_ - 1] != '\n') {
     printf("ERROR: HttpPackageInfo::Parse is failed\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   std::string headers_str(raw_headers_, raw_headers_size_) ;
   HeadersIterator headers_it(
       headers_str.begin(), headers_str.end(), std::string("\r\n")) ;
@@ -441,7 +440,7 @@ vv::Error HttpPackageInfo::ParseInternal(
     result = SetHeader(
         std::string(headers_it.name_begin(), headers_it.name_end()),
         std::string(headers_it.values_begin(), headers_it.values_end())) ;
-    if (V8_ERR_FAILED(raw_headers_error_)) {
+    if (V8_ERROR_FAILED(raw_headers_error_)) {
       printf("ERROR: HttpPackageInfo::Parse is failed on SetHeader()\n") ;
       break ;
     }
@@ -507,7 +506,7 @@ void HttpPackageInfo::SetBodyInternal(
   body_ = body ;
   body_size_ = body_size ;
   body_owned_ = owned ;
-  body_error_ = vv::errOk ;
+  body_error_ = errOk ;
 
   if (body_size >= 0) {
     SetHeader(Header::ContentLength, vvi::StringPrintf("%d", body_size_)) ;

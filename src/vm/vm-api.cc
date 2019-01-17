@@ -75,13 +75,13 @@ Error RunScriptByFile(
   std::unique_ptr<vi::ScriptRunner> runner ;
   Error result = vi::ScriptRunner::CreateByFiles(
       file_type, file_path, script_path, runner, pdata) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
     return result ;
   }
 
   result = runner->Run() ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Script run is failed\n") ;
     return result ;
   }
@@ -100,45 +100,6 @@ Error RunScriptByFile(
 
 }  // namespace
 
-std::string ErrorToString(Error error) {
-  const char* msg = "" ;
-  switch(error) {
-    // TODO: Add other error codes
-    case errJsonInvalidEscape:
-      msg = "Json: Invalid escape sequence." ;
-      break ;
-    case errJsonSyntaxError:
-      msg = "Json: Syntax error." ;
-      break ;
-    case errJsonUnexpectedToken:
-      msg = "Json: Unexpected token." ;
-      break ;
-    case errJsonTrailingComma:
-      msg = "Json: Trailing comma not allowed." ;
-      break ;
-    case errJsonTooMuchNesting:
-      msg = "Json: Too much nesting." ;
-      break ;
-    case errJsonUnexpectedDataAfterRoot:
-      msg = "Json: Unexpected data after root element." ;
-      break ;
-    case errJsonUnsupportedEncoding:
-      msg = "Json: Unsupported encoding. JSON must be UTF-8." ;
-      break ;
-    case errJsonUnquotedDictionaryKey:
-      msg = "Json: Dictionary keys must be quoted." ;
-      break ;
-    case errJsonInappropriateType:
-      msg = "Json: Field has an inappropriate type." ;
-      break ;
-    default:
-      msg = "Error occurred." ;
-      break ;
-  }
-
-  return vi::StringPrintf("%s Error code: 0x%08x.", msg, error) ;
-}
-
 void InitializeV8(const char* app_path) {
   V8HANDLE()->Initialize(app_path) ;
 }
@@ -152,7 +113,7 @@ Error CompileScript(
     ScriptCompiler::CachedData& result) {
   vi::Data data ;
   Error res = vi::CompileScript(script, script_origin, data) ;
-  if (V8_ERR_FAILED(res)) {
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: Can't compile the script\n") ;
     return res ;
   }
@@ -211,13 +172,13 @@ Error RunScript(
   std::unique_ptr<vi::ScriptRunner> runner ;
   Error result = vi::ScriptRunner::Create(
       nullptr, script_data, runner, snapshot_out) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
     return result ;
   }
 
   result = runner->Run() ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Script run is failed\n") ;
     return result ;
   }
@@ -254,7 +215,7 @@ Error RunScriptBySnapshot(
   std::unique_ptr<vi::ScriptRunner> runner ;
   Error result = vi::ScriptRunner::Create(
       &snapshot_data, script_data, runner, snapshot_out) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't create ScriptRunner\n") ;
     return result ;
   }

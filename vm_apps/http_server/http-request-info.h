@@ -66,7 +66,7 @@ class HttpRequestInfo : public HttpPackageInfo {
 
   const std::string& host() const { return host_ ; }
 
-  vv::Error raw_request(const char*& request, std::int32_t& size) const {
+  Error raw_request(const char*& request, std::int32_t& size) const {
     request = raw_request_ ;
     size = raw_request_size_ ;
     return raw_request_error_ ;
@@ -74,7 +74,7 @@ class HttpRequestInfo : public HttpPackageInfo {
 
  protected:
    // Initializes the object by raw data
-  vv::Error ParseInternal(
+  Error ParseInternal(
       const char* request, std::int32_t size, bool owned = false) override ;
 
   void UpdateInfoByHeader(
@@ -90,7 +90,7 @@ class HttpRequestInfo : public HttpPackageInfo {
   const char* raw_request_ = nullptr ;
   std::int32_t raw_request_size_ = 0 ;
   bool raw_request_owned_ = false ;
-  vv::Error raw_request_error_ = vv::errObjNotInit ;
+  Error raw_request_error_ = errObjNotInit ;
 
   DISALLOW_COPY_AND_ASSIGN(HttpRequestInfo) ;
 };

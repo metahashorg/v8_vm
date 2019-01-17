@@ -25,30 +25,30 @@ class TcpSocketPosix {
 
   // Opens the socket.
   // Returns a net error code.
-  vv::Error Open(AddressFamily family) ;
+  Error Open(AddressFamily family) ;
 
   // Takes ownership of |socket|, which is known to already be connected to the
   // given peer address. However, peer address may be the empty address, for
   // compatibility. The given peer address will be returned by GetPeerAddress.
-  vv::Error AdoptConnectedSocket(
+  Error AdoptConnectedSocket(
       SocketDescriptor socket, const IPEndPoint& peer_address) ;
   // Takes ownership of |socket|, which may or may not be open, bound, or
   // listening. The caller must determine the state of the socket based on its
   // provenance and act accordingly. The socket may have connections waiting
   // to be accepted, but must not be actually connected.
-  vv::Error AdoptUnconnectedSocket(SocketDescriptor socket) ;
+  Error AdoptUnconnectedSocket(SocketDescriptor socket) ;
 
   // Binds this socket to |address|. This is generally only used on a server.
   // Should be called after Open(). Returns a net error code.
-  vv::Error Bind(const IPEndPoint& address) ;
+  Error Bind(const IPEndPoint& address) ;
 
   // Put this socket on listen state with the given |backlog|.
   // Returns a net error code.
-  vv::Error Listen(int backlog) ;
+  Error Listen(int backlog) ;
 
   // Accepts incoming connection.
   // Returns a net error code.
-  vv::Error Accept(
+  Error Accept(
       std::unique_ptr<TcpSocketPosix>* tcp_socket, IPEndPoint* address,
       Timeout timeout = kInfiniteTimeout) ;
 
@@ -59,32 +59,32 @@ class TcpSocketPosix {
 
   // Reads from the socket.
   // Returns a net error code.
-  vv::Error Read(
+  Error Read(
       char* buf, std::int32_t& buf_len, Timeout timeout = kInfiniteTimeout) ;
 
   // Writes to the socket.
   // Returns a net error code.
-  vv::Error Write(
+  Error Write(
       const char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) ;
 
   // Copies the local tcp address into |address| and returns a net error code.
-  vv::Error GetLocalAddress(IPEndPoint* address) const ;
+  Error GetLocalAddress(IPEndPoint* address) const ;
 
   // Copies the remote tcp code into |address| and returns a net error code.
-  vv::Error GetPeerAddress(IPEndPoint* address) const ;
+  Error GetPeerAddress(IPEndPoint* address) const ;
 
   // Sets various socket options.
   // The commonly used options for server listening sockets:
   // - AllowAddressReuse().
-  vv::Error SetDefaultOptionsForServer() ;
+  Error SetDefaultOptionsForServer() ;
   // The commonly used options for client sockets and accepted sockets:
   // - SetNoDelay(true);
   // - SetKeepAlive(true, 45).
   void SetDefaultOptionsForClient() ;
-  vv::Error AllowAddressReuse() ;
-  vv::Error SetReceiveBufferSize(std::int32_t size) ;
-  vv::Error SetSendBufferSize(std::int32_t size) ;
+  Error AllowAddressReuse() ;
+  Error SetReceiveBufferSize(std::int32_t size) ;
+  Error SetSendBufferSize(std::int32_t size) ;
   bool SetKeepAlive(bool enable, int delay) ;
   bool SetNoDelay(bool no_delay) ;
 

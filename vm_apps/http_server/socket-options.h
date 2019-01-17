@@ -45,18 +45,18 @@
 //
 // SetTCPNoDelay() sets the TCP_NODELAY option. Use |no_delay| to enable or
 // disable it. On error returns a net error code, on success returns OK.
-vv::Error SetTCPNoDelay(SocketDescriptor fd, bool no_delay) ;
+Error SetTCPNoDelay(SocketDescriptor fd, bool no_delay) ;
 
 // SetReuseAddr() sets the SO_REUSEADDR socket option. Use |reuse| to enable or
 // disable it. On error returns a net error code, on success returns OK.
-vv::Error SetReuseAddr(SocketDescriptor fd, bool reuse) ;
+Error SetReuseAddr(SocketDescriptor fd, bool reuse) ;
 
 // SetSocketReceiveBufferSize() sets the SO_RCVBUF socket option. On error
 // returns a net error code, on success returns OK.
-vv::Error SetSocketReceiveBufferSize(SocketDescriptor fd, std::int32_t size) ;
+Error SetSocketReceiveBufferSize(SocketDescriptor fd, std::int32_t size) ;
 
 // SetSocketSendBufferSize() sets the SO_SNDBUF socket option. On error
 // returns a net error code, on success returns OK.
-vv::Error SetSocketSendBufferSize(SocketDescriptor fd, std::int32_t size) ;
+Error SetSocketSendBufferSize(SocketDescriptor fd, std::int32_t size) ;
 
 #endif  // V8_VM_APPS_HTTP_SERVER_SOCKADDR_STORAGE_H_

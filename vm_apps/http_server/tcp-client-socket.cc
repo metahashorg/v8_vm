@@ -24,14 +24,14 @@ TcpClientSocket::~TcpClientSocket() {
   Disconnect() ;
 }
 
-vv::Error TcpClientSocket::Bind(const IPEndPoint& address) {
+Error TcpClientSocket::Bind(const IPEndPoint& address) {
   // TODO:
-  return vv::errNotImplemented ;
+  return errNotImplemented ;
 }
 
-vv::Error TcpClientSocket::Connect() {
+Error TcpClientSocket::Connect() {
   // TODO:
-  return vv::errNotImplemented ;
+  return errNotImplemented ;
 }
 
 void TcpClientSocket::Disconnect() {
@@ -48,20 +48,20 @@ bool TcpClientSocket::IsConnectedAndIdle() const {
   return socket_->IsConnectedAndIdle() ;
 }
 
-vv::Error TcpClientSocket::GetPeerAddress(IPEndPoint* address) const {
+Error TcpClientSocket::GetPeerAddress(IPEndPoint* address) const {
   return socket_->GetPeerAddress(address) ;
 }
 
-vv::Error TcpClientSocket::GetLocalAddress(IPEndPoint* address) const {
+Error TcpClientSocket::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 
   if (!socket_->IsValid()) {
     if (bind_address_) {
       *address = *bind_address_ ;
-      return vv::errOk ;
+      return errOk ;
     }
 
-    return vv::errNetSocketNotConnected ;
+    return errNetSocketNotConnected ;
   }
 
   return socket_->GetLocalAddress(address) ;
@@ -71,24 +71,24 @@ std::int64_t TcpClientSocket::GetTotalReceivedBytes() const {
   return total_received_bytes_ ;
 }
 
-vv::Error TcpClientSocket::Read(
+Error TcpClientSocket::Read(
     char* buf, std::int32_t& buf_len, Timeout timeout) {
-  vv::Error result = socket_->Read(buf, buf_len, timeout) ;
-  if (V8_ERR_SUCCESSED(result)) {
+  Error result = socket_->Read(buf, buf_len, timeout) ;
+  if (V8_ERROR_SUCCESS(result)) {
     total_received_bytes_ += buf_len ;
   }
 
   return result ;
 }
-vv::Error TcpClientSocket::Write(
+Error TcpClientSocket::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
   return socket_->Write(buf, buf_len, timeout) ;
 }
 
-vv::Error TcpClientSocket::SetReceiveBufferSize(std::int32_t size) {
+Error TcpClientSocket::SetReceiveBufferSize(std::int32_t size) {
   return socket_->SetReceiveBufferSize(size) ;
 }
-vv::Error TcpClientSocket::SetSendBufferSize(std::int32_t size) {
+Error TcpClientSocket::SetSendBufferSize(std::int32_t size) {
   return socket_->SetSendBufferSize(size) ;
 }
 

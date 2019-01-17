@@ -56,7 +56,7 @@ void HttpRequestInfo::Clear() {
   raw_request_ = nullptr ;
   raw_request_size_ = 0 ;
   raw_request_owned_ = false ;
-  raw_request_error_ = vv::errObjNotInit ;
+  raw_request_error_ = errObjNotInit ;
 
   HttpPackageInfo::Clear() ;
 }
@@ -71,18 +71,18 @@ std::string HttpRequestInfo::ToString() const {
   return output ;
 }
 
-vv::Error HttpRequestInfo::ParseInternal(
+Error HttpRequestInfo::ParseInternal(
     const char* request, std::int32_t size, bool owned) {
   raw_request_ = request ;
   raw_request_size_ = size ;
   raw_request_owned_ = owned ;
-  raw_request_error_ = vv::errOk ;
+  raw_request_error_ = errOk ;
 
   // Find http-headers
   const char* headers = std::find(request, request + size, '\r') ;
   if ((request + size - headers) < 2 || headers[1] != '\n') {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   headers += 2 ;
@@ -91,13 +91,13 @@ vv::Error HttpRequestInfo::ParseInternal(
   const char* method_end = std::find(request, headers, ' ') ;
   if (method_end == headers) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   method_.assign(request, method_end) ;
   if (!IsToken(method_)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   // Read URI
@@ -110,7 +110,7 @@ vv::Error HttpRequestInfo::ParseInternal(
   const char* uri_end = std::find(request, headers, ' ') ;
   if (uri_end == headers) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   uri_.assign(request, uri_end) ;
@@ -122,8 +122,8 @@ vv::Error HttpRequestInfo::ParseInternal(
     ++request ;
   }
 
-  vv::Error result = ParseHttpVersion(request, headers) ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = ParseHttpVersion(request, headers) ;
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
     return result ;
   }
@@ -132,7 +132,7 @@ vv::Error HttpRequestInfo::ParseInternal(
   std::int32_t headers_size =
       size - static_cast<std::int32_t>(headers - raw_request_) ;
   result = HttpPackageInfo::ParseInternal(headers, headers_size, false) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
     return result ;
   }

@@ -16,6 +16,7 @@ const char kSwitchSnapshotOut[] = "snap_o" ;
 const char kSwitchModeCmdRun[] = "cmdrun" ;
 const char kSwitchModeCompile[] = "compile" ;
 const char kSwitchModeDump[] = "dump" ;
+const char kSwitchModeErrorList[] = "error-list" ;
 
 const char kCompilationFileExtension[] = ".cmpl" ;
 const char kContextDumpFileExtension[] = ".context-dump.json" ;
@@ -27,6 +28,7 @@ enum class ModeType {
   Compile,
   Run,
   Dump,
+  ErrorList,
 };
 
 ModeType GetModeType(const CommandLine& cmd_line) {
@@ -47,6 +49,9 @@ ModeType GetModeType(const CommandLine& cmd_line) {
         cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeDump &&
         cmd_line.GetArgCount() != 0) {
       result = ModeType::Dump ;
+    } else if (
+        cmd_line.GetSwitchValueNative(kSwitchMode) == kSwitchModeErrorList) {
+      result = ModeType::ErrorList ;
     }
   }
 
@@ -71,7 +76,9 @@ int DoUnknown() {
       "        v8_vm --mode=cmdrun --cmd=script_cmd.js --snap_i=script1.shot --snap_o=script2.shot\n\n"
       "  mode=dump        Create a dump by snapshot-file(s)\n"
       "    <args>         snapshot-file path(s) (may be more than one)\n"
-      "  e.g.: v8_vm --mode=dump script.shot" ;
+      "  e.g.: v8_vm --mode=dump script.shot\n\n"
+      "  mode=error-list  Trace a error list\n"
+      "  e.g.: v8_vm --mode=error-list" ;
   printf("%s\n", usage) ;
   return 1 ;
 }
@@ -82,10 +89,10 @@ int DoCompile(const CommandLine& cmd_line) {
 
   bool error = false ;
   for (auto it : cmd_line.GetArgs()) {
-    v8::vm::Error result = v8::vm::CompileScriptFromFile(
+    Error result = v8::vm::CompileScriptFromFile(
         it.c_str(),
         ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
-    if (V8_ERR_FAILED(result)) {
+    if (V8_ERROR_FAILED(result)) {
       printf("ERROR: File \'%s\' hasn't been compiled.\n", it.c_str()) ;
       error = true ;
     }
@@ -93,7 +100,7 @@ int DoCompile(const CommandLine& cmd_line) {
 
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
-  return (error ? v8::vm::errIncompleteOperation : 0) ;
+  return (error ? errIncompleteOperation : 0) ;
 }
 
 int DoRun(const CommandLine& cmd_line) {
@@ -120,7 +127,7 @@ int DoRun(const CommandLine& cmd_line) {
     out_snapshot_path = cmd_line.GetSwitchValueNative(kSwitchSnapshotOut) ;
   }
 
-  v8::vm::Error result = v8::vm::errOk ;
+  Error result = errOk ;
   if (snapshot_path.length()) {
     result = v8::vm::RunScriptBySnapshotFromFile(
         snapshot_path.c_str(),
@@ -139,14 +146,14 @@ int DoRun(const CommandLine& cmd_line) {
     return DoUnknown() ;
   }
 
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Run of a command script is failed. (File: %s)\n",
            cmd_line.GetSwitchValueNative(kSwitchCommand).c_str()) ;
   }
 
   // Deinitialize V8
   v8::vm::DeinitializeV8() ;
-  return (result != v8::vm::errOk ? result : 0) ;
+  return (result != errOk ? result : 0) ;
 }
 
 int DoDump(const CommandLine& cmd_line) {
@@ -172,6 +179,27 @@ int DoDump(const CommandLine& cmd_line) {
   return 0 ;
 }
 
+int DoErrorList() {
+  printf("%-32s%-12s%s", "Name", "Id", "Description\n") ;
+
+  Error error = errOk ;
+  #define V8_WARNING(type_name, prefix_flag, wrn_name, ...) \
+    error = V8_ERROR_WARNING_NAME(type_name, prefix_flag, wrn_name) ; \
+    printf("%-32s0x%08x  \"%s\"\n", error.name(), error.code(), \
+           error.description()) ;
+  #include "include/v8-vm-error-list.h"
+  #undef V8_WARNING
+  // Errors
+  #define V8_ERROR(type_name, prefix_flag, err_name, ...) \
+    error = V8_ERROR_ERROR_NAME(type_name, prefix_flag, err_name) ; \
+    printf("%-32s0x%08x  \"%s\"\n", error.name(), error.code(), \
+           error.description()) ;
+  #include "include/v8-vm-error-list.h"
+  #undef V8_ERROR
+
+  return 0 ;
+}
+
 int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
   ModeType mode_type = GetModeType(cmd_line) ;
@@ -184,6 +212,8 @@ int main(int argc, char* argv[]) {
     result = DoRun(cmd_line) ;
   } else if (mode_type == ModeType::Dump) {
     result = DoDump(cmd_line) ;
+  } else if (mode_type == ModeType::ErrorList) {
+    result = DoErrorList() ;
   }
 
   return result ;

@@ -28,7 +28,7 @@
 
 namespace {
 
-vv::Error MapAcceptError(int os_error) {
+Error MapAcceptError(int os_error) {
   switch (os_error) {
     // If the client aborts the connection before the server calls accept,
     // POSIX specifies accept should fail with ECONNABORTED. The server can
@@ -36,7 +36,7 @@ vv::Error MapAcceptError(int os_error) {
     // ERR_IO_PENDING. See UNIX Network Programming, Vol. 1, 3rd Ed., Sec.
     // 5.11, "Connection Abort before accept Returns".
     case ECONNABORTED:
-      return vv::errNetIOPending ;
+      return errNetIOPending ;
     default:
       return MapSystemError(os_error) ;
   }
@@ -69,7 +69,7 @@ SocketPosix::~SocketPosix() {
   Close();
 }
 
-int SocketPosix::Open(int address_family) {
+Error SocketPosix::Open(int address_family) {
   // TODO:
   // DCHECK_EQ(kInvalidSocket, socket_fd_);
   // DCHECK(address_family == AF_INET ||
@@ -85,43 +85,43 @@ int SocketPosix::Open(int address_family) {
   }
 
   if (!SetNonBlocking(socket_fd_)) {
-    vv::Error rv = MapSystemError(errno) ;
+    Error rv = MapSystemError(errno) ;
     printf("ERROR: SetNonBlocking() returned a failure\n") ;
     Close() ;
     return rv ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::AdoptConnectedSocket(
+Error SocketPosix::AdoptConnectedSocket(
     SocketDescriptor socket, const SockaddrStorage& address) {
-  vv::Error rv = AdoptUnconnectedSocket(socket) ;
-  if (rv != vv::errOk) {
+  Error rv = AdoptUnconnectedSocket(socket) ;
+  if (rv != errOk) {
     printf("ERROR: AdoptUnconnectedSocket() returned an error\n") ;
     return rv ;
   }
 
   SetPeerAddress(address) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
+Error SocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
   // TODO: DCHECK_EQ(kInvalidSocket, socket_fd_);
 
   socket_fd_ = socket ;
 
   if (!SetNonBlocking(socket_fd_)) {
-    vv::Error rv = MapSystemError(errno) ;
+    Error rv = MapSystemError(errno) ;
     printf("ERROR: SetNonBlocking() returned a failure\n") ;
     Close() ;
     return rv ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::Bind(const SockaddrStorage& address) {
+Error SocketPosix::Bind(const SockaddrStorage& address) {
   // TODO: DCHECK_NE(kInvalidSocket, socket_fd_) ;
 
   int rv = bind(socket_fd_, address.addr, address.addr_len) ;
@@ -130,10 +130,10 @@ vv::Error SocketPosix::Bind(const SockaddrStorage& address) {
     return MapSystemError(errno) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::Listen(int backlog) {
+Error SocketPosix::Listen(int backlog) {
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_);
   // DCHECK_LT(0, backlog);
@@ -144,10 +144,10 @@ vv::Error SocketPosix::Listen(int backlog) {
     return MapSystemError(errno) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::Accept(
+Error SocketPosix::Accept(
     std::unique_ptr<SocketPosix>* socket, Timeout timeout) {
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_) ;
@@ -170,7 +170,7 @@ vv::Error SocketPosix::Accept(
     printf("ERROR: select() returned an error\n") ;
     return MapAcceptError(errno) ;
   } else if (wait_result == 0) {
-    return vv::errTimeout ;
+    return errTimeout ;
   }
 
   SockaddrStorage new_peer_address ;
@@ -182,14 +182,14 @@ vv::Error SocketPosix::Accept(
   }
 
   std::unique_ptr<SocketPosix> accepted_socket(new SocketPosix) ;
-  vv::Error rv =
+  Error rv =
       accepted_socket->AdoptConnectedSocket(new_socket, new_peer_address) ;
-  if (rv != vv::errOk) {
+  if (rv != errOk) {
     return rv ;
   }
 
   *socket = std::move(accepted_socket) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 bool SocketPosix::IsConnected() const {
@@ -273,7 +273,7 @@ bool SocketPosix::IsConnectedAndIdle() const {
 #endif  // V8_OS_FUCHSIA
 }
 
-vv::Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
+Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_) ;
   // DCHECK(!waiting_connect_) ;
@@ -302,7 +302,7 @@ vv::Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
     printf("ERROR: select() returned an error\n") ;
     return MapAcceptError(errno) ;
   } else if (wait_result == 0) {
-    return vv::errTimeout ;
+    return errTimeout ;
   }
 
   // Try to read
@@ -313,10 +313,10 @@ vv::Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   }
 
   buf_len = static_cast<std::int32_t>(rv) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::Write(
+Error SocketPosix::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO:
   // DCHECK_NE(kInvalidSocket, socket_fd_) ;
@@ -343,12 +343,12 @@ vv::Error SocketPosix::Write(
   int wait_result = HANDLE_EINTR(select(
       socket_fd_ + 1, NULL, &set, NULL, timeout_pval)) ;
   if(wait_result < 0) {
-    vv::Error net_error = MapAcceptError(errno) ;
+    Error net_error = MapAcceptError(errno) ;
     printf("ERROR: select() returned an error (Net error: 0x%08x)\n",
-           net_error) ;
+           net_error.code()) ;
     return net_error ;
   } else if (wait_result == 0) {
-    return vv::errTimeout ;
+    return errTimeout ;
   }
 
 #if defined(V8_OS_LINUX) || defined(V8_OS_ANDROID)
@@ -367,10 +367,10 @@ vv::Error SocketPosix::Write(
   }
 
   buf_len = static_cast<std::int32_t>(rv) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
+Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
   // TODO: DCHECK(address) ;
 
   if (getsockname(socket_fd_, address->addr, &address->addr_len) < 0) {
@@ -378,18 +378,18 @@ vv::Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
     return MapSystemError(errno) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error SocketPosix::GetPeerAddress(SockaddrStorage* address) const {
+Error SocketPosix::GetPeerAddress(SockaddrStorage* address) const {
   // TODO: DCHECK(address);
 
   if (!HasPeerAddress()) {
-    return vv::errNetSocketNotConnected ;
+    return errNetSocketNotConnected ;
   }
 
   *address = *peer_address_ ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 void SocketPosix::SetPeerAddress(const SockaddrStorage& address) {

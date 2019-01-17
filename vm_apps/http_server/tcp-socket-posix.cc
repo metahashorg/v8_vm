@@ -62,11 +62,11 @@ TcpSocketPosix::~TcpSocketPosix() {
   Close() ;
 }
 
-vv::Error TcpSocketPosix::Open(AddressFamily family) {
+Error TcpSocketPosix::Open(AddressFamily family) {
   // TODO: DCHECK(!socket_) ;
   socket_.reset(new SocketPosix) ;
-  vv::Error rv = socket_->Open(ConvertAddressFamily(family)) ;
-  if (rv != vv::errOk) {
+  Error rv = socket_->Open(ConvertAddressFamily(family)) ;
+  if (rv != errOk) {
     printf("ERROR: socket_->Open() returned an error\n") ;
     socket_.reset() ;
   }
@@ -74,7 +74,7 @@ vv::Error TcpSocketPosix::Open(AddressFamily family) {
   return rv ;
 }
 
-vv::Error TcpSocketPosix::AdoptConnectedSocket(
+Error TcpSocketPosix::AdoptConnectedSocket(
     SocketDescriptor socket, const IPEndPoint& peer_address) {
   // TODO: DCHECK(!socket_) ;
 
@@ -83,12 +83,12 @@ vv::Error TcpSocketPosix::AdoptConnectedSocket(
       // For backward compatibility, allows the empty address.
       !(peer_address == IPEndPoint())) {
     printf("ERROR: peer_address.ToSockAddr() returned a failure\n") ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
   socket_.reset(new SocketPosix) ;
-  vv::Error rv = socket_->AdoptConnectedSocket(socket, storage) ;
-  if (rv != vv::errOk) {
+  Error rv = socket_->AdoptConnectedSocket(socket, storage) ;
+  if (rv != errOk) {
     printf("ERROR: socket_->AdoptConnectedSocket() returned an error\n") ;
     socket_.reset() ;
   }
@@ -96,12 +96,12 @@ vv::Error TcpSocketPosix::AdoptConnectedSocket(
   return rv ;
 }
 
-vv::Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
+Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
   // TODO: DCHECK(!socket_);
 
   socket_.reset(new SocketPosix) ;
-  vv::Error rv = socket_->AdoptUnconnectedSocket(socket) ;
-  if (rv != vv::errOk) {
+  Error rv = socket_->AdoptUnconnectedSocket(socket) ;
+  if (rv != errOk) {
     printf("ERROR: socket_->AdoptUnconnectedSocket() returned an error\n") ;
     socket_.reset() ;
   }
@@ -109,33 +109,33 @@ vv::Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
   return rv ;
 }
 
-vv::Error TcpSocketPosix::Bind(const IPEndPoint& address) {
+Error TcpSocketPosix::Bind(const IPEndPoint& address) {
   // TODO: DCHECK(socket_) ;
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
     printf("ERROR: address.ToSockAddr() returned a failure\n") ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
   return socket_->Bind(storage) ;
 }
 
-vv::Error TcpSocketPosix::Listen(int backlog) {
+Error TcpSocketPosix::Listen(int backlog) {
   // TODO: DCHECK(socket_) ;
   return socket_->Listen(backlog) ;
 }
 
-vv::Error TcpSocketPosix::Accept(
+Error TcpSocketPosix::Accept(
     std::unique_ptr<TcpSocketPosix>* tcp_socket, IPEndPoint* address,
     Timeout timeout) {
   // TODO: DCHECK(tcp_socket);
   // TODO: DCHECK(socket_);
 
   std::unique_ptr<SocketPosix> accept_socket ;
-  vv::Error rv = socket_->Accept(&accept_socket, timeout) ;
-  if (V8_ERR_FAILED(rv)) {
-    if (rv != vv::errTimeout) {
+  Error rv = socket_->Accept(&accept_socket, timeout) ;
+  if (V8_ERROR_FAILED(rv)) {
+    if (rv != errTimeout) {
       printf("ERROR: socket_->Accept() returned an error\n") ;
     }
 
@@ -143,16 +143,16 @@ vv::Error TcpSocketPosix::Accept(
   }
 
   SockaddrStorage storage ;
-  if (accept_socket->GetPeerAddress(&storage) != vv::errOk ||
+  if (accept_socket->GetPeerAddress(&storage) != errOk ||
       !address->FromSockAddr(storage.addr, storage.addr_len)) {
     printf("ERROR: socket_->Accept() returned an invalid address\n") ;
     accept_socket.reset() ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
   tcp_socket->reset(new TcpSocketPosix()) ;
   (*tcp_socket)->socket_ = std::move(accept_socket) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 bool TcpSocketPosix::IsConnected() const {
@@ -169,65 +169,65 @@ bool TcpSocketPosix::IsConnectedAndIdle() const {
   return socket_ && socket_->IsConnectedAndIdle() ;
 }
 
-vv::Error TcpSocketPosix::Read(
+Error TcpSocketPosix::Read(
     char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO: DCHECK(socket_) ;
 
   return socket_->Read(buf, buf_len, timeout) ;
 }
 
-vv::Error TcpSocketPosix::Write(
+Error TcpSocketPosix::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO: DCHECK(socket_) ;
 
   return socket_->Write(buf, buf_len, timeout) ;
 }
 
-vv::Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
+Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 
   if (!socket_) {
-    return vv::errNetSocketNotConnected ;
+    return errNetSocketNotConnected ;
   }
 
   SockaddrStorage storage ;
-  vv::Error rv = socket_->GetLocalAddress(&storage) ;
-  if (rv != vv::errOk) {
+  Error rv = socket_->GetLocalAddress(&storage) ;
+  if (rv != errOk) {
     printf("ERROR: socket_->GetLocalAddress() returned an error\n") ;
     return rv ;
   }
 
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
     printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketPosix::GetPeerAddress(IPEndPoint* address) const {
+Error TcpSocketPosix::GetPeerAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address);
 
   if (!IsConnected()) {
-    return vv::errNetSocketNotConnected ;
+    return errNetSocketNotConnected ;
   }
 
   SockaddrStorage storage ;
-  vv::Error rv = socket_->GetPeerAddress(&storage) ;
-  if (rv != vv::errOk) {
+  Error rv = socket_->GetPeerAddress(&storage) ;
+  if (rv != errOk) {
     printf("ERROR: socket_->GetPeerAddress() returned an error\n") ;
     return rv ;
   }
 
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
     printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return vv::errNetAddressInvalid ;
+    return errNetAddressInvalid ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpSocketPosix::SetDefaultOptionsForServer() {
+Error TcpSocketPosix::SetDefaultOptionsForServer() {
   // TODO: DCHECK(socket_);
   return AllowAddressReuse() ;
 }
@@ -261,19 +261,19 @@ void TcpSocketPosix::SetDefaultOptionsForClient() {
 #endif
 }
 
-vv::Error TcpSocketPosix::AllowAddressReuse() {
+Error TcpSocketPosix::AllowAddressReuse() {
   // TODO: DCHECK(socket_) ;
 
   return SetReuseAddr(socket_->socket_fd(), true) ;
 }
 
-vv::Error TcpSocketPosix::SetReceiveBufferSize(std::int32_t size) {
+Error TcpSocketPosix::SetReceiveBufferSize(std::int32_t size) {
   // TODO: DCHECK(socket_) ;
 
   return SetSocketReceiveBufferSize(socket_->socket_fd(), size) ;
 }
 
-vv::Error TcpSocketPosix::SetSendBufferSize(std::int32_t size) {
+Error TcpSocketPosix::SetSendBufferSize(std::int32_t size) {
   // TODO: DCHECK(socket_) ;
 
   return SetSocketSendBufferSize(socket_->socket_fd(), size) ;
@@ -288,7 +288,7 @@ bool TcpSocketPosix::SetKeepAlive(bool enable, int delay) {
 bool TcpSocketPosix::SetNoDelay(bool no_delay) {
   // TODO: DCHECK(socket_) ;
 
-  return SetTCPNoDelay(socket_->socket_fd(), no_delay) == vv::errOk ;
+  return SetTCPNoDelay(socket_->socket_fd(), no_delay) == errOk ;
 }
 
 void TcpSocketPosix::Close() {

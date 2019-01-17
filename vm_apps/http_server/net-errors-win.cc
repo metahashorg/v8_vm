@@ -11,106 +11,106 @@
 #include <winsock2.h>
 
 // Map winsock and system errors to V8 errors.
-vv::Error MapSystemError(SystemErrorCode os_error) {
+Error MapSystemError(SystemErrorCode os_error) {
   // There are numerous Winsock error codes, but these are the ones we thus far
   // find interesting.
   switch (os_error) {
     case WSAEWOULDBLOCK:
     case WSA_IO_PENDING:
-       return vv::errNetIOPending ;
+       return errNetIOPending ;
     case WSAEACCES:
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case WSAENETDOWN:
-       return vv::errNetInternetDisconnected ;
+       return errNetInternetDisconnected ;
     case WSAETIMEDOUT:
     case WSA_WAIT_TIMEOUT:
-       return vv::errTimeout ;
+       return errTimeout ;
     case WSAECONNRESET:
     case WSAENETRESET:  // Related to keep-alive
-       return vv::errNetConnectionReset ;
+       return errNetConnectionReset ;
     case WSAECONNABORTED:
-       return vv::errNetConnectionAborted ;
+       return errNetConnectionAborted ;
     case WSAECONNREFUSED:
-       return vv::errNetConnectionRefused ;
+       return errNetConnectionRefused ;
     case WSA_IO_INCOMPLETE:
     case WSAEDISCON:
-       return vv::errNetConnectionClosed ;
+       return errNetConnectionClosed ;
     case WSAEISCONN:
-       return vv::errNetSocketIsConnected ;
+       return errNetSocketIsConnected ;
     case WSAEHOSTUNREACH:
     case WSAENETUNREACH:
-       return vv::errNetAddressUnreachable ;
+       return errNetAddressUnreachable ;
     case WSAEADDRNOTAVAIL:
-       return vv::errNetAddressInvalid ;
+       return errNetAddressInvalid ;
     case WSAEMSGSIZE:
-       return vv::errNetMsgTooBig ;
+       return errNetMsgTooBig ;
     case WSAENOTCONN:
-       return vv::errNetSocketNotConnected ;
+       return errNetSocketNotConnected ;
     case WSAEAFNOSUPPORT:
-       return vv::errNetAddressUnreachable ;
+       return errNetAddressUnreachable ;
     case WSAEINVAL:
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case WSAEADDRINUSE:
-       return vv::errNetAddressInUse ;
+       return errNetAddressInUse ;
 
     // System errors.
     case ERROR_FILE_NOT_FOUND:  // The system cannot find the file specified.
-       return vv::errFileNotFound ;
+       return errFileNotFound ;
     case ERROR_PATH_NOT_FOUND:  // The system cannot find the path specified.
-       return vv::errPathNotFound ;
+       return errPathNotFound ;
     case ERROR_TOO_MANY_OPEN_FILES:  // The system cannot open the file.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case ERROR_ACCESS_DENIED:  // Access is denied.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ERROR_INVALID_HANDLE:  // The handle is invalid.
-       return vv::errInvalidHandle ;
+       return errInvalidHandle ;
     case ERROR_NOT_ENOUGH_MEMORY:   // Not enough storage is available to
-       return vv::errOutOfMemory ;  // process this command.
+       return errOutOfMemory ;  // process this command.
     case ERROR_OUTOFMEMORY:         // Not enough storage is available
-       return vv::errOutOfMemory ;  // to complete this operation.
+       return errOutOfMemory ;  // to complete this operation.
     case ERROR_WRITE_PROTECT:  // The media is write protected.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ERROR_SHARING_VIOLATION:    // Cannot access the file because it is
-       return vv::errAccessDenied ;  // being used by another process.
+       return errAccessDenied ;  // being used by another process.
     case ERROR_LOCK_VIOLATION:       // The process cannot access the file because
-       return vv::errAccessDenied ;  // another process has locked the file.
+       return errAccessDenied ;  // another process has locked the file.
     case ERROR_HANDLE_EOF:  // Reached the end of the file.
-       return vv::errFailed ;
+       return errFailed ;
     case ERROR_HANDLE_DISK_FULL:  // The disk is full.
-       return vv::errFileNoSpace ;
+       return errFileNoSpace ;
     case ERROR_FILE_EXISTS:  // The file exists.
-       return vv::errFileExists ;
+       return errFileExists ;
     case ERROR_INVALID_PARAMETER:  // The parameter is incorrect.
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case ERROR_BUFFER_OVERFLOW:  // The file name is too long.
-       return vv::errFilePathTooLong ;
+       return errFilePathTooLong ;
     case ERROR_DISK_FULL:  // There is not enough space on the disk.
-       return vv::errFileNoSpace ;
+       return errFileNoSpace ;
     case ERROR_CALL_NOT_IMPLEMENTED:   // This function is not supported on
-       return vv::errNotImplemented ;  // this system.
+       return errNotImplemented ;  // this system.
     case ERROR_INVALID_NAME:            // The filename, directory name,
-       return vv::errInvalidArgument ;  // or volume label syntax is incorrect.
+       return errInvalidArgument ;  // or volume label syntax is incorrect.
     case ERROR_DIR_NOT_EMPTY:  // The directory is not empty.
-       return vv::errFailed ;
+       return errFailed ;
     case ERROR_BUSY:  // The requested resource is in use.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ERROR_ALREADY_EXISTS:      // Cannot create a file when that file
-       return vv::errFileExists ;   // already exists.
+       return errFileExists ;   // already exists.
     case ERROR_FILENAME_EXCED_RANGE:  // The filename or extension is too long.
-       return vv::errFilePathTooLong ;
+       return errFilePathTooLong ;
     case ERROR_FILE_TOO_LARGE:      // The file size exceeds the limit allowed
-       return vv::errFileNoSpace ;  // and cannot be saved.
+       return errFileNoSpace ;  // and cannot be saved.
     case ERROR_IO_DEVICE:            // The request could not be performed
-       return vv::errAccessDenied ;  // because of an I/O device error.
+       return errAccessDenied ;  // because of an I/O device error.
     case ERROR_POSSIBLE_DEADLOCK:    // A potential deadlock condition has
-       return vv::errAccessDenied ;  // been detected.
+       return errAccessDenied ;  // been detected.
     case ERROR_BAD_DEVICE:  // The specified device name is invalid.
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
 
     case ERROR_SUCCESS:
-       return vv::errOk;
+       return errOk;
     default:
       printf("ERROR: Unknown error - 0x%08X", (std::uint32_t)os_error) ;
-       return vv::errFailed ;
+       return errFailed ;
   }
 }

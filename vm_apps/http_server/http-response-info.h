@@ -35,7 +35,7 @@ class HttpResponseInfo : public HttpPackageInfo {
   void Clear() override ;
 
   // Sets a status codes
-  vv::Error SetStatusCode(std::int32_t status_code) ;
+  Error SetStatusCode(std::int32_t status_code) ;
 
   // Serializes HttpPackageInfo to a string representation.  Joins all the
   // header keys and values with ": ", and inserts "\r\n" between each header
@@ -46,7 +46,7 @@ class HttpResponseInfo : public HttpPackageInfo {
 
  protected:
   // Initializes the object by raw data
-  vv::Error ParseInternal(
+  Error ParseInternal(
       const char* response, std::int32_t size, bool owned = false) override ;
 
  private:
@@ -56,7 +56,7 @@ class HttpResponseInfo : public HttpPackageInfo {
   const char* raw_response_ = nullptr ;
   std::int32_t raw_response_size_ = 0 ;
   bool raw_response_owned_ = false ;
-  vv::Error raw_response_error_ = vv::errObjNotInit ;
+  Error raw_response_error_ = errObjNotInit ;
 
   DISALLOW_COPY_AND_ASSIGN(HttpResponseInfo) ;
 };

@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
           cmd_line.GetSwitchValueNative(kSwitchPort).c_str(), &server_port)) {
     printf("ERROR: Server port is ivalid (Port: %s)\n",
            cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   // Initialize V8
@@ -57,11 +57,11 @@ int main(int argc, char* argv[]) {
 
   // Start server
   TcpServer server ;
-  vv::Error error = server.Start(
+  Error error = server.Start(
       server_port,
       HttpServerSession::GetCreator(
           V8HttpServerSession::ProcessSession, kServerName, kBodyBufferSize)) ;
-  V8_ERR_RETURN_IF_FAILED(error) ;
+  V8_ERROR_RETURN_IF_FAILED(error) ;
 
   char command(0) ;
   while (command != 'q' && command != 'Q') {
@@ -70,11 +70,11 @@ int main(int argc, char* argv[]) {
 
   // Stop server
   error = server.Stop() ;
-  V8_ERR_RETURN_IF_FAILED(error) ;
+  V8_ERROR_RETURN_IF_FAILED(error) ;
 
   // Wait for server has stopped
   error = server.Wait() ;
-  V8_ERR_RETURN_IF_FAILED(error) ;
+  V8_ERROR_RETURN_IF_FAILED(error) ;
 
   return 0 ;
 }

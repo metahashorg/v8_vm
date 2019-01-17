@@ -32,7 +32,7 @@ class Socket {
   // the provided buffer until the callback is invoked or the socket is
   // closed.  If the socket is Disconnected before the read completes, the
   // callback will not be invoked. |timeout| is in milliseconds.
-  virtual vv::Error Read(
+  virtual Error Read(
       char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) = 0 ;
 
@@ -49,19 +49,19 @@ class Socket {
   // the contents of the actual buffer that is written to the socket. If the
   // socket is Disconnected before the write completes, the callback will not be
   // invoked. |timeout| is in milliseconds.
-  virtual vv::Error Write(
+  virtual Error Write(
       const char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) = 0 ;
 
   // Set the receive buffer size (in bytes) for the socket.
   // Note: changing this value can affect the TCP window size on some platforms.
   // Returns a net error code.
-  virtual vv::Error SetReceiveBufferSize(std::int32_t size) = 0 ;
+  virtual Error SetReceiveBufferSize(std::int32_t size) = 0 ;
 
   // Set the send buffer size (in bytes) for the socket.
   // Note: changing this value can affect the TCP window size on some platforms.
   // Returns a net error code.
-  virtual vv::Error SetSendBufferSize(std::int32_t size) = 0 ;
+  virtual Error SetSendBufferSize(std::int32_t size) = 0 ;
 };
 
 #endif  // V8_VM_APPS_HTTP_SERVER_SOCKET_H_

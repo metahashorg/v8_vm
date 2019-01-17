@@ -20,28 +20,28 @@ TcpServerSession::~TcpServerSession() {
   socket_.reset() ;
 }
 
-vv::Error TcpServerSession::Start() {
+Error TcpServerSession::Start() {
   if (!socket_.get()) {
     printf("ERROR: Socket is invalid\n") ;
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
   thread_.reset(new std::thread(&TcpServerSession::Run, std::ref(*this))) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpServerSession::Stop() {
+Error TcpServerSession::Stop() {
   stop_flag_ = true ;
   if (!thread_.get()) {
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpServerSession::Wait() {
+Error TcpServerSession::Wait() {
   if (!thread_.get()) {
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
   // Wait the thread
@@ -49,7 +49,7 @@ vv::Error TcpServerSession::Wait() {
     thread_->join() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
 void TcpServerSession::SetClosedCallback(const ClosedCallback& callback) {
@@ -67,7 +67,7 @@ TcpServerSession::TcpServerSession(std::unique_ptr<StreamSocket>& socket)
   socket_.swap(socket) ;
 }
 
-vv::Error TcpServerSession::Read(
+Error TcpServerSession::Read(
     char* buf, std::int32_t& buf_len, bool complete_buf) {
   // TODO:
   // DCHECK(socket_) ;
@@ -79,22 +79,22 @@ vv::Error TcpServerSession::Read(
   buf_len = 0 ;
 
   // Try to read
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   for (std::int32_t attempt_count = 0;
        attempt_count < read_and_write_attempt_count_ && local_buf_len > 0;) {
     if (stop_flag_) {
       printf("ERROR: TcpServerSession have been stopped\n") ;
-      return vv::errAborted ;
+      return errAborted ;
     }
 
     std::int32_t circuit_buf_len = local_buf_len ;
     result = socket_->Read(buf, circuit_buf_len, kWaitForReadAndWrite) ;
-    if (V8_ERR_FAILED(result) && result != vv::errTimeout) {
+    if (V8_ERROR_FAILED(result) && result != errTimeout) {
       printf("ERROR: socket_->Read() returned an error\n") ;
       return result ;
     }
 
-    if (result == vv::errTimeout || circuit_buf_len == 0) {
+    if (result == errTimeout || circuit_buf_len == 0) {
       ++attempt_count ;
       continue ;
     }
@@ -111,15 +111,15 @@ vv::Error TcpServerSession::Read(
     }
   }
 
-  if (result == vv::errOk && local_buf_len != 0) {
-    result = complete_buf ? vv::errIncompleteOperation :
-                            vv::wrnIncompleteOperation ;
+  if (result == errOk && local_buf_len != 0) {
+    result = complete_buf ? errIncompleteOperation :
+                            wrnIncompleteOperation ;
   }
 
   return result ;
 }
 
-vv::Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
+Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
   // TODO:
   // DCHECK(socket_) ;
   // DCHECK_NE(nullptr, buf) ;
@@ -130,22 +130,22 @@ vv::Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
   buf_len = 0 ;
 
   // Try to read
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   for (std::int32_t attempt_count = 0;
        attempt_count < read_and_write_attempt_count_ && local_buf_len > 0;) {
     if (stop_flag_) {
       printf("ERROR: TcpServerSession have been stopped\n") ;
-      return vv::errAborted ;
+      return errAborted ;
     }
 
     std::int32_t circuit_buf_len = local_buf_len ;
     result = socket_->Write(buf, circuit_buf_len, kWaitForReadAndWrite) ;
-    if (V8_ERR_FAILED(result) && result != vv::errTimeout) {
+    if (V8_ERROR_FAILED(result) && result != errTimeout) {
       printf("ERROR: socket_->Write() returned an error\n") ;
       return result ;
     }
 
-    if (result == vv::errTimeout || circuit_buf_len == 0) {
+    if (result == errTimeout || circuit_buf_len == 0) {
       ++attempt_count ;
       continue ;
     }
@@ -156,16 +156,16 @@ vv::Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
     local_buf_len -= circuit_buf_len ;
   }
 
-  if (result == vv::errOk && local_buf_len != 0) {
-    result = vv::errIncompleteOperation ;
+  if (result == errOk && local_buf_len != 0) {
+    result = errIncompleteOperation ;
   }
 
   return result ;
 }
 
 void TcpServerSession::Run() {
-  vv::Error result = Do() ;
-  if (error_callback_ && V8_ERR_FAILED(result)) {
+  Error result = Do() ;
+  if (error_callback_ && V8_ERROR_FAILED(result)) {
     error_callback_(this, result) ;
   }
 

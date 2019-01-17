@@ -27,12 +27,12 @@ class TcpServerSocket : public ServerSocket {
   // bound or listening. The caller must determine this based on the provenance
   // of the socket and act accordingly. The socket may have connections waiting
   // to be accepted, but must not be actually connected.
-  vv::Error AdoptSocket(SocketDescriptor socket) ;
+  Error AdoptSocket(SocketDescriptor socket) ;
 
   // ServerSocket implementation.
-  vv::Error Listen(const IPEndPoint& address, int backlog) override ;
-  vv::Error GetLocalAddress(IPEndPoint* address) const override ;
-  vv::Error Accept(
+  Error Listen(const IPEndPoint& address, int backlog) override ;
+  Error GetLocalAddress(IPEndPoint* address) const override ;
+  Error Accept(
       std::unique_ptr<StreamSocket>* socket,
       Timeout timeout = kInfiniteTimeout) override ;
 

@@ -37,21 +37,21 @@ class V8HttpServerSession {
   };
 
   // Entry point of V8 http-session
-  static vv::Error ProcessSession(
+  static Error ProcessSession(
       HttpRequestInfo& request, HttpResponseInfo& response) ;
 
  private:
   V8HttpServerSession(HttpRequestInfo& request, HttpResponseInfo& response) ;
 
-  vv::Error Do() ;
+  Error Do() ;
 
   // Compiles script
-  vv::Error CompileScript() ;
+  Error CompileScript() ;
 
   // Runs a command script
-  vv::Error RunCommandScript() ;
+  Error RunCommandScript() ;
 
-  vv::Error WriteResponseBody() ;
+  Error WriteResponseBody() ;
 
   HttpRequestInfo& http_request_ ;
   HttpResponseInfo& http_response_ ;

@@ -64,10 +64,10 @@ class HttpPackageInfo {
   virtual void Clear() ;
 
   // Initializes the object by raw data
-  vv::Error Parse(const char* data, std::int32_t size, bool owned = false) ;
+  Error Parse(const char* data, std::int32_t size, bool owned = false) ;
 
   // Initializes a http-version of the object by raw-data
-  vv::Error ParseHttpVersion(const char* str_begin, const char* str_end) ;
+  Error ParseHttpVersion(const char* str_begin, const char* str_end) ;
 
   // Sets http-version
   void SetHttpVersion(const HttpVersion& http_version) ;
@@ -88,16 +88,15 @@ class HttpPackageInfo {
   // in the vector remains the same.  When comparing |key|, case is ignored.
   // The caller must ensure that |key| passes IsValidHeaderName() and
   // |value| passes IsValidHeaderValue().
-  vv::Error SetHeader(const std::string& key, const std::string& value) ;
+  Error SetHeader(const std::string& key, const std::string& value) ;
 
   // Sets the header value pair for |key| and |value|, if |key| does not exist.
   // If |key| already exists, the call is a no-op.
   // When comparing |key|, case is ignored.
-  vv::Error SetHeaderIfMissing(
-      const std::string& key, const std::string& value) ;
+  Error SetHeaderIfMissing(const std::string& key, const std::string& value) ;
 
   // Returns body information
-  vv::Error GetBody(const char*& body, std::int32_t& body_size) ;
+  Error GetBody(const char*& body, std::int32_t& body_size) ;
 
   // Sets body information
   void SetBody(const char* body, std::int32_t body_size, bool owned = false) ;
@@ -106,7 +105,7 @@ class HttpPackageInfo {
   void SetBody(const std::string& body) ;
 
   // Sets body information by first request of it
-  typedef std::function<vv::Error(const char*&, std::int32_t&, bool& owned)>
+  typedef std::function<Error(const char*&, std::int32_t&, bool& owned)>
       BodyGetter ;
   void SetBody(BodyGetter getter) ;
 
@@ -119,7 +118,7 @@ class HttpPackageInfo {
 
   HttpVersion http_version() const { return http_version_ ; }
 
-  vv::Error raw_headers(const char*& headers, std::int32_t& size) const {
+  Error raw_headers(const char*& headers, std::int32_t& size) const {
     headers = raw_headers_ ;
     size = raw_headers_size_ ;
     return raw_headers_error_ ;
@@ -129,8 +128,8 @@ class HttpPackageInfo {
   static bool IsToken(const std::string& string) ;
 
  protected:
-  virtual vv::Error ParseInternal(
-    const char* headers, std::int32_t size, bool owned) ;
+  virtual Error ParseInternal(
+      const char* headers, std::int32_t size, bool owned) ;
 
   virtual void UpdateInfoByHeader(
       const std::string& key, const std::string& value, bool deleted = false) ;
@@ -148,7 +147,7 @@ class HttpPackageInfo {
   const char* raw_headers_ = nullptr ;
   std::int32_t raw_headers_size_ = 0 ;
   bool raw_headers_owned_ = false ;
-  vv::Error raw_headers_error_ = vv::errObjNotInit ;
+  Error raw_headers_error_ = errObjNotInit ;
 
   // Body data
   const char* body_ = nullptr ;
@@ -156,7 +155,7 @@ class HttpPackageInfo {
   std::int32_t content_length_ = -1 ;
   std::int32_t body_size_ = 0 ;
   bool body_owned_ = false ;
-  vv::Error body_error_ = vv::wrnObjNotInit ;
+  Error body_error_ = wrnObjNotInit ;
   BodyGetter body_getter_ = nullptr ;
 
   DISALLOW_COPY_AND_ASSIGN(HttpPackageInfo) ;

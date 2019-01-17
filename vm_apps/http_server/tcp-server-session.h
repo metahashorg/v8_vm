@@ -24,18 +24,18 @@ class TcpServerSession {
 
   // Callback for a session error
   typedef std::function<
-      void(TcpServerSession* session, vv::Error error)> ErrorCallback ;
+      void(TcpServerSession* session, Error error)> ErrorCallback ;
 
   virtual ~TcpServerSession() ;
 
   // Starts tcp-session
-  virtual vv::Error Start() ;
+  virtual Error Start() ;
 
   // Stops tcp-session
-  virtual vv::Error Stop() ;
+  virtual Error Stop() ;
 
   // Waits until tcp-session will have stopped
-  virtual vv::Error Wait() ;
+  virtual Error Wait() ;
 
   // Sets callback for session closed
   void SetClosedCallback(const ClosedCallback& callback) ;
@@ -47,12 +47,12 @@ class TcpServerSession {
   TcpServerSession(std::unique_ptr<StreamSocket>& socket) ;
 
   // Reads data from a socket
-  vv::Error Read(char* buf, std::int32_t& buf_len, bool complete_buf = false) ;
+  Error Read(char* buf, std::int32_t& buf_len, bool complete_buf = false) ;
 
   // Writes data from a socket
-  vv::Error Write(const char* buf, std::int32_t& buf_len) ;
+  Error Write(const char* buf, std::int32_t& buf_len) ;
 
-  virtual vv::Error Do() = 0 ;
+  virtual Error Do() = 0 ;
 
 
  private:

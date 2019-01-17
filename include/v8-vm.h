@@ -6,87 +6,11 @@
 #define INCLUDE_V8_VM_H_
 
 #include "v8.h"  // NOLINT(build/include)
+#include "v8-vm-error.h"
 
 
 namespace v8 {
 namespace vm {
-
-/** Errors */
-#define V8_ERR_SUCCESSED(e) ((e) >= 0)
-#define V8_ERR_FAILED(e) ((e) < 0)
-#define V8_ERR_RETURN_IF_FAILED(e) if (V8_ERR_FAILED(e)) { return (e) ; }
-
-typedef std::int32_t Error ;
-
-const Error errOk = 0x0 ;
-
-// Common warnings
-const Error wrnIncompleteOperation = 0x0000001 ;
-const Error wrnObjNotInit          = 0x0000002 ;
-
-const Error errBase = 0xf0000000 ;
-
-// Common errors
-const Error errCommonBase            = (errBase|0x0001000) ;
-const Error errUnknown               = (errCommonBase|0x0000001) ;
-const Error errFailed                = (errCommonBase|0x0000002) ;
-const Error errAccessDenied          = (errCommonBase|0x0000003) ;
-const Error errObjNotInit            = (errCommonBase|0x0000004) ;
-const Error errTimeout               = (errCommonBase|0x0000005) ;
-const Error errInvalidArgument       = (errCommonBase|0x0000006) ;
-const Error errFileNotFound          = (errCommonBase|0x0000007) ;
-const Error errPathNotFound          = (errCommonBase|0x0000008) ;
-const Error errInsufficientResources = (errCommonBase|0x0000009) ;
-const Error errInvalidHandle         = (errCommonBase|0x000000a) ;
-const Error errOutOfMemory           = (errCommonBase|0x000000b) ;
-const Error errFileNoSpace           = (errCommonBase|0x000000c) ;
-const Error errFileExists            = (errCommonBase|0x000000d) ;
-const Error errFilePathTooLong       = (errCommonBase|0x000000e) ;
-const Error errNotImplemented        = (errCommonBase|0x000000f) ;
-const Error errAborted               = (errCommonBase|0x0000010) ;
-const Error errFileTooBig            = (errCommonBase|0x0000011) ;
-const Error errIncompleteOperation   = (errCommonBase|0x0000012) ;
-const Error errUnsupportedType       = (errCommonBase|0x0000013) ;
-const Error errNotEnoughData         = (errCommonBase|0x0000014) ;
-const Error errFileNotExists         = (errCommonBase|0x0000015) ;
-const Error errFileEmpty             = (errCommonBase|0x0000016) ;
-
-// JS errors
-const Error errJSBase          = (errBase|0x0002000) ;
-const Error errJSUnknown       = (errJSBase|0x0000001) ;
-const Error errJSException     = (errJSBase|0x0000002) ;
-const Error errJSCacheRejected = (errJSBase|0x0000003) ;
-
-// Json errors
-const Error errJsonBase                    = (errBase|0x0004000) ;
-const Error errJsonInvalidEscape           = (errJsonBase|0x0000001) ;
-const Error errJsonSyntaxError             = (errJsonBase|0x0000002) ;
-const Error errJsonUnexpectedToken         = (errJsonBase|0x0000003) ;
-const Error errJsonTrailingComma           = (errJsonBase|0x0000004) ;
-const Error errJsonTooMuchNesting          = (errJsonBase|0x0000005) ;
-const Error errJsonUnexpectedDataAfterRoot = (errJsonBase|0x0000006) ;
-const Error errJsonUnsupportedEncoding     = (errJsonBase|0x0000007) ;
-const Error errJsonUnquotedDictionaryKey   = (errJsonBase|0x0000008) ;
-const Error errJsonInappropriateType       = (errJsonBase|0x0000009) ;
-
-// Net errors
-const Error errNetBase                 = (errBase|0x0008000) ;
-const Error errNetIOPending            = (errNetBase|0x0000001) ;
-const Error errNetInternetDisconnected = (errNetBase|0x0000002) ;
-const Error errNetConnectionReset      = (errNetBase|0x0000003) ;
-const Error errNetConnectionAborted    = (errNetBase|0x0000004) ;
-const Error errNetConnectionRefused    = (errNetBase|0x0000005) ;
-const Error errNetConnectionClosed     = (errNetBase|0x0000006) ;
-const Error errNetSocketIsConnected    = (errNetBase|0x0000007) ;
-const Error errNetAddressUnreachable   = (errNetBase|0x0000008) ;
-const Error errNetAddressInvalid       = (errNetBase|0x0000009) ;
-const Error errNetAddressInUse         = (errNetBase|0x000000a) ;
-const Error errNetMsgTooBig            = (errNetBase|0x000000b) ;
-const Error errNetSocketNotConnected   = (errNetBase|0x000000c) ;
-const Error errNetInvalidPackage       = (errNetBase|0x000000d) ;
-const Error errNetEntityTooLarge       = (errNetBase|0x000000e) ;
-
-std::string V8_EXPORT ErrorToString(Error error) ;
 
 /** Enum about how to write Json */
 enum class FormattedJson {

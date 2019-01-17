@@ -26,7 +26,7 @@ Error ScriptRunner::Run() {
   Local<Script> script ;
   Error result = CompileScript(
       *context_, script_data_, script, script_cache_.get()) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Command script hasn't been compiled.\n") ;
     return result ;
   }
@@ -83,7 +83,7 @@ Error ScriptRunner::Create(
 
       // Compile a main script
       res = CompileScript(*result->context_, *data, result->main_script_) ;
-      if (V8_ERR_FAILED(res)) {
+      if (V8_ERROR_FAILED(res)) {
         printf("ERROR: Main script hasn't been compiled.\n") ;
         return res ;
       }
@@ -99,7 +99,7 @@ Error ScriptRunner::Create(
       // Load compilation
       res = LoadScriptCompilation(
           *result->context_, *data, result->main_script_) ;
-      if (V8_ERR_FAILED(res)) {
+      if (V8_ERROR_FAILED(res)) {
         printf("ERROR: Main script hasn't been loaded.\n") ;
         return res ;
       }
@@ -142,7 +142,7 @@ Error ScriptRunner::Create(
   // Compile a command script and save a cache of it
   Local<Script> script ;
   res = CompileScript(*result->context_, script_data, script) ;
-  if (V8_ERR_FAILED(res)) {
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: Command script hasn't been compiled. "
            "(Script origin: %s)\n", script_data.origin.c_str()) ;
     return res ;

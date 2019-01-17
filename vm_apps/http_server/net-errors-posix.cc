@@ -13,7 +13,7 @@
 #include <string>
 #include <unistd.h>
 
-vv::Error MapSystemError(SystemErrorCode os_error) {
+Error MapSystemError(SystemErrorCode os_error) {
   // There are numerous posix error codes, but these are the ones we thus far
   // find interesting.
   switch (os_error) {
@@ -21,95 +21,95 @@ vv::Error MapSystemError(SystemErrorCode os_error) {
 #if EWOULDBLOCK != EAGAIN
     case EWOULDBLOCK:
 #endif
-       return vv::errNetIOPending ;
+       return errNetIOPending ;
     case EACCES:
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ENETDOWN:
-       return vv::errNetInternetDisconnected ;
+       return errNetInternetDisconnected ;
     case ETIMEDOUT:
-       return vv::errTimeout ;
+       return errTimeout ;
     case ECONNRESET:
     case ENETRESET:  // Related to keep-alive.
     case EPIPE:
-       return vv::errNetConnectionReset ;
+       return errNetConnectionReset ;
     case ECONNABORTED:
-       return vv::errNetConnectionAborted ;
+       return errNetConnectionAborted ;
     case ECONNREFUSED:
-       return vv::errNetConnectionRefused ;
+       return errNetConnectionRefused ;
     case EHOSTUNREACH:
     case EHOSTDOWN:
     case ENETUNREACH:
     case EAFNOSUPPORT:
-       return vv::errNetAddressUnreachable;
+       return errNetAddressUnreachable;
     case EADDRNOTAVAIL:
-       return vv::errNetAddressInvalid ;
+       return errNetAddressInvalid ;
     case EMSGSIZE:
-       return vv::errNetMsgTooBig ;
+       return errNetMsgTooBig ;
     case ENOTCONN:
-       return vv::errNetSocketNotConnected ;
+       return errNetSocketNotConnected ;
     case EISCONN:
-       return vv::errNetSocketIsConnected ;
+       return errNetSocketIsConnected ;
     case EINVAL:
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case EADDRINUSE:
-       return vv::errNetAddressInUse ;
+       return errNetAddressInUse ;
     case E2BIG:  // Argument list too long.
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case EBADF:  // Bad file descriptor.
-       return vv::errInvalidHandle ;
+       return errInvalidHandle ;
     case EBUSY:  // Device or resource busy.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case ECANCELED:  // Operation canceled.
-       return vv::errAborted ;
+       return errAborted ;
     case EDEADLK:  // Resource deadlock avoided.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case EDQUOT:  // Disk quota exceeded.
-       return vv::errFileNoSpace ;
+       return errFileNoSpace ;
     case EEXIST:  // File exists.
-       return vv::errFileExists ;
+       return errFileExists ;
     case EFAULT:  // Bad address.
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case EFBIG:  // File too large.
-       return vv::errFileTooBig ;
+       return errFileTooBig ;
     case EISDIR:  // Operation not allowed for a directory.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ENAMETOOLONG:  // Filename too long.
-       return vv::errFilePathTooLong ;
+       return errFilePathTooLong ;
     case ENFILE:  // Too many open files in system.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case ENOBUFS:  // No buffer space available.
-       return vv::errOutOfMemory ;
+       return errOutOfMemory ;
     case ENODEV:  // No such device.
-       return vv::errInvalidArgument ;
+       return errInvalidArgument ;
     case ENOENT:  // No such file or directory.
-       return vv::errFileNotFound ;
+       return errFileNotFound ;
     case ENOLCK:  // No locks available.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case ENOMEM:  // Not enough space.
-       return vv::errOutOfMemory ;
+       return errOutOfMemory ;
     case ENOSPC:  // No space left on device.
-       return vv::errFileNoSpace ;
+       return errFileNoSpace ;
     case ENOSYS:  // Function not implemented.
-       return vv::errNotImplemented ;
+       return errNotImplemented ;
     case ENOTDIR:  // Not a directory.
-       return vv::errFileNotFound ;
+       return errFileNotFound ;
     case ENOTSUP:  // Operation not supported.
-       return vv::errNotImplemented ;
+       return errNotImplemented ;
     case EPERM:  // Operation not permitted.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case EROFS:  // Read-only file system.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case ETXTBSY:  // Text file busy.
-       return vv::errAccessDenied ;
+       return errAccessDenied ;
     case EUSERS:  // Too many users.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
     case EMFILE:  // Too many open files.
-       return vv::errInsufficientResources ;
+       return errInsufficientResources ;
 
     case 0:
-       return vv::errOk;
+       return errOk;
     default:
       printf("ERROR: Unknown error - 0x%08X", (std::uint32_t)os_error) ;
-       return vv::errFailed ;
+       return errFailed ;
   }
 }

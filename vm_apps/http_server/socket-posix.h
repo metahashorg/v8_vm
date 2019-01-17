@@ -25,22 +25,22 @@ class SocketPosix {
 
   // Opens a socket and returns net::OK if |address_family| is AF_INET, AF_INET6
   // or AF_UNIX. Otherwise, it does DCHECK() and returns a net error.
-  vv::Error Open(int address_family);
+  Error Open(int address_family);
 
   // Takes ownership of |socket|, which is known to already be connected to the
   // given peer address.
-  vv::Error AdoptConnectedSocket(
+  Error AdoptConnectedSocket(
       SocketDescriptor socket, const SockaddrStorage& peer_address) ;
   // Takes ownership of |socket|, which may or may not be open, bound, or
   // listening. The caller must determine the state of the socket based on its
   // provenance and act accordingly. The socket may have connections waiting
   // to be accepted, but must not be actually connected.
-  vv::Error AdoptUnconnectedSocket(SocketDescriptor socket) ;
+  Error AdoptUnconnectedSocket(SocketDescriptor socket) ;
 
-  vv::Error Bind(const SockaddrStorage& address) ;
+  Error Bind(const SockaddrStorage& address) ;
 
-  vv::Error Listen(int backlog) ;
-  vv::Error Accept(
+  Error Listen(int backlog) ;
+  Error Accept(
       std::unique_ptr<SocketPosix>* socket,
       Timeout timeout = kInfiniteTimeout) ;
 
@@ -51,17 +51,17 @@ class SocketPosix {
 
   // Reads from the socket.
   // Returns a net error code.
-  vv::Error Read(
+  Error Read(
       char* buf, std::int32_t& buf_len, Timeout timeout = kInfiniteTimeout) ;
 
   // Writes to the socket.
   // Returns a net error code.
-  vv::Error Write(
+  Error Write(
       const char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) ;
 
-  vv::Error GetLocalAddress(SockaddrStorage* address) const ;
-  vv::Error GetPeerAddress(SockaddrStorage* address) const ;
+  Error GetLocalAddress(SockaddrStorage* address) const ;
+  Error GetPeerAddress(SockaddrStorage* address) const ;
   void SetPeerAddress(const SockaddrStorage& address) ;
   // Returns true if peer address has been set regardless of socket state.
   bool HasPeerAddress() const ;

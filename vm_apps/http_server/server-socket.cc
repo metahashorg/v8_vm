@@ -22,7 +22,7 @@ ServerSocket::~ServerSocket() {
 //     const std::string& address_string, std::uint16_t port, int backlog) {
 //   IPAddress ip_address ;
 //   if (!ip_address.AssignFromIPLiteral(address_string)) {
-//     return vv::errNetAddressInvalid ;
+//     return errNetAddressInvalid ;
 //   }
 //
 //   return Listen(IPEndPoint(ip_address, port), backlog) ;

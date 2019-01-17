@@ -30,14 +30,14 @@ HttpServerSession::HttpServerSession(
     body_buffer_size_(body_buffer_size),
     session_handler_(session_handler) {}
 
-vv::Error HttpServerSession::GetBody(
+Error HttpServerSession::GetBody(
     const char*& body, std::int32_t& body_size, bool& owned) {
   printf("VERBS: HttpServerSession::GetBody()\n") ;
   // TODO: DCHECK(request_) ;
 
   if (!request_) {
     printf("ERROR: Can't get a body when request is NULL\n") ;
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
   // |owned| is false in any case
@@ -48,19 +48,19 @@ vv::Error HttpServerSession::GetBody(
     // TODO: Sometimes we need to read before EOF
     body = nullptr ;
     body_size = 0 ;
-    return vv::errOk ;
+    return errOk ;
   }
 
   // We might have already read something
   local_body_size -= raw_body_.size() ;
 
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   std::vector<char> body_buffer(body_buffer_size_) ;
-  for (; V8_ERR_SUCCESSED(result) && local_body_size > 0;) {
+  for (; V8_ERROR_SUCCESS(result) && local_body_size > 0;) {
     std::int32_t buf_len = std::min(
         local_body_size, static_cast<std::int32_t>(body_buffer.size())) ;
     result = Read(&body_buffer.at(0), buf_len, true) ;
-    if (buf_len == 0 || V8_ERR_FAILED(result)) {
+    if (buf_len == 0 || V8_ERROR_FAILED(result)) {
       continue ;
     }
 
@@ -76,15 +76,15 @@ vv::Error HttpServerSession::GetBody(
   return result ;
 }
 
-vv::Error HttpServerSession::ReadRequestHeader() {
+Error HttpServerSession::ReadRequestHeader() {
   // Read http-headers
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   std::vector<char> headers_buffer(kHeaderBufferSize) ;
   std::uint8_t http_header_end_flag = 0 ;
-  for (; V8_ERR_SUCCESSED(result);) {
+  for (; V8_ERROR_SUCCESS(result);) {
     std::int32_t buf_len = static_cast<std::int32_t>(headers_buffer.size()) ;
     result = Read(&headers_buffer.at(0), buf_len, false) ;
-    if (buf_len == 0 || V8_ERR_FAILED(result)) {
+    if (buf_len == 0 || V8_ERROR_FAILED(result)) {
       continue ;
     }
 
@@ -124,13 +124,13 @@ vv::Error HttpServerSession::ReadRequestHeader() {
     }
 
     if (raw_headers_.size() > kHeaderMaxSize) {
-      result = vv::errNetEntityTooLarge ;
+      result = errNetEntityTooLarge ;
       response_.reset(new HttpResponseInfo(HTTP_REQUEST_ENTITY_TOO_LARGE)) ;
       break ;
     }
   }
 
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Net error's occurred or HTTP header is corrupted\n") ;
     return result ;
   }
@@ -139,30 +139,30 @@ vv::Error HttpServerSession::ReadRequestHeader() {
   request_.reset(new HttpRequestInfo()) ;
   result = request_->Parse(
       &raw_headers_.at(0), static_cast<std::int32_t>(raw_headers_.size())) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: request_->Parse() is failed\n") ;
     request_.reset() ;
     response_.reset(new HttpResponseInfo(HTTP_BAD_REQUEST)) ;
-    return vv::errNetInvalidPackage ;
+    return errNetInvalidPackage ;
   }
 
   response_.reset(new HttpResponseInfo()) ;
   request_->SetBody(std::bind(
       &HttpServerSession::GetBody, std::ref(*this), std::placeholders::_1,
       std::placeholders::_2, std::placeholders::_3)) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error HttpServerSession::SendResponse() {
+Error HttpServerSession::SendResponse() {
   if (!response_) {
-    return vv::wrnObjNotInit ;
+    return wrnObjNotInit ;
   }
 
   // Send headers
   std::string headers = response_->ToString() ;
   std::int32_t buf_len = static_cast<std::int32_t>(headers.length()) ;
-  vv::Error result = Write(headers.c_str(), buf_len) ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = Write(headers.c_str(), buf_len) ;
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Sending response headers is failed\n") ;
     return result ;
   }
@@ -170,14 +170,14 @@ vv::Error HttpServerSession::SendResponse() {
   // Send a body if it exists
   const char* body = nullptr ;
   result = response_->GetBody(body, buf_len) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: response_->GetBody() is failed\n") ;
     return result ;
   }
 
   if (buf_len > 0) {
     result = Write(body, buf_len) ;
-    if (V8_ERR_FAILED(result)) {
+    if (V8_ERROR_FAILED(result)) {
       printf("ERROR: Sending a body is failed\n") ;
       return result ;
     }
@@ -197,13 +197,13 @@ void HttpServerSession::SetResponseDefaultHeaders() {
   }
 }
 
-vv::Error HttpServerSession::Do() {
+Error HttpServerSession::Do() {
   printf("VERBS: HttpServerSession::Do()\n") ;
 
   // Read a request
-  vv::Error result = ReadRequestHeader() ;
+  Error result = ReadRequestHeader() ;
   SetResponseDefaultHeaders() ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: ReadRequestHeader() is failed\n") ;
     SendResponse() ;
     return result ;
@@ -215,7 +215,7 @@ vv::Error HttpServerSession::Do() {
   // Call a handler if it exists
   if (session_handler_) {
     result = session_handler_(*request_, *response_) ;
-    if (V8_ERR_FAILED(result)) {
+    if (V8_ERROR_FAILED(result)) {
       printf("ERROR: session_handler_() is failed\n") ;
       // Refresh a response because of a handler call
       response_.reset(new HttpResponseInfo(HTTP_INTERNAL_SERVER_ERROR)) ;

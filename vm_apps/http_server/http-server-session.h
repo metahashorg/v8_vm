@@ -15,7 +15,7 @@ class HttpServerSession : public TcpServerSession {
  public:
    // Handler of a session
    typedef std::function<
-       vv::Error(HttpRequestInfo& request, HttpResponseInfo& response)>
+       Error(HttpRequestInfo& request, HttpResponseInfo& response)>
        SessionHandler ;
 
   // Default buffer size for reading/writing a body
@@ -40,19 +40,19 @@ class HttpServerSession : public TcpServerSession {
       const std::string& server_name, std::int32_t body_buffer_size) ;
 
   // Reads a body of a request
-  vv::Error GetBody(const char*& body, std::int32_t& body_size, bool& owned) ;
+  Error GetBody(const char*& body, std::int32_t& body_size, bool& owned) ;
 
   // Reads a request header and creates a request and a response structures
-  vv::Error ReadRequestHeader() ;
+  Error ReadRequestHeader() ;
 
   // Sends a response
-  vv::Error SendResponse() ;
+  Error SendResponse() ;
 
   // Sets default headers of a resopnse
   void SetResponseDefaultHeaders() ;
 
   // Entry point of a http-session
-  vv::Error Do() override ;
+  Error Do() override ;
 
   // Creates a new http-session
   static TcpServerSession* New(

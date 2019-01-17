@@ -128,7 +128,7 @@ Error CompileModuleFromFile(const char* module_path, const char* result_path) {
   Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
   Local<Module> module ;
   Error res = CompileModule(context->isolate(), module_data, module) ;
-  if (V8_ERR_FAILED(res)) {
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: The module hasn't been compiled.\n") ;
     return res ;
   }
@@ -157,7 +157,7 @@ Error CompileScript(
   Data script_data(Data::Type::JSScript, script_origin, script) ;
   Local<Script> script_obj ;
   Error res = CompileScript(*context, script_data, script_obj) ;
-  if (V8_ERR_FAILED(res)) {
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: The script hasn't been compiled.\n") ;
     return res ;
   }
@@ -186,7 +186,7 @@ Error CompileScriptFromFile(const char* script_path, const char* result_path) {
 
   Data result ;
   Error res = CompileScript(file_content.start(), script_path, result) ;
-  if (V8_ERR_FAILED(res)) {
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: Can't compile the script\n") ;
     return res ;
   }
@@ -216,7 +216,7 @@ Error LoadModuleCompilation(
   cache->use_hash_for_check = false ;
   Data module_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
   Error result = CompileModule(isolate, module_data, module, cache.get()) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: The script hasn't been compiled.\n") ;
     return result ;
   }
@@ -250,7 +250,7 @@ Error LoadScriptCompilation(
   cache->use_hash_for_check = false ;
   Data script_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
   Error result = CompileScript(context, script_data, script, cache.get()) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: The script hasn't been compiled.\n") ;
     return result ;
   }

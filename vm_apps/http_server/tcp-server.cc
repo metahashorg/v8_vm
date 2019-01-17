@@ -23,11 +23,11 @@ TcpServer::~TcpServer() {
   thread_.reset() ;
 }
 
-vv::Error TcpServer::Start(
+Error TcpServer::Start(
     std::uint16_t port, const TcpServerSession::Creator& session_creator) {
   if (!port || !session_creator) {
     printf("ERROR: TcpServer::Start() - invalid argument\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   // Remember callback of a tcp-session creation
@@ -37,8 +37,8 @@ vv::Error TcpServer::Start(
   ip_endpoint_.reset(new IPEndPoint(IPAddress(0, 0, 0, 0), port)) ;
 
   // Create socket and initialize it
-  vv::Error result = socket_.Listen(*ip_endpoint_.get(), kListenBacklog) ;
-  V8_ERR_RETURN_IF_FAILED(result) ;
+  Error result = socket_.Listen(*ip_endpoint_.get(), kListenBacklog) ;
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Create callbacks on session events
   session_closed_callback_ = std::bind(
@@ -49,21 +49,21 @@ vv::Error TcpServer::Start(
 
   // Start a server thread
   thread_.reset(new std::thread(&TcpServer::Run, std::ref(*this))) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpServer::Stop() {
+Error TcpServer::Stop() {
   stop_flag_ = true ;
   if (!thread_.get()) {
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error TcpServer::Wait() {
+Error TcpServer::Wait() {
   if (!thread_.get()) {
-    return vv::errObjNotInit ;
+    return errObjNotInit ;
   }
 
   // Wait the thread
@@ -78,8 +78,8 @@ vv::Error TcpServer::Wait() {
       break ;
     }
 
-    vv::Error session_error = (*sessions_.begin())->Stop() ;
-    if (V8_ERR_FAILED(session_error)) {
+    Error session_error = (*sessions_.begin())->Stop() ;
+    if (V8_ERROR_FAILED(session_error)) {
       delete (*sessions_.begin()) ;
       sessions_.erase(sessions_.begin()) ;
       continue ;
@@ -88,7 +88,7 @@ vv::Error TcpServer::Wait() {
     sessions_cv_.wait(locker) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
 void TcpServer::OnSessionClosed(TcpServerSession* session) {
@@ -99,19 +99,19 @@ void TcpServer::OnSessionClosed(TcpServerSession* session) {
   sessions_cv_.notify_all() ;
 }
 
-void TcpServer::OnSessionError(TcpServerSession* session, vv::Error error) {}
+void TcpServer::OnSessionError(TcpServerSession* session, Error error) {}
 
 void TcpServer::Run() {
   while(!stop_flag_) {
     std::unique_ptr<StreamSocket> accepted_socket ;
-    vv::Error result = socket_.Accept(&accepted_socket, kWaitForAccept) ;
-    if (result == vv::errOk) {
+    Error result = socket_.Accept(&accepted_socket, kWaitForAccept) ;
+    if (result == errOk) {
       TcpServerSession* session = session_creator_(accepted_socket) ;
       if (session) {
         session->SetClosedCallback(session_closed_callback_) ;
         session->SetErrorCallback(session_error_callback_) ;
-        vv::Error session_error = session->Start() ;
-        if (V8_ERR_FAILED(session_error)) {
+        Error session_error = session->Start() ;
+        if (V8_ERROR_FAILED(session_error)) {
           delete session ;
         } else {
           std::unique_lock<std::mutex> locker(sessions_lock_) ;
@@ -122,7 +122,7 @@ void TcpServer::Run() {
       continue ;
     }
 
-    if (result != vv::errTimeout) {
+    if (result != errTimeout) {
       printf("ERROR: TcpServer::Run() - Accept() returned an error\n") ;
     }
   }

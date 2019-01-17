@@ -21,14 +21,14 @@ class TcpServer {
   virtual ~TcpServer() ;
 
   // Starts a tcp-server
-  vv::Error Start(
+  Error Start(
       std::uint16_t port, const TcpServerSession::Creator& session_creator) ;
 
   // Stops a tcp-server
-  vv::Error Stop() ;
+  Error Stop() ;
 
   // Waits until tcp-server will have stopped
-  vv::Error Wait() ;
+  Error Wait() ;
 
   const IPEndPoint* ip_endpoint() const { return ip_endpoint_.get() ; }
 
@@ -39,7 +39,7 @@ class TcpServer {
 
   // Callbacks for events from a session
   void OnSessionClosed(TcpServerSession* session) ;
-  void OnSessionError(TcpServerSession* session, vv::Error error) ;
+  void OnSessionError(TcpServerSession* session, Error error) ;
 
   std::unique_ptr<IPEndPoint> ip_endpoint_ ;
   TcpServerSocket socket_ ;

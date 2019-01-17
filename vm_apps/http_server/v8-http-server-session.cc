@@ -21,7 +21,7 @@ namespace {
 
 const std::size_t kAddressLength = 25 ;
 
-vv::Error CreateAddress(
+Error CreateAddress(
     const std::vector<std::uint8_t>& data, int nonce,
     std::string& result) {
   std::vector<std::string> fields ;
@@ -38,7 +38,7 @@ vv::Error CreateAddress(
   if (sha3_256(hash, SHA256_DIGEST_LENGTH, (const uint8_t*)rlpenc.data(),
                rlpenc.size())) {
     printf("ERROR: sha3_256() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   // Form the first 21 bytes of an address
@@ -49,33 +49,33 @@ vv::Error CreateAddress(
   SHA256_CTX sha256_context ;
   if (!SHA256_Init(&sha256_context)) {
     printf("ERROR: SHA256_Init() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   if (!SHA256_Update(&sha256_context, address, 21)) {
     printf("ERROR: SHA256_Update() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   if (!SHA256_Final(hash, &sha256_context)) {
     printf("ERROR: SHA256_Final() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   // Calculate sha256 from previous hash
   if (!SHA256_Init(&sha256_context)) {
     printf("ERROR: SHA256_Init() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   if (!SHA256_Update(&sha256_context, hash, SHA256_DIGEST_LENGTH)) {
     printf("ERROR: SHA256_Update() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   if (!SHA256_Final(hash, &sha256_context)) {
     printf("ERROR: SHA256_Update() is failed\n") ;
-    return vv::errUnknown ;
+    return errUnknown ;
   }
 
   // Set a checksum
@@ -85,11 +85,11 @@ vv::Error CreateAddress(
   address[24] = hash[3] ;
   // Save result
   result = "0x" + HexEncode(address, kAddressLength) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
 template<typename T>
-vv::Error ReadInt(
+Error ReadInt(
     std::uint8_t *&cur_pos, std::uint8_t *end_pos, std::uint64_t& result) {
   static_assert(std::is_integral<T>::value, "Type must be integral") ;
 
@@ -97,28 +97,28 @@ vv::Error ReadInt(
 
   if ((cur_pos + sizeof(T)) > end_pos) {
     printf("ERROR: ReadInt() can't read next integer.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   result = *reinterpret_cast<T*>(cur_pos) ;
   cur_pos += sizeof(T) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error ReadVarInt(
+Error ReadVarInt(
     std::uint8_t *&cur_pos, std::uint8_t *end_pos, std::uint64_t& result) {
   // TODO: DCHECK(cur_pos + sizeof(std::uint8_t) <= end_pos) ;
 
   if ((cur_pos + sizeof(std::uint8_t)) > end_pos) {
     printf("ERROR: ReadVarInt() can't read next integer.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   const uint8_t len = *cur_pos ;
   cur_pos++ ;
   if (len <= 249) {
     result = len ;
-    return vv::errOk ;
+    return errOk ;
   } else if (len == 250) {
     return ReadInt<uint16_t>(cur_pos, end_pos, result) ;
   } else if (len == 251) {
@@ -128,7 +128,7 @@ vv::Error ReadVarInt(
   }
 
   printf("ERROR: Unknown type of integer.\n") ;
-  return vv::errUnsupportedType ;
+  return errUnsupportedType ;
 }
 
 class RequestParser {
@@ -136,31 +136,31 @@ class RequestParser {
   RequestParser() ;
 
   // Parse a json-request
-  vv::Error Parse(
+  Error Parse(
       const char* json, std::int32_t size,
       std::unique_ptr<V8HttpServerSession::Request>& result) ;
 
  private:
    // Parse a address
-   vv::Error ParseAddress(const char* val, std::size_t size) ;
+   Error ParseAddress(const char* val, std::size_t size) ;
 
   // Parse a method
-  vv::Error ParseMethod(const std::string& method) ;
+  Error ParseMethod(const std::string& method) ;
 
   // Parse a transaction
-  vv::Error ParseTransaction(const char* val, std::size_t size) ;
+  Error ParseTransaction(const char* val, std::size_t size) ;
 
   // JSON parser callbacks
-  vv::Error OnNull() ;
-  vv::Error OnBoolean(bool val) ;
-  vv::Error OnInteger(std::int64_t val) ;
-  vv::Error OnDouble(double val) ;
-  vv::Error OnString(const char* val, std::size_t size) ;
-  vv::Error OnStartMap() ;
-  vv::Error OnMapKey(const char* val, std::size_t size) ;
-  vv::Error OnEndMap() ;
-  vv::Error OnStartArray(const char* raw_pos) ;
-  vv::Error OnEndArray(const char* raw_pos) ;
+  Error OnNull() ;
+  Error OnBoolean(bool val) ;
+  Error OnInteger(std::int64_t val) ;
+  Error OnDouble(double val) ;
+  Error OnString(const char* val, std::size_t size) ;
+  Error OnStartMap() ;
+  Error OnMapKey(const char* val, std::size_t size) ;
+  Error OnEndMap() ;
+  Error OnStartArray(const char* raw_pos) ;
+  Error OnEndArray(const char* raw_pos) ;
 
   JsonSaxParser::Callbacks callbacks_ ;
   std::unique_ptr<V8HttpServerSession::Request> request_ ;
@@ -231,7 +231,7 @@ RequestParser::RequestParser() {
       &RequestParser::OnEndArray, std::ref(*this), std::placeholders::_1) ;
 }
 
-vv::Error RequestParser::Parse(
+Error RequestParser::Parse(
   const char* json, std::int32_t size,
   std::unique_ptr<V8HttpServerSession::Request>& result) {
   // Clear nesting
@@ -250,8 +250,8 @@ vv::Error RequestParser::Parse(
 
   // Try to parse a json
   JsonSaxParser parser(callbacks_, JsonSaxParser::JSON_PARSE_RFC) ;
-  vv::Error res = parser.Parse(json, size) ;
-  if (V8_ERR_FAILED(res)) {
+  Error res = parser.Parse(json, size) ;
+  if (V8_ERROR_FAILED(res)) {
     printf("ERROR: Can't have parsed a json of the request\n") ;
     return res ;
   }
@@ -265,54 +265,54 @@ vv::Error RequestParser::Parse(
 
     if (processed_.find(processed_fileds_[i]) == processed_.end()) {
       printf("ERROR: Field |%s| is absent.\n", processed_fileds_[i]) ;
-      return vv::errNotEnoughData ;
+      return errNotEnoughData ;
     }
   }
 
   // Save a result
   std::swap(result, request_) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::ParseAddress(const char* val, std::size_t size) {
+Error RequestParser::ParseAddress(const char* val, std::size_t size) {
   if (size < 2 || val[0] != '0' || val[1] != 'x') {
     printf("ERROR: |address| has a invalid format.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   if (!HexStringToBytes(std::string(val + 2 , size - 2), &request_->address)) {
     printf("ERROR: |address| has a corrupted value.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   request_->address_str.assign(val, size) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::ParseMethod(const std::string& method) {
-  vv::Error result = vv::errOk ;
+Error RequestParser::ParseMethod(const std::string& method) {
+  Error result = errOk ;
   if (method == kCompileMethod) {
     request_->method = V8HttpServerSession::Method::Compile ;
   } else if (method == kCmdRunMethod) {
     request_->method = V8HttpServerSession::Method::CmdRun ;
   } else {
     printf("ERROR: Unknown method - \'%s\'\n", method.c_str()) ;
-    result = vv::errInvalidArgument ;
+    result = errInvalidArgument ;
   }
 
   return result ;
 }
 
-vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
+Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   std::vector<std::uint8_t> transaction ;
   if (!HexStringToBytes(std::string(val, size), &transaction)) {
     printf("ERROR: |transaction| has a corrupted value.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   if (transaction.size() <= kAddressLength) {
     printf("ERROR: |transaction| is too short.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   // We have an address from a json therefore we skip it
@@ -320,23 +320,23 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   std::uint8_t* end_position = &transaction.at(0) + transaction.size() ;
 
   // Read transaction.value
-  vv::Error result = ReadVarInt(
+  Error result = ReadVarInt(
       position, end_position, request_->transaction.value) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't have read |transaction| value.\n") ;
     return result ;
   }
 
   // Read transaction.fees
   result = ReadVarInt(position, end_position, request_->transaction.fees) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't have read |transaction| fees.\n") ;
     return result ;
   }
 
   // Read transaction.nonce
   result = ReadVarInt(position, end_position, request_->transaction.nonce) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't have read |transaction| nonce.\n") ;
     return result ;
   }
@@ -344,7 +344,7 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   // Read transaction.data_size
   std::uint64_t data_size = 0 ;
   result = ReadVarInt(position, end_position, data_size) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't have read |transaction| data size.\n") ;
     return result ;
   }
@@ -352,7 +352,7 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   // Read transaction.data
   if ((end_position - position) != static_cast<std::int64_t>(data_size)) {
     printf("ERROR: |transaction| data don't match its format.\n") ;
-    return vv::errInvalidArgument ;
+    return errInvalidArgument ;
   }
 
   // Parse transaction.data
@@ -370,7 +370,7 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   result = parser.Parse(
       reinterpret_cast<const char*>(position),
       static_cast<std::int32_t>(data_size)) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't have parsed a transaction data of the request\n") ;
     return result ;
   }
@@ -387,24 +387,24 @@ vv::Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
 
       printf("ERROR: Field |%s| of a transaction data is absent.\n",
              processed_fileds_[i]) ;
-      return vv::errNotEnoughData ;
+      return errNotEnoughData ;
     }
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnNull() {
+Error RequestParser::OnNull() {
   if (nesting_.empty()) {
     // NOTREACHED() ;
     printf("ERROR: Unexpected \'null\'.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   for (int i = 0; i < processed_fileds_count_; ++i) {
     if (nesting_.back() == processed_fileds_[i]) {
       printf("ERROR: |%s| can't be \'null\'.\n", processed_fileds_[i]) ;
-      return vv::errJsonInappropriateType ;
+      return errJsonInappropriateType ;
     }
   }
 
@@ -412,20 +412,20 @@ vv::Error RequestParser::OnNull() {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnBoolean(bool val) {
+Error RequestParser::OnBoolean(bool val) {
   if (nesting_.empty()) {
     // NOTREACHED() ;
     printf("ERROR: Unexpected \'boolean\'.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   for (int i = 0; i < processed_fileds_count_; ++i) {
     if (nesting_.back() == processed_fileds_[i]) {
       printf("ERROR: |%s| can't be \'boolean\'.\n", processed_fileds_[i]) ;
-      return vv::errJsonInappropriateType ;
+      return errJsonInappropriateType ;
     }
   }
 
@@ -433,14 +433,14 @@ vv::Error RequestParser::OnBoolean(bool val) {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnInteger(std::int64_t val) {
+Error RequestParser::OnInteger(std::int64_t val) {
   if (nesting_.empty()) {
     // NOTREACHED() ;
     printf("ERROR: Unexpected \'integer\'.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   if (nesting_.back() == kId) {
@@ -450,7 +450,7 @@ vv::Error RequestParser::OnInteger(std::int64_t val) {
     for (int i = 0; i < processed_fileds_count_; ++i) {
       if (nesting_.back() == processed_fileds_[i]) {
         printf("ERROR: |%s| can't be \'integer\'.\n", processed_fileds_[i]) ;
-        return vv::errJsonInappropriateType ;
+        return errJsonInappropriateType ;
       }
     }
   }
@@ -459,20 +459,20 @@ vv::Error RequestParser::OnInteger(std::int64_t val) {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnDouble(double val) {
+Error RequestParser::OnDouble(double val) {
   if (nesting_.empty()) {
     // NOTREACHED() ;
     printf("ERROR: Unexpected \'double\'.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   for (int i = 0; i < processed_fileds_count_; ++i) {
     if (nesting_.back() == processed_fileds_[i]) {
       printf("ERROR: |%s| can't be \'double\'.\n", processed_fileds_[i]) ;
-      return vv::errJsonInappropriateType ;
+      return errJsonInappropriateType ;
     }
   }
 
@@ -480,19 +480,19 @@ vv::Error RequestParser::OnDouble(double val) {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnString(const char* val, std::size_t size) {
+Error RequestParser::OnString(const char* val, std::size_t size) {
   if (nesting_.empty()) {
     // NOTREACHED() ;
     printf("ERROR: Unexpected \'string\'.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   if (nesting_.back() == kAddress) {
-    vv::Error result = ParseAddress(val, size) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = ParseAddress(val, size) ;
+    if (V8_ERROR_FAILED(result)) {
       printf("ERROR: ParseAddress() is failed.\n") ;
       return result ;
     }
@@ -508,8 +508,8 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
     if (transaction_processing_) {
       request_->transaction.data.method.assign(val, size) ;
     } else {
-      vv::Error result = ParseMethod(std::string(val, size)) ;
-      if (V8_ERR_FAILED(result)) {
+      Error result = ParseMethod(std::string(val, size)) ;
+      if (V8_ERROR_FAILED(result)) {
         printf("ERROR: ParseMethod() is failed.\n") ;
         return result ;
       }
@@ -519,13 +519,13 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
   } else if (nesting_.back() == kState) {
     if (!HexStringToBytes(std::string(val, size), &request_->state)) {
       printf("ERROR: Can't parse a previous state.\n") ;
-      return vv::errInvalidArgument ;
+      return errInvalidArgument ;
     }
 
     processed_.insert(kState) ;
   } else if (nesting_.back() == kTransaction) {
-    vv::Error result = ParseTransaction(val, size) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = ParseTransaction(val, size) ;
+    if (V8_ERROR_FAILED(result)) {
       printf("ERROR: ParseTransaction() is failed.\n") ;
       return result ;
     }
@@ -535,7 +535,7 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
     for (int i = 0; i < processed_fileds_count_; ++i) {
       if (nesting_.back() == processed_fileds_[i]) {
         printf("ERROR: |%s| can't be \'string\'.\n", processed_fileds_[i]) ;
-        return vv::errJsonInappropriateType ;
+        return errJsonInappropriateType ;
       }
     }
   }
@@ -544,23 +544,23 @@ vv::Error RequestParser::OnString(const char* val, std::size_t size) {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnStartMap() {
+Error RequestParser::OnStartMap() {
   nesting_.emplace_back(kStartMap) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnMapKey(const char* key, std::size_t size) {
+Error RequestParser::OnMapKey(const char* key, std::size_t size) {
   nesting_.emplace_back(key, size) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnEndMap() {
+Error RequestParser::OnEndMap() {
   if (nesting_.empty() || nesting_.back() != kStartMap) {
     printf("ERROR: Unexpected end of map.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   nesting_.pop_back() ;
@@ -568,10 +568,10 @@ vv::Error RequestParser::OnEndMap() {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnStartArray(const char* raw_pos) {
+Error RequestParser::OnStartArray(const char* raw_pos) {
   if (transaction_processing_ && !params_beginning_&& !nesting_.empty() &&
       nesting_.back() == kParams) {
     params_beginning_ = raw_pos ;
@@ -579,13 +579,13 @@ vv::Error RequestParser::OnStartArray(const char* raw_pos) {
   }
 
   nesting_.emplace_back(kStartArray) ;
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error RequestParser::OnEndArray(const char* raw_pos) {
+Error RequestParser::OnEndArray(const char* raw_pos) {
   if (nesting_.empty() || nesting_.back() != kStartArray) {
     printf("ERROR: Unexpected end of array.\n") ;
-    return vv::errJsonUnexpectedToken ;
+    return errJsonUnexpectedToken ;
   }
 
   if (params_beginning_ && nesting_.size() == params_nesting_) {
@@ -599,12 +599,12 @@ vv::Error RequestParser::OnEndArray(const char* raw_pos) {
     nesting_.pop_back() ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
 }  // namespace
 
-vv::Error V8HttpServerSession::ProcessSession(
+Error V8HttpServerSession::ProcessSession(
     HttpRequestInfo& request, HttpResponseInfo& response) {
   printf("VERBS: V8HttpServerSession::ProcessSession()\n") ;
 
@@ -613,11 +613,11 @@ vv::Error V8HttpServerSession::ProcessSession(
     response.SetStatusCode(HTTP_METHOD_NOT_ALLOWED) ;
     response.SetHeader(
         HttpPackageInfo::Header::Allow, HttpRequestInfo::Method::Post) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
   V8HttpServerSession session(request, response) ;
-  vv::Error result = session.Do() ;
+  Error result = session.Do() ;
   return result ;
 }
 
@@ -626,24 +626,24 @@ V8HttpServerSession::V8HttpServerSession(
   : http_request_(request),
     http_response_(response) {}
 
-vv::Error V8HttpServerSession::Do() {
+Error V8HttpServerSession::Do() {
   printf("VERBS: V8HttpServerSession::Do()\n") ;
 
   const char* body = nullptr ;
   std::int32_t body_size = 0 ;
-  vv::Error result = http_request_.GetBody(body, body_size) ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = http_request_.GetBody(body, body_size) ;
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: http_request_.GetBody() is failed\n") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
   RequestParser parser ;
   result = parser.Parse(body, body_size, request_) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: parser.Parse() is failed\n") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
   if (request_->method == Method::Compile) {
@@ -653,28 +653,28 @@ vv::Error V8HttpServerSession::Do() {
   } else {
     printf("ERROR: Unknown method.\n") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't execute a js-script.\n") ;
     http_response_.SetStatusCode(
-        result == vv::errNetInvalidPackage ? HTTP_BAD_REQUEST :
-                                             HTTP_INTERNAL_SERVER_ERROR) ;
-    return vv::errOk ;
+        result == errNetInvalidPackage ? HTTP_BAD_REQUEST :
+                                         HTTP_INTERNAL_SERVER_ERROR) ;
+    return errOk ;
   }
 
   result = WriteResponseBody() ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't write a response body.\n") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error V8HttpServerSession::CompileScript() {
+Error V8HttpServerSession::CompileScript() {
   static const char script_template[] = ";\ncontract = new %s(%s);" ;
 
   printf("VERBS: V8HttpServerSession::CompileScript().\n") ;
@@ -689,21 +689,21 @@ vv::Error V8HttpServerSession::CompileScript() {
 
   if (!script.length()) {
     printf("ERROR: Script is absent.\n") ;
-    return vv::errNetInvalidPackage ;
+    return errNetInvalidPackage ;
   }
 
   printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
 
   // Run script
   v8::StartupData data = { nullptr, 0 } ;
-  vv::Error result = vv::RunScript(
+  Error result = vv::RunScript(
       script.c_str(), request_->address_str.c_str(), &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
     delete [] data.data ;
   }
 
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: vv::RunScript() is failed.\n") ;
     return result ;
   }
@@ -712,15 +712,15 @@ vv::Error V8HttpServerSession::CompileScript() {
   result = CreateAddress(
       request_->address, static_cast<int>(request_->transaction.nonce),
       response_address_) ;
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't create a address.\n") ;
     return result ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error V8HttpServerSession::RunCommandScript() {
+Error V8HttpServerSession::RunCommandScript() {
   static const char script_template[] = ";\ncontract.%s(%s);" ;
 
   printf("VERBS: V8HttpServerSession::RunCommandScript().\n") ;
@@ -735,7 +735,7 @@ vv::Error V8HttpServerSession::RunCommandScript() {
 
   if (!script.length()) {
     printf("ERROR: Script is absent.\n") ;
-    return vv::errNetInvalidPackage ;
+    return errNetInvalidPackage ;
   }
 
   printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
@@ -744,7 +744,7 @@ vv::Error V8HttpServerSession::RunCommandScript() {
   v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
                             static_cast<int>(request_->state.size()) } ;
   v8::StartupData data = { nullptr, 0 } ;
-  vv::Error result = vv::RunScriptBySnapshot(
+  Error result = vv::RunScriptBySnapshot(
       state, script.c_str(), request_->address_str.c_str(),
       request_->address_str.c_str(), &data) ;
   if (data.raw_size) {
@@ -752,15 +752,15 @@ vv::Error V8HttpServerSession::RunCommandScript() {
     delete [] data.data ;
   }
 
-  if (V8_ERR_FAILED(result)) {
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: vv::RunScriptBySnapshot() is failed.\n") ;
     return result ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error V8HttpServerSession::WriteResponseBody() {
+Error V8HttpServerSession::WriteResponseBody() {
   static const char kBodyWithAddress[] =
       "{\n"
       "  \"id\": %d,\n"
@@ -787,5 +787,5 @@ vv::Error V8HttpServerSession::WriteResponseBody() {
         response_state_.c_str())) ;
   }
 
-  return vv::errOk ;
+  return errOk ;
 }

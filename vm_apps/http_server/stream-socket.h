@@ -34,7 +34,7 @@ class StreamSocket : public Socket {
   //
   // Connect may also be called again after a call to the Disconnect method.
   //
-  virtual vv::Error Connect() = 0 ;
+  virtual Error Connect() = 0 ;
 
   // Called to disconnect a socket.  Does nothing if the socket is already
   // disconnected.  After calling Disconnect it is possible to call Connect
@@ -58,11 +58,11 @@ class StreamSocket : public Socket {
 
   // Copies the peer address to |address| and returns a network error code.
   // errNetSocketNotConnected will be returned if the socket is not connected.
-  virtual vv::Error GetPeerAddress(IPEndPoint* address) const = 0 ;
+  virtual Error GetPeerAddress(IPEndPoint* address) const = 0 ;
 
   // Copies the local address to |address| and returns a network error code.
   // errNetSocketNotConnected will be returned if the socket is not bound.
-  virtual vv::Error GetLocalAddress(IPEndPoint* address) const = 0 ;
+  virtual Error GetLocalAddress(IPEndPoint* address) const = 0 ;
 
   // Returns true if the socket ever had any reads or writes.  StreamSockets
   // layered on top of transport sockets should return if their own Read() or

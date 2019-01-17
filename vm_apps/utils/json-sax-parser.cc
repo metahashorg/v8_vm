@@ -67,13 +67,13 @@ JsonSaxParser::JsonSaxParser(const Callbacks& callbacks, int options)
     stack_depth_(0),
     line_number_(0),
     index_last_line_(0),
-    error_code_(vv::errOk),
+    error_(errOk),
     error_line_(0),
     error_column_(0) {}
 
 JsonSaxParser::~JsonSaxParser() {}
 
-vv::Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
+Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
   start_pos_ = input ;
   pos_ = start_pos_ ;
   end_pos_ = start_pos_ + size ;
@@ -81,7 +81,7 @@ vv::Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
   line_number_ = 1 ;
   index_last_line_ = 0 ;
 
-  error_code_ = vv::errOk ;
+  error_ = errOk ;
   error_line_ = 0 ;
   error_column_ = 0 ;
 
@@ -96,8 +96,8 @@ vv::Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
   }
 
   // Parse the first and any nested tokens.
-  vv::Error result = ParseNextToken() ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = ParseNextToken() ;
+  if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Json is invalid\n") ;
     return result ;
   }
@@ -105,21 +105,21 @@ vv::Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
   // Make sure the input stream is at an end.
   if (GetNextToken() != T_END_OF_INPUT) {
     if (!CanConsume(1) || (NextChar() && GetNextToken() != T_END_OF_INPUT)) {
-      result = vv::errJsonUnexpectedDataAfterRoot ;
-      ReportError(vv::errJsonUnexpectedDataAfterRoot, 1) ;
+      result = errJsonUnexpectedDataAfterRoot ;
+      ReportError(errJsonUnexpectedDataAfterRoot, 1) ;
     }
   }
 
   return result ;
 }
 
-vv::Error JsonSaxParser::error_code() const {
-  return error_code_ ;
+Error JsonSaxParser::error() const {
+  return error_ ;
 }
 
 std::string JsonSaxParser::GetErrorMessage() const {
   return FormatErrorMessage(
-      error_line_, error_column_, vv::ErrorToString(error_code_)) ;
+      error_line_, error_column_, error_.description()) ;
 }
 
 int JsonSaxParser::error_line() const {
@@ -309,11 +309,11 @@ bool JsonSaxParser::EatComment() {
   return false ;
 }
 
-vv::Error JsonSaxParser::ParseNextToken() {
+Error JsonSaxParser::ParseNextToken() {
   return ParseToken(GetNextToken()) ;
 }
 
-vv::Error JsonSaxParser::ParseToken(Token token) {
+Error JsonSaxParser::ParseToken(Token token) {
   switch (token) {
     case T_OBJECT_BEGIN:
       return ConsumeDictionary() ;
@@ -328,26 +328,26 @@ vv::Error JsonSaxParser::ParseToken(Token token) {
     case T_NULL:
       return ConsumeLiteral() ;
     default:
-      ReportError(vv::errJsonUnexpectedToken, 1) ;
-      return vv::errJsonUnexpectedToken ;
+      ReportError(errJsonUnexpectedToken, 1) ;
+      return errJsonUnexpectedToken ;
   }
 }
 
-vv::Error JsonSaxParser::ConsumeDictionary() {
+Error JsonSaxParser::ConsumeDictionary() {
   if (*pos_ != '{') {
-    ReportError(vv::errJsonUnexpectedToken, 1) ;
-    return vv::errJsonUnexpectedToken ;
+    ReportError(errJsonUnexpectedToken, 1) ;
+    return errJsonUnexpectedToken ;
   }
 
   StackMarker depth_check(&stack_depth_);
   if (depth_check.IsTooDeep()) {
-    ReportError(vv::errJsonTooMuchNesting, 1) ;
-    return vv::errJsonTooMuchNesting ;
+    ReportError(errJsonTooMuchNesting, 1) ;
+    return errJsonTooMuchNesting ;
   }
 
   if (callbacks_.start_map_callback) {
-    vv::Error result = callbacks_.start_map_callback() ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = callbacks_.start_map_callback() ;
+    if (V8_ERROR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
     }
@@ -357,21 +357,21 @@ vv::Error JsonSaxParser::ConsumeDictionary() {
   Token token = GetNextToken() ;
   while (token != T_OBJECT_END) {
     if (token != T_STRING) {
-      ReportError(vv::errJsonUnquotedDictionaryKey, 1) ;
-      return vv::errJsonUnquotedDictionaryKey ;
+      ReportError(errJsonUnquotedDictionaryKey, 1) ;
+      return errJsonUnquotedDictionaryKey ;
     }
 
     // First consume the key.
     StringBuilder key ;
-    vv::Error result = ConsumeStringRaw(&key) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = ConsumeStringRaw(&key) ;
+    if (V8_ERROR_FAILED(result)) {
       return result ;
     }
 
     if (callbacks_.map_key_callback) {
       std::string key_str = key.DestructiveAsString() ;
       result = callbacks_.map_key_callback(key_str.c_str(), key_str.size()) ;
-      if (V8_ERR_FAILED(result)) {
+      if (V8_ERROR_FAILED(result)) {
         ReportError(result, (int)-key_str.size()) ;
         return result ;
       }
@@ -381,14 +381,14 @@ vv::Error JsonSaxParser::ConsumeDictionary() {
     NextChar() ;
     token = GetNextToken() ;
     if (token != T_OBJECT_PAIR_SEPARATOR) {
-      ReportError(vv::errJsonSyntaxError, 1) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1) ;
+      return errJsonSyntaxError ;
     }
 
     // The next token is the value.
     NextChar() ;
     result = ParseNextToken() ;
-    if (V8_ERR_FAILED(result)) {
+    if (V8_ERROR_FAILED(result)) {
       // ReportError from deeper level.
       return result ;
     }
@@ -399,41 +399,41 @@ vv::Error JsonSaxParser::ConsumeDictionary() {
       NextChar() ;
       token = GetNextToken() ;
       if (token == T_OBJECT_END && !(options_ & JSON_ALLOW_TRAILING_COMMAS)) {
-        ReportError(vv::errJsonTrailingComma, 1) ;
-        return vv::errJsonTrailingComma ;
+        ReportError(errJsonTrailingComma, 1) ;
+        return errJsonTrailingComma ;
       }
     } else if (token != T_OBJECT_END) {
-      ReportError(vv::errJsonSyntaxError, 0) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 0) ;
+      return errJsonSyntaxError ;
     }
   }
 
   if (callbacks_.end_map_callback) {
-    vv::Error result = callbacks_.end_map_callback() ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = callbacks_.end_map_callback() ;
+    if (V8_ERROR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
     }
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error JsonSaxParser::ConsumeList() {
+Error JsonSaxParser::ConsumeList() {
   if (*pos_ != '[') {
-    ReportError(vv::errJsonUnexpectedToken, 1) ;
-    return vv::errJsonUnexpectedToken ;
+    ReportError(errJsonUnexpectedToken, 1) ;
+    return errJsonUnexpectedToken ;
   }
 
   StackMarker depth_check(&stack_depth_);
   if (depth_check.IsTooDeep()) {
-    ReportError(vv::errJsonTooMuchNesting, 1) ;
-    return vv::errJsonTooMuchNesting ;
+    ReportError(errJsonTooMuchNesting, 1) ;
+    return errJsonTooMuchNesting ;
   }
 
   if (callbacks_.start_array_callback) {
-    vv::Error result = callbacks_.start_array_callback(pos_) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = callbacks_.start_array_callback(pos_) ;
+    if (V8_ERROR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
     }
@@ -442,8 +442,8 @@ vv::Error JsonSaxParser::ConsumeList() {
   NextChar() ;
   Token token = GetNextToken() ;
   while (token != T_ARRAY_END) {
-    vv::Error result = ParseToken(token) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = ParseToken(token) ;
+    if (V8_ERROR_FAILED(result)) {
       // ReportError from deeper level.
       return result ;
     }
@@ -454,37 +454,37 @@ vv::Error JsonSaxParser::ConsumeList() {
       NextChar() ;
       token = GetNextToken() ;
       if (token == T_ARRAY_END && !(options_ & JSON_ALLOW_TRAILING_COMMAS)) {
-        ReportError(vv::errJsonTrailingComma, 1) ;
-        return vv::errJsonTrailingComma ;
+        ReportError(errJsonTrailingComma, 1) ;
+        return errJsonTrailingComma ;
       }
     } else if (token != T_ARRAY_END) {
-      ReportError(vv::errJsonSyntaxError, 1) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1) ;
+      return errJsonSyntaxError ;
     }
   }
 
   if (callbacks_.end_array_callback) {
-    vv::Error result = callbacks_.end_array_callback(pos_) ;
-    if (V8_ERR_FAILED(result)) {
+    Error result = callbacks_.end_array_callback(pos_) ;
+    if (V8_ERROR_FAILED(result)) {
       ReportError(result, 1) ;
       return result ;
     }
   }
 
-  return vv::errOk ;
+  return errOk ;
 }
 
-vv::Error JsonSaxParser::ConsumeString() {
+Error JsonSaxParser::ConsumeString() {
   StringBuilder string ;
-  vv::Error result = ConsumeStringRaw(&string) ;
-  if (V8_ERR_FAILED(result)) {
+  Error result = ConsumeStringRaw(&string) ;
+  if (V8_ERROR_FAILED(result)) {
     return result ;
   }
 
   if (callbacks_.string_callback) {
     std::string value = string.DestructiveAsString() ;
     result = callbacks_.string_callback(value.c_str(), value.length()) ;
-    if (V8_ERR_FAILED(result)) {
+    if (V8_ERROR_FAILED(result)) {
       ReportError(result, (int)-value.length()) ;
     }
   }
@@ -492,16 +492,16 @@ vv::Error JsonSaxParser::ConsumeString() {
   return result ;
 }
 
-vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
+Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
   if (*pos_ != '"') {
-    ReportError(vv::errJsonUnexpectedToken, 1) ;
-    return vv::errJsonUnexpectedToken ;
+    ReportError(errJsonUnexpectedToken, 1) ;
+    return errJsonUnexpectedToken ;
   }
 
   // Strings are at minimum two characters: the surrounding double quotes.
   if (!CanConsume(2)) {
-    ReportError(vv::errJsonSyntaxError, 1) ;
-    return vv::errJsonSyntaxError ;
+    ReportError(errJsonSyntaxError, 1) ;
+    return errJsonSyntaxError ;
   }
 
   // StringBuilder will internally build a StringPiece unless a UTF-16
@@ -512,7 +512,7 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
   // Handle the empty string case early.
   if (*pos_ == '"') {
     *out = std::move(string) ;
-    return vv::errOk ;
+    return errOk ;
   }
 
   int length = static_cast<int>(end_pos_ - start_pos_) ;
@@ -526,8 +526,8 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
     U8_NEXT(start_pos_, index_, length, next_char) ;
     if (next_char < 0 || !IsValidCharacter(next_char)) {
       if ((options_ & JSON_REPLACE_INVALID_CHARACTERS) == 0) {
-        ReportError(vv::errJsonUnsupportedEncoding, 1) ;
-        return vv::errJsonUnsupportedEncoding ;
+        ReportError(errJsonUnsupportedEncoding, 1) ;
+        return errJsonUnsupportedEncoding ;
       }
 
       U8_NEXT(start_pos_, start_index, length, next_char) ;
@@ -540,7 +540,7 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
     if (next_char == '"') {
       --index_ ;  // Rewind by one because of U8_NEXT.
       *out = std::move(string) ;
-      return vv::errOk ;
+      return errOk ;
     }
 
     // If this character is not an escape sequence...
@@ -558,14 +558,14 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
       string.Convert() ;
 
       if (!CanConsume(1)) {
-        ReportError(vv::errJsonInvalidEscape, 0) ;
-        return vv::errJsonInvalidEscape ;
+        ReportError(errJsonInvalidEscape, 0) ;
+        return errJsonInvalidEscape ;
       }
 
       NextChar() ;
       if (!CanConsume(1)) {
-        ReportError(vv::errJsonInvalidEscape, 0) ;
-        return vv::errJsonInvalidEscape ;
+        ReportError(errJsonInvalidEscape, 0) ;
+        return errJsonInvalidEscape ;
       }
 
       switch (*pos_) {
@@ -574,15 +574,15 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
           // UTF-8 \x escape sequences are not allowed in the spec, but they
           // are supported here for backwards-compatiblity with the old parser.
           if (!CanConsume(3)) {
-            ReportError(vv::errJsonInvalidEscape, 1) ;
-            return vv::errJsonInvalidEscape ;
+            ReportError(errJsonInvalidEscape, 1) ;
+            return errJsonInvalidEscape ;
           }
 
           std::int32_t hex_digit = 0 ;
           if (!HexStringToInt32(std::string(NextChar(), 2), &hex_digit) ||
               !IsValidCharacter(hex_digit)) {
-            ReportError(vv::errJsonInvalidEscape, -1) ;
-            return vv::errJsonInvalidEscape ;
+            ReportError(errJsonInvalidEscape, -1) ;
+            return errJsonInvalidEscape ;
           }
 
           NextChar() ;
@@ -597,8 +597,8 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
         case 'u': {  // UTF-16 sequence.
           // UTF units are of the form \uXXXX.
           if (!CanConsume(5)) {  // 5 being 'u' and four HEX digits.
-            ReportError(vv::errJsonInvalidEscape, 0) ;
-            return vv::errJsonInvalidEscape ;
+            ReportError(errJsonInvalidEscape, 0) ;
+            return errJsonInvalidEscape ;
           }
 
           // Skip the 'u'.
@@ -606,8 +606,8 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
 
           std::string utf8_units ;
           if (!DecodeUTF16(&utf8_units)) {
-            ReportError(vv::errJsonInvalidEscape, -1) ;
-            return vv::errJsonInvalidEscape ;
+            ReportError(errJsonInvalidEscape, -1) ;
+            return errJsonInvalidEscape ;
           }
 
           string.AppendString(utf8_units.data(), utf8_units.length()) ;
@@ -642,14 +642,14 @@ vv::Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
           break ;
         // All other escape squences are illegal.
         default:
-          ReportError(vv::errJsonInvalidEscape, 0) ;
-          return vv::errJsonInvalidEscape ;
+          ReportError(errJsonInvalidEscape, 0) ;
+          return errJsonInvalidEscape ;
       }
     }
   }
 
-  ReportError(vv::errJsonSyntaxError, 0) ;
-  return vv::errJsonSyntaxError   ;
+  ReportError(errJsonSyntaxError, 0) ;
+  return errJsonSyntaxError   ;
 }
 
 bool JsonSaxParser::DecodeUTF16(std::string* dest_string) {
@@ -752,7 +752,7 @@ void JsonSaxParser::DecodeUTF8(const int32_t& point, StringBuilder* dest) {
   }
 }
 
-vv::Error JsonSaxParser::ConsumeNumber() {
+Error JsonSaxParser::ConsumeNumber() {
   const char* num_start = pos_ ;
   const int start_index = index_ ;
   int end_index = start_index ;
@@ -762,8 +762,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
   }
 
   if (!ReadInt(false)) {
-    ReportError(vv::errJsonSyntaxError, 1) ;
-    return vv::errJsonSyntaxError ;
+    ReportError(errJsonSyntaxError, 1) ;
+    return errJsonSyntaxError ;
   }
 
   end_index = index_ ;
@@ -772,8 +772,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
   if (CanConsume(1) && *pos_ == '.') {
     NextChar() ;
     if (!ReadInt(true)) {
-      ReportError(vv::errJsonSyntaxError, 1) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1) ;
+      return errJsonSyntaxError ;
     }
 
     end_index = index_ ;
@@ -783,8 +783,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
   if (CanConsume(1) && (*pos_ == 'e' || *pos_ == 'E')) {
     NextChar() ;
     if (!CanConsume(1)) {
-      ReportError(vv::errJsonSyntaxError, 1) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1) ;
+      return errJsonSyntaxError ;
     }
 
     if (*pos_ == '-' || *pos_ == '+') {
@@ -792,8 +792,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
     }
 
     if (!ReadInt(true)) {
-      ReportError(vv::errJsonSyntaxError, 1);
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1);
+      return errJsonSyntaxError ;
     }
 
     end_index = index_ ;
@@ -813,8 +813,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
     case T_END_OF_INPUT:
       break;
     default:
-      ReportError(vv::errJsonSyntaxError, 1) ;
-      return vv::errJsonSyntaxError ;
+      ReportError(errJsonSyntaxError, 1) ;
+      return errJsonSyntaxError ;
   }
 
   pos_ = exit_pos ;
@@ -822,12 +822,12 @@ vv::Error JsonSaxParser::ConsumeNumber() {
 
   std::string num_string(num_start, end_index - start_index) ;
 
-  vv::Error result = vv::errOk ;
+  Error result = errOk ;
   std::int64_t num_int ;
   if (StringToInt64(num_string, &num_int)) {
     if (callbacks_.integer_callback) {
       result = callbacks_.integer_callback(num_int) ;
-      if (V8_ERR_FAILED(result)) {
+      if (V8_ERROR_FAILED(result)) {
         ReportError(result, start_index - end_index) ;
       }
     }
@@ -840,7 +840,7 @@ vv::Error JsonSaxParser::ConsumeNumber() {
       std::isfinite(num_double)) {
     if (callbacks_.double_callback) {
       result = callbacks_.double_callback(num_double) ;
-      if (V8_ERR_FAILED(result)) {
+      if (V8_ERROR_FAILED(result)) {
         ReportError(result, start_index - end_index) ;
       }
     }
@@ -848,8 +848,8 @@ vv::Error JsonSaxParser::ConsumeNumber() {
     return result ;
   }
 
-  ReportError(vv::errJsonSyntaxError, start_index - end_index) ;
-  return vv::errJsonSyntaxError ;
+  ReportError(errJsonSyntaxError, start_index - end_index) ;
+  return errJsonSyntaxError ;
 }
 
 bool JsonSaxParser::ReadInt(bool allow_leading_zeros) {
@@ -880,21 +880,21 @@ bool JsonSaxParser::ReadInt(bool allow_leading_zeros) {
   return true ;
 }
 
-vv::Error JsonSaxParser::ConsumeLiteral() {
+Error JsonSaxParser::ConsumeLiteral() {
   switch (*pos_) {
     case 't': {
       const char kTrueLiteral[] = "true" ;
       const int kTrueLen = static_cast<int>(strlen(kTrueLiteral)) ;
       if (!CanConsume(kTrueLen) ||
           !StringsAreEqual(pos_, kTrueLiteral, kTrueLen)) {
-        ReportError(vv::errJsonSyntaxError, 1) ;
-        return vv::errJsonSyntaxError ;
+        ReportError(errJsonSyntaxError, 1) ;
+        return errJsonSyntaxError ;
       }
 
-      vv::Error result = vv::errOk ;
+      Error result = errOk ;
       if (callbacks_.boolean_callback) {
         result = callbacks_.boolean_callback(true) ;
-        if (V8_ERR_FAILED(result)) {
+        if (V8_ERROR_FAILED(result)) {
           ReportError(result, 1) ;
         }
       }
@@ -907,14 +907,14 @@ vv::Error JsonSaxParser::ConsumeLiteral() {
       const int kFalseLen = static_cast<int>(strlen(kFalseLiteral));
       if (!CanConsume(kFalseLen) ||
           !StringsAreEqual(pos_, kFalseLiteral, kFalseLen)) {
-        ReportError(vv::errJsonSyntaxError, 1) ;
-        return vv::errJsonSyntaxError ;
+        ReportError(errJsonSyntaxError, 1) ;
+        return errJsonSyntaxError ;
       }
 
-      vv::Error result = vv::errOk ;
+      Error result = errOk ;
       if (callbacks_.boolean_callback) {
         result = callbacks_.boolean_callback(false) ;
-        if (V8_ERR_FAILED(result)) {
+        if (V8_ERROR_FAILED(result)) {
           ReportError(result, 1) ;
         }
       }
@@ -927,14 +927,14 @@ vv::Error JsonSaxParser::ConsumeLiteral() {
       const int kNullLen = static_cast<int>(strlen(kNullLiteral));
       if (!CanConsume(kNullLen) ||
           !StringsAreEqual(pos_, kNullLiteral, kNullLen)) {
-        ReportError(vv::errJsonSyntaxError, 1) ;
-        return vv::errJsonSyntaxError ;
+        ReportError(errJsonSyntaxError, 1) ;
+        return errJsonSyntaxError ;
       }
 
-      vv::Error result = vv::errOk ;
+      Error result = errOk ;
       if (callbacks_.null_callback) {
         result = callbacks_.null_callback() ;
-        if (V8_ERR_FAILED(result)) {
+        if (V8_ERROR_FAILED(result)) {
           ReportError(result, 1) ;
         }
       }
@@ -943,8 +943,8 @@ vv::Error JsonSaxParser::ConsumeLiteral() {
       return result ;
     }
     default:
-      ReportError(vv::errJsonUnexpectedToken, 1) ;
-      return vv::errJsonUnexpectedToken ;
+      ReportError(errJsonUnexpectedToken, 1) ;
+      return errJsonUnexpectedToken ;
   }
 }
 
@@ -953,8 +953,8 @@ bool JsonSaxParser::StringsAreEqual(
   return strncmp(left, right, len) == 0 ;
 }
 
-void JsonSaxParser::ReportError(vv::Error code, int column_adjust) {
-  error_code_ = code ;
+void JsonSaxParser::ReportError(Error error, int column_adjust) {
+  error_ = error ;
   error_line_ = line_number_ ;
   error_column_ = index_ - index_last_line_ + column_adjust ;
 }

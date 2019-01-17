@@ -31,28 +31,28 @@ class JsonSaxParser {
   };
 
   struct Callbacks {
-    std::function<vv::Error()> null_callback = nullptr ;
-    std::function<vv::Error(bool)> boolean_callback = nullptr ;
-    std::function<vv::Error(std::int64_t)> integer_callback = nullptr ;
-    std::function<vv::Error(double)> double_callback = nullptr ;
-    std::function<vv::Error(const char*, std::size_t)>
+    std::function<Error()> null_callback = nullptr ;
+    std::function<Error(bool)> boolean_callback = nullptr ;
+    std::function<Error(std::int64_t)> integer_callback = nullptr ;
+    std::function<Error(double)> double_callback = nullptr ;
+    std::function<Error(const char*, std::size_t)>
         string_callback = nullptr ;
-    std::function<vv::Error()> start_map_callback = nullptr ;
-    std::function<vv::Error(const char*, std::size_t)>
+    std::function<Error()> start_map_callback = nullptr ;
+    std::function<Error(const char*, std::size_t)>
         map_key_callback = nullptr ;
-    std::function<vv::Error()> end_map_callback = nullptr ;
-    std::function<vv::Error(const char*)> start_array_callback = nullptr ;
-    std::function<vv::Error(const char*)> end_array_callback = nullptr ;
+    std::function<Error()> end_map_callback = nullptr ;
+    std::function<Error(const char*)> start_array_callback = nullptr ;
+    std::function<Error(const char*)> end_array_callback = nullptr ;
   };
 
   explicit JsonSaxParser(const Callbacks& callbacks, int options) ;
   ~JsonSaxParser() ;
 
   // Parses the input string according to the set options.
-  vv::Error Parse(const char* input, std::int32_t size) ;
+  Error Parse(const char* input, std::int32_t size) ;
 
   // Returns the error code.
-  vv::Error error_code() const ;
+  Error error() const ;
 
   // Returns the human-friendly error message.
   std::string GetErrorMessage() const ;
@@ -154,28 +154,28 @@ class JsonSaxParser {
   bool EatComment() ;
 
   // Calls GetNextToken() and then ParseToken().
-  vv::Error ParseNextToken() ;
+  Error ParseNextToken() ;
 
   // Takes a token that represents the start of a Value ("a structural token"
   // in RFC terms) and consumes it, returning the result as a Value.
-  vv::Error ParseToken(Token token) ;
+  Error ParseToken(Token token) ;
 
   // Assuming that the parser is currently wound to '{', this parses a JSON
   // object into a DictionaryValue.
-  vv::Error ConsumeDictionary() ;
+  Error ConsumeDictionary() ;
 
   // Assuming that the parser is wound to '[', this parses a JSON list into a
   // std::unique_ptr<ListValue>.
-  vv::Error ConsumeList() ;
+  Error ConsumeList() ;
 
   // Calls through ConsumeStringRaw and wraps it in a value.
-  vv::Error ConsumeString() ;
+  Error ConsumeString() ;
 
   // Assuming that the parser is wound to a double quote, this parses a string,
   // decoding any escape sequences and converts UTF-16 to UTF-8. Returns true on
   // success and places result into |out|. Returns false on failure with
   // error information set.
-  vv::Error ConsumeStringRaw(StringBuilder* out) ;
+  Error ConsumeStringRaw(StringBuilder* out) ;
   // Helper function for ConsumeStringRaw() that consumes the next four or 10
   // bytes (parser is wound to the first character of a HEX sequence, with the
   // potential for consuming another \uXXXX for a surrogate). Returns true on
@@ -189,14 +189,14 @@ class JsonSaxParser {
 
   // Assuming that the parser is wound to the start of a valid JSON number,
   // this parses and converts it to either an int or double value.
-  vv::Error ConsumeNumber() ;
+  Error ConsumeNumber() ;
   // Helper that reads characters that are ints. Returns true if a number was
   // read and false on error.
   bool ReadInt(bool allow_leading_zeros) ;
 
   // Consumes the literal values of |true|, |false|, and |null|, assuming the
   // parser is wound to the first character of any of those.
-  vv::Error ConsumeLiteral() ;
+  Error ConsumeLiteral() ;
 
   // Compares two string buffers of a given length.
   static bool StringsAreEqual(const char* left, const char* right, size_t len) ;
@@ -204,7 +204,7 @@ class JsonSaxParser {
   // Sets the error information to |code| at the current column, based on
   // |index_| and |index_last_line_|, with an optional positive/negative
   // adjustment by |column_adjust|.
-  void ReportError(vv::Error code, int column_adjust) ;
+  void ReportError(Error code, int column_adjust) ;
 
   // Given the line and column number of an error, formats one of the error
   // message contants from json_reader.h for human display.
@@ -240,7 +240,7 @@ class JsonSaxParser {
   int index_last_line_ ;
 
   // Error information.
-  vv::Error error_code_ ;
+  Error error_ ;
   int error_line_ ;
   int error_column_ ;
 

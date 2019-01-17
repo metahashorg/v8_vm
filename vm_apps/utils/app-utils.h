@@ -15,6 +15,8 @@
 namespace vv = v8::vm ;
 namespace vvi = vv::internal ;
 
+using Error = v8::vm::Error ;
+
 // The arraysize(arr) macro returns the count of elements in an array arr. The
 // expression is a compile-time constant, and therefore can be used in defining
 // new arrays, for example. If you use arraysize on a pointer by mistake, you

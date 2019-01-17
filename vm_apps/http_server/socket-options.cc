@@ -21,7 +21,7 @@
 #include <winsock2.h>
 #endif
 
-vv::Error SetTCPNoDelay(SocketDescriptor fd, bool no_delay) {
+Error SetTCPNoDelay(SocketDescriptor fd, bool no_delay) {
 #if defined(V8_OS_POSIX)
   int on = no_delay ? 1 : 0 ;
 #elif defined(V8_OS_WIN)
@@ -29,10 +29,10 @@ vv::Error SetTCPNoDelay(SocketDescriptor fd, bool no_delay) {
 #endif
   int rv = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
                       reinterpret_cast<const char*>(&on), sizeof(on)) ;
-  return rv == -1 ? MapSystemError(errno) : vv::errOk ;
+  return rv == -1 ? MapSystemError(errno) : errOk ;
 }
 
-vv::Error SetReuseAddr(SocketDescriptor fd, bool reuse) {
+Error SetReuseAddr(SocketDescriptor fd, bool reuse) {
 // SO_REUSEADDR is useful for server sockets to bind to a recently unbound
 // port. When a socket is closed, the end point changes its state to TIME_WAIT
 // and wait for 2 MSL (maximum segment lifetime) to ensure the remote peer
@@ -54,10 +54,10 @@ vv::Error SetReuseAddr(SocketDescriptor fd, bool reuse) {
   int rv = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
                       reinterpret_cast<const char*>(&boolean_value),
                       sizeof(boolean_value)) ;
-  return rv == -1 ? MapSystemError(errno) : vv::errOk ;
+  return rv == -1 ? MapSystemError(errno) : errOk ;
 }
 
-vv::Error SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
+Error SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
   int rv = setsockopt(fd, SOL_SOCKET, SO_RCVBUF,
                       reinterpret_cast<const char*>(&size), sizeof(size)) ;
 #if defined(V8_OS_POSIX)
@@ -65,7 +65,7 @@ vv::Error SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
 #elif defined(V8_OS_WIN)
   int os_error = WSAGetLastError() ;
 #endif
-  int net_error = (rv == -1) ? MapSystemError(os_error) : vv::errOk ;
+  Error net_error = (rv == -1) ? MapSystemError(os_error) : errOk ;
   if (!!rv) {
     printf("ERROR: Could not set socket receive buffer size\n") ;
   }
@@ -73,7 +73,7 @@ vv::Error SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
   return net_error ;
 }
 
-vv::Error SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
+Error SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
   int rv = setsockopt(fd, SOL_SOCKET, SO_SNDBUF,
                       reinterpret_cast<const char*>(&size), sizeof(size)) ;
 #if defined(V8_OS_POSIX)
@@ -81,7 +81,7 @@ vv::Error SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
 #elif defined(V8_OS_WIN)
   int os_error = WSAGetLastError() ;
 #endif
-  int net_error = (rv == -1) ? MapSystemError(os_error) : vv::errOk ;
+  Error net_error = (rv == -1) ? MapSystemError(os_error) : errOk ;
   if (!!rv) {
     printf("ERROR:Could not set socket sent buffer size\n") ;
   }

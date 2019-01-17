@@ -40,15 +40,15 @@ class TcpClientSocket : public StreamSocket {
   ~TcpClientSocket() override ;
 
   // Binds the socket to a local IP address and port.
-  vv::Error Bind(const IPEndPoint& address) ;
+  Error Bind(const IPEndPoint& address) ;
 
   // StreamSocket implementation.
-  vv::Error Connect() override ;
+  Error Connect() override ;
   void Disconnect() override ;
   bool IsConnected() const override ;
   bool IsConnectedAndIdle() const override ;
-  vv::Error GetPeerAddress(IPEndPoint* address) const override ;
-  vv::Error GetLocalAddress(IPEndPoint* address) const override ;
+  Error GetPeerAddress(IPEndPoint* address) const override ;
+  Error GetLocalAddress(IPEndPoint* address) const override ;
   // TODO: bool WasEverUsed() const override ;
   // TODO: bool WasAlpnNegotiated() const override;
   // TODO: NextProto GetNegotiatedProtocol() const override;
@@ -61,14 +61,14 @@ class TcpClientSocket : public StreamSocket {
   // Socket implementation.
   // Multiple outstanding requests are not supported.
   // Full duplex mode (reading and writing at the same time) is supported.
-  vv::Error Read(
+  Error Read(
       char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) override ;
-  vv::Error Write(
+  Error Write(
       const char* buf, std::int32_t& buf_len,
       Timeout timeout = kInfiniteTimeout) override ;
-  vv::Error SetReceiveBufferSize(std::int32_t size) override ;
-  vv::Error SetSendBufferSize(std::int32_t size) override ;
+  Error SetReceiveBufferSize(std::int32_t size) override ;
+  Error SetSendBufferSize(std::int32_t size) override ;
 
   virtual bool SetKeepAlive(bool enable, int delay) ;
   virtual bool SetNoDelay(bool no_delay) ;
