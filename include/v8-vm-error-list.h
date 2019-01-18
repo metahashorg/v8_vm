@@ -175,4 +175,5 @@ V8_ERROR(Net, true, SocketNotConnected, 0xc, "The socket is not connected")
 V8_ERROR(Net, true, InvalidPackage, 0xd, "The net package is invalid")
 V8_ERROR(Net, true, EntityTooLarge, 0xe,
     "Net entity is too large for processing")
+V8_ERROR(Net, true, ActionNotAllowed, 0xf, "The action is not allowed")
 #endif  // defined(V8_ERROR)

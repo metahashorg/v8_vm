@@ -8,6 +8,7 @@
 #include "src/base/macros.h"
 #include "vm_apps/http_server/http-request-info.h"
 #include "vm_apps/http_server/http-response-info.h"
+#include "vm_apps/utils/app-utils.h"
 
 class V8HttpServerSession {
  public:
@@ -40,6 +41,10 @@ class V8HttpServerSession {
   static Error ProcessSession(
       HttpRequestInfo& request, HttpResponseInfo& response) ;
 
+  // Writes a error response body
+  static Error WriteErrorResponseBody(
+      Request* request, const Error& error, HttpResponseInfo& response) ;
+
  private:
   V8HttpServerSession(HttpRequestInfo& request, HttpResponseInfo& response) ;
 
@@ -51,6 +56,7 @@ class V8HttpServerSession {
   // Runs a command script
   Error RunCommandScript() ;
 
+  // Writes a response body
   Error WriteResponseBody() ;
 
   HttpRequestInfo& http_request_ ;
@@ -59,6 +65,8 @@ class V8HttpServerSession {
   std::unique_ptr<Request> request_ ;
   std::string response_state_ ;
   std::string response_address_ ;
+
+  static FormattedJson json_formatted_ ;
 
   DISALLOW_COPY_AND_ASSIGN(V8HttpServerSession) ;
 };

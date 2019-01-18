@@ -176,24 +176,50 @@ class V8_EXPORT Error {
     std::uint32_t line = 0 ;
   };
 
+  // Constructors
   Error(ErrorCodes code, const char* file, std::uint32_t line)
     : code_(code), file_(file), line_(line) {}
+  Error(const Error& error)
+    : code_(error.code_), file_(error.file_), line_(error.line_) {}
 
-  operator ErrorCodeType() { return static_cast<ErrorCodeType>(code_) ; }
-  operator ErrorCodes() { return code_ ; }
+  // Operators
+  operator ErrorCodeType() const { return static_cast<ErrorCodeType>(code_) ; }
+  operator ErrorCodes() const { return code_ ; }
+  Error& operator =(const Error& error) {
+    code_ = error.code_ ;
+    file_ = error.file_ ;
+    line_ = error.line_ ;
+    return *this ;
+  }
   bool operator ==(const Error& error) { return code_ == error.code() ; }
   bool operator !=(const Error& error) { return code_ != error.code() ; }
 
+  // Information
   ErrorCodes code() const { return code_ ; }
   const char* description() const { return GetErrorDescription(code_) ; }
   const char* name() const { return GetErrorName(code_) ; }
   const char* file() const { return file_ ; }
   std::uint32_t line() const { return line_ ; }
 
+  // Messages
+  std::size_t message_count() const { return 1 ; }
+  const Message& message(std::size_t index) const {
+    if (!error_message_) {
+      error_message_.reset(new Message()) ;
+    }
+
+    error_message_->message = description() ;
+    error_message_->file = file() ;
+    error_message_->line = line() ;
+    return *error_message_ ;
+  }
+
  private:
   ErrorCodes code_ = ErrorCodes::errOk ;
   const char* file_ = "" ;
   std::uint32_t line_ = 0 ;
+
+  mutable std::unique_ptr<Message> error_message_ ;
 };
 
 // Await implementation of language feature:
@@ -277,6 +303,7 @@ class V8_EXPORT Error {
   V8_ERROR_CODE_DEFINITION(errNetSocketNotConnected)
 #define errNetInvalidPackage V8_ERROR_CODE_DEFINITION(errNetInvalidPackage)
 #define errNetEntityTooLarge V8_ERROR_CODE_DEFINITION(errNetEntityTooLarge)
+#define errNetActionNotAllowed V8_ERROR_CODE_DEFINITION(errNetActionNotAllowed)
 
 }  // namespace vm
 }  // namespace v8

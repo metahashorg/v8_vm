@@ -18,6 +18,10 @@ class HttpServerSession : public TcpServerSession {
        Error(HttpRequestInfo& request, HttpResponseInfo& response)>
        SessionHandler ;
 
+   // Handler of a http errors
+   typedef std::function<
+       Error(const Error& error, HttpResponseInfo& response)> ErrorHandler ;
+
   // Default buffer size for reading/writing a body
   static const std::int32_t kDefaultBodyBufferSize = 16 * 1024 ;
 
@@ -29,14 +33,14 @@ class HttpServerSession : public TcpServerSession {
 
   // Returns a creator of a http-session
   static Creator GetCreator(
-      const SessionHandler& session_handler,
+      const SessionHandler& session_handler, const ErrorHandler& error_handler,
       const std::string& server_name = "",
       std::int32_t body_buffer_size = kDefaultBodyBufferSize) ;
 
  private:
   HttpServerSession(
       std::unique_ptr<StreamSocket>& socket,
-      const SessionHandler& session_handler,
+      const SessionHandler& session_handler, const ErrorHandler& error_handler,
       const std::string& server_name, std::int32_t body_buffer_size) ;
 
   // Reads a body of a request
@@ -57,7 +61,7 @@ class HttpServerSession : public TcpServerSession {
   // Creates a new http-session
   static TcpServerSession* New(
       std::unique_ptr<StreamSocket>& socket,
-      const SessionHandler& session_handler,
+      const SessionHandler& session_handler, const ErrorHandler& error_handler,
       const std::string& server_name, std::int32_t body_buffer_size) ;
 
   // Http-session doesn't have a default constructor
@@ -72,6 +76,7 @@ class HttpServerSession : public TcpServerSession {
   std::unique_ptr<HttpResponseInfo> response_ ;
 
   SessionHandler session_handler_ ;
+  ErrorHandler error_handler_ ;
 
   DISALLOW_COPY_AND_ASSIGN(HttpServerSession) ;
 };

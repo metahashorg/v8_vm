@@ -14,21 +14,22 @@ const std::size_t kHeaderMaxSize = 4 * 1024 * 1024 ;
 HttpServerSession::~HttpServerSession() {}
 
 TcpServerSession::Creator HttpServerSession::GetCreator(
-    const SessionHandler& session_handler, const std::string& server_name,
-    std::int32_t body_buffer_size) {
+    const SessionHandler& session_handler, const ErrorHandler& error_handler,
+    const std::string& server_name, std::int32_t body_buffer_size) {
   return std::bind(
       &HttpServerSession::New, std::placeholders::_1, session_handler,
-      server_name, body_buffer_size) ;
+      error_handler, server_name, body_buffer_size) ;
 }
 
 HttpServerSession::HttpServerSession(
     std::unique_ptr<StreamSocket>& socket,
-    const SessionHandler& session_handler,
+    const SessionHandler& session_handler, const ErrorHandler& error_handler,
     const std::string& server_name, std::int32_t body_buffer_size)
   : TcpServerSession(socket),
     server_name_(server_name),
     body_buffer_size_(body_buffer_size),
-    session_handler_(session_handler) {}
+    session_handler_(session_handler),
+    error_handler_(error_handler) {}
 
 Error HttpServerSession::GetBody(
     const char*& body, std::int32_t& body_size, bool& owned) {
@@ -126,6 +127,10 @@ Error HttpServerSession::ReadRequestHeader() {
     if (raw_headers_.size() > kHeaderMaxSize) {
       result = errNetEntityTooLarge ;
       response_.reset(new HttpResponseInfo(HTTP_REQUEST_ENTITY_TOO_LARGE)) ;
+      if (error_handler_) {
+        error_handler_(result, *response_) ;
+      }
+
       break ;
     }
   }
@@ -143,6 +148,10 @@ Error HttpServerSession::ReadRequestHeader() {
     printf("ERROR: request_->Parse() is failed\n") ;
     request_.reset() ;
     response_.reset(new HttpResponseInfo(HTTP_BAD_REQUEST)) ;
+    if (error_handler_) {
+      error_handler_(result, *response_) ;
+    }
+
     return errNetInvalidPackage ;
   }
 
@@ -220,9 +229,16 @@ Error HttpServerSession::Do() {
       // Refresh a response because of a handler call
       response_.reset(new HttpResponseInfo(HTTP_INTERNAL_SERVER_ERROR)) ;
       SetResponseDefaultHeaders() ;
+      if (error_handler_) {
+        error_handler_(result, *response_) ;
+      }
     }
   } else {
     response_->SetStatusCode(HTTP_NOT_IMPLEMENTED) ;
+    SetResponseDefaultHeaders() ;
+    if (error_handler_) {
+      error_handler_(errNotImplemented, *response_) ;
+    }
   }
 
   // Send a response
@@ -232,12 +248,12 @@ Error HttpServerSession::Do() {
 
 TcpServerSession* HttpServerSession::New(
     std::unique_ptr<StreamSocket>& socket,
-    const SessionHandler& session_handler,
+    const SessionHandler& session_handler, const ErrorHandler& error_handler,
     const std::string& server_name, std::int32_t body_buffer_size) {
   if (!socket || body_buffer_size < 1) {
     return nullptr ;
   }
 
   return new HttpServerSession(
-      socket, session_handler, server_name, body_buffer_size) ;
+      socket, session_handler, error_handler, server_name, body_buffer_size) ;
 }

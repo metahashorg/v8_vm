@@ -5,6 +5,7 @@
 #include "vm_apps/http_server/v8-http-server-session.h"
 
 #include <set>
+#include <sstream>
 #include <deque>
 
 #include "include/v8-vm.h"
@@ -18,6 +19,18 @@
 #include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
+
+// Json field name list
+const char* kJsonFieldAddress[] = JSON_ARRAY_OF_FIELD(address) ;
+const char* kJsonFieldCode[] = JSON_ARRAY_OF_FIELD(code) ;
+const char* kJsonFieldError[] = JSON_ARRAY_OF_FIELD(error) ;
+const char* kJsonFieldFile[] = JSON_ARRAY_OF_FIELD(file) ;
+const char* kJsonFieldId[] = JSON_ARRAY_OF_FIELD(id) ;
+const char* kJsonFieldLine[] = JSON_ARRAY_OF_FIELD(line) ;
+const char* kJsonFieldMessage[] = JSON_ARRAY_OF_FIELD(message) ;
+const char* kJsonFieldResult[] = JSON_ARRAY_OF_FIELD(result) ;
+const char* kJsonFieldStack[] = JSON_ARRAY_OF_FIELD(stack) ;
+const char* kJsonFieldState[] = JSON_ARRAY_OF_FIELD(state) ;
 
 const std::size_t kAddressLength = 25 ;
 
@@ -604,6 +617,8 @@ Error RequestParser::OnEndArray(const char* raw_pos) {
 
 }  // namespace
 
+FormattedJson V8HttpServerSession::json_formatted_ = FormattedJson::True ;
+
 Error V8HttpServerSession::ProcessSession(
     HttpRequestInfo& request, HttpResponseInfo& response) {
   printf("VERBS: V8HttpServerSession::ProcessSession()\n") ;
@@ -613,12 +628,80 @@ Error V8HttpServerSession::ProcessSession(
     response.SetStatusCode(HTTP_METHOD_NOT_ALLOWED) ;
     response.SetHeader(
         HttpPackageInfo::Header::Allow, HttpRequestInfo::Method::Post) ;
+    WriteErrorResponseBody(nullptr, errNetActionNotAllowed, response) ;
     return errOk ;
   }
 
   V8HttpServerSession session(request, response) ;
   Error result = session.Do() ;
   return result ;
+}
+
+Error V8HttpServerSession::WriteErrorResponseBody(
+    Request* request, const Error& error, HttpResponseInfo& response) {
+  std::ostringstream http_body ;
+  JsonGapArray gaps ;
+  JsonGap root_gap(gaps, json_formatted_, 0) ;
+  JsonGap child_gap(root_gap) ;
+  http_body << kJsonLeftBracket[root_gap] ;
+
+  // Write |id| and |result| fields
+  if (request) {
+    http_body << child_gap << kJsonFieldId[child_gap] << request->id
+        << kJsonComma[child_gap] ;
+    http_body << child_gap << kJsonFieldResult[child_gap] ;
+    http_body << kJsonLeftBracket[root_gap] ;
+  }
+
+  // Write |error| field
+  JsonGap error_gap(request ? child_gap : root_gap) ;
+  JsonGap error_item_gap(error_gap) ;
+  http_body << error_gap << kJsonFieldError[error_gap] ;
+  http_body << kJsonLeftBracket[error_gap] ;
+  http_body << error_item_gap << kJsonFieldCode[error_item_gap]
+      << static_cast<ErrorCodeType>(error) << kJsonComma[error_item_gap] ;
+  http_body << error_item_gap << kJsonFieldMessage[error_item_gap]
+      << JSON_STRING(error.description()) << kJsonComma[error_item_gap] ;
+  if (error.message_count()) {
+    http_body << error_item_gap << kJsonFieldStack[error_item_gap]
+      << kJsonLeftSquareBracket[error_item_gap] ;
+    JsonGap stack_item_gap(error_item_gap) ;
+    JsonGap stack_item_item_gap(stack_item_gap) ;
+    for (std::size_t i = 0, size = error.message_count(); i < size; ++i) {
+      if (i) {
+        http_body << kJsonComma[stack_item_item_gap] ;
+      }
+
+      const Error::Message& msg = error.message(i) ;
+      http_body << stack_item_gap << kJsonLeftBracket[stack_item_gap] ;
+      http_body << stack_item_item_gap << kJsonFieldMessage[stack_item_item_gap]
+          << JSON_STRING(msg.message) << kJsonComma[stack_item_item_gap] ;
+      http_body << stack_item_item_gap << kJsonFieldFile[stack_item_item_gap]
+          << JSON_STRING(msg.file) << kJsonComma[stack_item_item_gap] ;
+      http_body << stack_item_item_gap << kJsonFieldLine[stack_item_item_gap]
+          << msg.line ;
+      http_body << kJsonNewLine[stack_item_gap] << stack_item_gap
+          << kJsonRightBracket[stack_item_gap] ;
+    }
+
+    http_body << kJsonNewLine[error_item_gap] << error_item_gap
+        << kJsonRightSquareBracket[error_item_gap] ;
+  }
+
+  http_body << kJsonNewLine[error_gap] << error_gap
+      << kJsonRightBracket[error_gap] ;
+
+  // Write the end of |result| field
+  if (request) {
+    http_body << kJsonNewLine[child_gap] << child_gap
+        << kJsonRightBracket[child_gap] ;
+  }
+
+  http_body << kJsonNewLine[root_gap] << kJsonRightBracket[root_gap] ;
+
+  // Write a body
+  response.SetBody(http_body.str()) ;
+  return errOk ;
 }
 
 V8HttpServerSession::V8HttpServerSession(
@@ -635,7 +718,7 @@ Error V8HttpServerSession::Do() {
   if (V8_ERROR_FAILED(result)) {
     printf("ERROR: http_request_.GetBody() is failed\n") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return errOk ;
+    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
   }
 
   RequestParser parser ;
@@ -643,7 +726,7 @@ Error V8HttpServerSession::Do() {
   if (V8_ERROR_FAILED(result)) {
     printf("ERROR: parser.Parse() is failed\n") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return errOk ;
+    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
   }
 
   if (request_->method == Method::Compile) {
@@ -653,7 +736,8 @@ Error V8HttpServerSession::Do() {
   } else {
     printf("ERROR: Unknown method.\n") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return errOk ;
+    return WriteErrorResponseBody(
+        request_.get(), errJsonUnexpectedToken, http_response_) ;
   }
 
   if (V8_ERROR_FAILED(result)) {
@@ -661,14 +745,14 @@ Error V8HttpServerSession::Do() {
     http_response_.SetStatusCode(
         result == errNetInvalidPackage ? HTTP_BAD_REQUEST :
                                          HTTP_INTERNAL_SERVER_ERROR) ;
-    return errOk ;
+    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
   }
 
   result = WriteResponseBody() ;
   if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Can't write a response body.\n") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return errOk ;
+    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
   }
 
   return errOk ;
@@ -761,31 +845,35 @@ Error V8HttpServerSession::RunCommandScript() {
 }
 
 Error V8HttpServerSession::WriteResponseBody() {
-  static const char kBodyWithAddress[] =
-      "{\n"
-      "  \"id\": %d,\n"
-      "  \"result\": {\n"
-      "    \"address\": \"%s\",\n"
-      "    \"state\": \"%s\"\n"
-      "  }\n"
-      "}" ;
-  static const char kBodyWithoutAddress[] =
-      "{\n"
-      "  \"id\": %d,\n"
-      "  \"result\": {\n"
-      "    \"state\": \"%s\"\n"
-      "  }\n"
-      "}" ;
+  std::ostringstream http_body ;
+  JsonGapArray gaps ;
+  JsonGap root_gap(gaps, json_formatted_, 0) ;
+  JsonGap child_gap(root_gap) ;
+  http_body << kJsonLeftBracket[root_gap] ;
 
+  // Write |id| and |result| fields
+  http_body << child_gap << kJsonFieldId[child_gap] << request_->id
+      << kJsonComma[child_gap] ;
+  http_body << child_gap << kJsonFieldResult[child_gap] ;
+  http_body << kJsonLeftBracket[root_gap] ;
+
+  // Write |state| and |address| fields
+  JsonGap result_item_gap(child_gap) ;
+  http_body << result_item_gap << kJsonFieldState[result_item_gap]
+      << "\"" <<response_state_ << "\"" ;
   if (response_address_.length()) {
-    http_response_.SetBody(vvi::StringPrintf(
-        kBodyWithAddress, (std::int32_t)request_->id, response_address_.c_str(),
-        response_state_.c_str())) ;
-  } else {
-    http_response_.SetBody(vvi::StringPrintf(
-        kBodyWithoutAddress, (std::int32_t)request_->id,
-        response_state_.c_str())) ;
+     http_body << kJsonComma[result_item_gap] ;
+     http_body << result_item_gap << kJsonFieldAddress[result_item_gap]
+        << JSON_STRING(response_address_) ;
   }
 
+  // Write the end of |result| field
+  http_body << kJsonNewLine[child_gap] << child_gap
+      << kJsonRightBracket[child_gap] ;
+
+  http_body << kJsonNewLine[root_gap] << kJsonRightBracket[root_gap] ;
+
+  // Write a body
+  http_response_.SetBody(http_body.str()) ;
   return errOk ;
 }

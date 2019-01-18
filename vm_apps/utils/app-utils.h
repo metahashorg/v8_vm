@@ -10,12 +10,26 @@
 #include "include/v8-vm.h"
 #include "src/base/build_config.h"
 #include "src/base/compiler-specific.h"
+#include "src/vm/utils/json-utils.h"
 #include "src/vm/utils/string-printf.h"
 
+// Using directives
 namespace vv = v8::vm ;
 namespace vvi = vv::internal ;
 
+using ErrorCodeType = v8::vm::ErrorCodeType ;
 using Error = v8::vm::Error ;
+using FormattedJson = v8::vm::FormattedJson ;
+using JsonGapArray = v8::vm::internal::JsonGapArray ;
+using JsonGap = v8::vm::internal::JsonGap ;
+
+using v8::vm::internal::EncodeJsonString ;
+using v8::vm::internal::kJsonComma ;
+using v8::vm::internal::kJsonLeftBracket ;
+using v8::vm::internal::kJsonLeftSquareBracket ;
+using v8::vm::internal::kJsonNewLine ;
+using v8::vm::internal::kJsonRightBracket ;
+using v8::vm::internal::kJsonRightSquareBracket ;
 
 // The arraysize(arr) macro returns the count of elements in an array arr. The
 // expression is a compile-time constant, and therefore can be used in defining

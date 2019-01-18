@@ -57,10 +57,14 @@ int main(int argc, char* argv[]) {
 
   // Start server
   TcpServer server ;
+  HttpServerSession::ErrorHandler error_handler = std::bind(
+      &V8HttpServerSession::WriteErrorResponseBody, nullptr,
+      std::placeholders::_1, std::placeholders::_2) ;
   Error error = server.Start(
       server_port,
       HttpServerSession::GetCreator(
-          V8HttpServerSession::ProcessSession, kServerName, kBodyBufferSize)) ;
+          V8HttpServerSession::ProcessSession, error_handler, kServerName,
+          kBodyBufferSize)) ;
   V8_ERROR_RETURN_IF_FAILED(error) ;
 
   char command(0) ;
