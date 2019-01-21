@@ -30,6 +30,7 @@ using v8::vm::internal::kJsonLeftSquareBracket ;
 using v8::vm::internal::kJsonNewLine ;
 using v8::vm::internal::kJsonRightBracket ;
 using v8::vm::internal::kJsonRightSquareBracket ;
+using v8::vm::internal::StringPrintf ;
 
 // The arraysize(arr) macro returns the count of elements in an array arr. The
 // expression is a compile-time constant, and therefore can be used in defining

@@ -337,9 +337,9 @@ bool IPAddress::operator<(const IPAddress& that) const {
 //
 //   if (address.IsIPv6()) {
 //     // Need to bracket IPv6 addresses since they contain colons.
-//     return base::StringPrintf("[%s]:%d", address_str.c_str(), port) ;
+//     return StringPrintf("[%s]:%d", address_str.c_str(), port) ;
 //   }
-//   return base::StringPrintf("%s:%d", address_str.c_str(), port) ;
+//   return StringPrintf("%s:%d", address_str.c_str(), port) ;
 // }
 
 std::string IPAddressToPackedString(const IPAddress& address) {

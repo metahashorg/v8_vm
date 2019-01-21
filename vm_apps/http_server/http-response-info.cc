@@ -56,7 +56,7 @@ Error HttpResponseInfo::SetStatusCode(std::int32_t status_code) {
 }
 
 std::string HttpResponseInfo::ToString() const {
-  std::string output = vvi::StringPrintf(
+  std::string output = StringPrintf(
       "HTTP/%d.%d %d %s\r\n",
       http_version().major_value(), http_version().minor_value(),
       status_code_, GetHttpReasonPhrase(status_code_)) ;

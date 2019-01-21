@@ -509,7 +509,7 @@ void HttpPackageInfo::SetBodyInternal(
   body_error_ = errOk ;
 
   if (body_size >= 0) {
-    SetHeader(Header::ContentLength, vvi::StringPrintf("%d", body_size_)) ;
+    SetHeader(Header::ContentLength, StringPrintf("%d", body_size_)) ;
   } else {
     RemoveHeader(Header::ContentLength) ;
   }

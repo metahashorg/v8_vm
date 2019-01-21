@@ -7,6 +7,27 @@
 
 #include <cstring>
 
+#include "src/vm/utils/string-printf.h"
+
+// Macros for writing an exception into an error
+#define V8_ERROR_ADD_MSG_BY_TRY_CATCH(context, error, try_catch) \
+  Local<v8::Message> tc_msg = try_catch.Message() ; \
+  if (!tc_msg.IsEmpty()) { \
+    V8_ERROR_ADD_MSG_SP_BACK_OFFSET( \
+      error, \
+      1, \
+      "Origin:\'%s\' Line:%i Column:%i Source line:\'%s\' - %s", \
+      ValueToUtf8( \
+          context, tc_msg->GetScriptOrigin().ResourceName()).c_str(), \
+      tc_msg->GetLineNumber(context).FromMaybe(0), \
+      tc_msg->GetStartColumn(context).FromMaybe(-1) + 1, \
+      ValueToUtf8( \
+          context, \
+          tc_msg->GetSourceLine(context).FromMaybe(Local<String>())) \
+          .c_str(), \
+      ValueToUtf8(context, tc_msg->Get()).c_str()) ; \
+  }
+
 // Helpful macros for a declaration of big enums
 #define V8_ENUM_COMMA ,
 #define V8_ENUM_LEFT_BRACKET (
@@ -112,8 +133,15 @@ namespace internal {
 
 // Converts a utf8-string into a internal V8 string
 static inline Local<String> Utf8ToStr(Isolate* isolate, const char* str) {
-  return String::NewFromUtf8(isolate, str, NewStringType::kNormal)
-             .ToLocalChecked() ;
+  Local<String> result ;
+  TryCatch try_catch(isolate) ;
+  if (!String::NewFromUtf8(isolate, str, NewStringType::kNormal)
+          .ToLocal(&result)) {
+    printf("ERROR: Can't convert utf8-string to v8::String\n") ;
+    return Local<String>() ;
+  }
+
+  return result ;
 }
 
 // Converts a v8::Value (e.g. v8::String) into a utf8-string

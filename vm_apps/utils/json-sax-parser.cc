@@ -16,6 +16,20 @@
 #include "third_party/icu/source/common/unicode/utf8.h"
 #include "vm_apps/utils/string-number-conversions.h"
 
+#define ReportErrorM(error, ...) \
+    ReportError(error, __VA_ARGS__) ; \
+    V8_ERROR_ADD_MSG_BACK_OFFSET( \
+        error, \
+        FormatErrorMessage( \
+            origin_.c_str(), error_line_, error_column_, "json is invalid"), \
+        1) ;
+#define ReportCallbackErrorM(error, ...) \
+    ReportError(error, __VA_ARGS__) ; \
+    V8_ERROR_ADD_MSG( \
+        error, \
+        FormatErrorMessage( \
+            origin_.c_str(), error_line_, error_column_, "json is invalid")) ;
+
 namespace {
 
 const int32_t kExtendedASCIIStart = 0x80 ;
@@ -73,7 +87,9 @@ JsonSaxParser::JsonSaxParser(const Callbacks& callbacks, int options)
 
 JsonSaxParser::~JsonSaxParser() {}
 
-Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
+Error JsonSaxParser::Parse(
+    const char* input, const char* origin, std::int32_t size) {
+  origin_ = origin ;
   start_pos_ = input ;
   pos_ = start_pos_ ;
   end_pos_ = start_pos_ + size ;
@@ -106,7 +122,7 @@ Error JsonSaxParser::Parse(const char* input, std::int32_t size) {
   if (GetNextToken() != T_END_OF_INPUT) {
     if (!CanConsume(1) || (NextChar() && GetNextToken() != T_END_OF_INPUT)) {
       result = errJsonUnexpectedDataAfterRoot ;
-      ReportError(errJsonUnexpectedDataAfterRoot, 1) ;
+      ReportErrorM(result, 1) ;
     }
   }
 
@@ -119,7 +135,7 @@ Error JsonSaxParser::error() const {
 
 std::string JsonSaxParser::GetErrorMessage() const {
   return FormatErrorMessage(
-      error_line_, error_column_, error_.description()) ;
+      origin_.c_str(), error_line_, error_column_, error_.description()) ;
 }
 
 int JsonSaxParser::error_line() const {
@@ -328,27 +344,31 @@ Error JsonSaxParser::ParseToken(Token token) {
     case T_NULL:
       return ConsumeLiteral() ;
     default:
-      ReportError(errJsonUnexpectedToken, 1) ;
-      return errJsonUnexpectedToken ;
+      Error result = errJsonUnexpectedToken ;
+      ReportErrorM(result, 1) ;
+      return result ;
   }
 }
 
 Error JsonSaxParser::ConsumeDictionary() {
+  Error result = errOk ;
   if (*pos_ != '{') {
-    ReportError(errJsonUnexpectedToken, 1) ;
-    return errJsonUnexpectedToken ;
+    result = errJsonUnexpectedToken ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   StackMarker depth_check(&stack_depth_);
   if (depth_check.IsTooDeep()) {
-    ReportError(errJsonTooMuchNesting, 1) ;
-    return errJsonTooMuchNesting ;
+    result = errJsonTooMuchNesting ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   if (callbacks_.start_map_callback) {
     Error result = callbacks_.start_map_callback() ;
     if (V8_ERROR_FAILED(result)) {
-      ReportError(result, 1) ;
+      ReportCallbackErrorM(result, 1) ;
       return result ;
     }
   }
@@ -357,8 +377,9 @@ Error JsonSaxParser::ConsumeDictionary() {
   Token token = GetNextToken() ;
   while (token != T_OBJECT_END) {
     if (token != T_STRING) {
-      ReportError(errJsonUnquotedDictionaryKey, 1) ;
-      return errJsonUnquotedDictionaryKey ;
+      result = errJsonUnquotedDictionaryKey ;
+      ReportErrorM(result, 1) ;
+      return result ;
     }
 
     // First consume the key.
@@ -372,7 +393,7 @@ Error JsonSaxParser::ConsumeDictionary() {
       std::string key_str = key.DestructiveAsString() ;
       result = callbacks_.map_key_callback(key_str.c_str(), key_str.size()) ;
       if (V8_ERROR_FAILED(result)) {
-        ReportError(result, (int)-key_str.size()) ;
+        ReportCallbackErrorM(result, (int)-key_str.size()) ;
         return result ;
       }
     }
@@ -381,15 +402,16 @@ Error JsonSaxParser::ConsumeDictionary() {
     NextChar() ;
     token = GetNextToken() ;
     if (token != T_OBJECT_PAIR_SEPARATOR) {
-      ReportError(errJsonSyntaxError, 1) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1) ;
+      return result ;
     }
 
     // The next token is the value.
     NextChar() ;
     result = ParseNextToken() ;
     if (V8_ERROR_FAILED(result)) {
-      // ReportError from deeper level.
+      // ReportErrorM from deeper level.
       return result ;
     }
 
@@ -399,19 +421,21 @@ Error JsonSaxParser::ConsumeDictionary() {
       NextChar() ;
       token = GetNextToken() ;
       if (token == T_OBJECT_END && !(options_ & JSON_ALLOW_TRAILING_COMMAS)) {
-        ReportError(errJsonTrailingComma, 1) ;
-        return errJsonTrailingComma ;
+        result = errJsonTrailingComma ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
     } else if (token != T_OBJECT_END) {
-      ReportError(errJsonSyntaxError, 0) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 0) ;
+      return result ;
     }
   }
 
   if (callbacks_.end_map_callback) {
     Error result = callbacks_.end_map_callback() ;
     if (V8_ERROR_FAILED(result)) {
-      ReportError(result, 1) ;
+      ReportCallbackErrorM(result, 1) ;
       return result ;
     }
   }
@@ -420,21 +444,24 @@ Error JsonSaxParser::ConsumeDictionary() {
 }
 
 Error JsonSaxParser::ConsumeList() {
+  Error result = errOk ;
   if (*pos_ != '[') {
-    ReportError(errJsonUnexpectedToken, 1) ;
-    return errJsonUnexpectedToken ;
+    result = errJsonUnexpectedToken ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   StackMarker depth_check(&stack_depth_);
   if (depth_check.IsTooDeep()) {
-    ReportError(errJsonTooMuchNesting, 1) ;
-    return errJsonTooMuchNesting ;
+    result = errJsonTooMuchNesting ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   if (callbacks_.start_array_callback) {
-    Error result = callbacks_.start_array_callback(pos_) ;
+    result = callbacks_.start_array_callback(pos_) ;
     if (V8_ERROR_FAILED(result)) {
-      ReportError(result, 1) ;
+      ReportCallbackErrorM(result, 1) ;
       return result ;
     }
   }
@@ -444,7 +471,7 @@ Error JsonSaxParser::ConsumeList() {
   while (token != T_ARRAY_END) {
     Error result = ParseToken(token) ;
     if (V8_ERROR_FAILED(result)) {
-      // ReportError from deeper level.
+      // ReportErrorM from deeper level.
       return result ;
     }
 
@@ -454,19 +481,21 @@ Error JsonSaxParser::ConsumeList() {
       NextChar() ;
       token = GetNextToken() ;
       if (token == T_ARRAY_END && !(options_ & JSON_ALLOW_TRAILING_COMMAS)) {
-        ReportError(errJsonTrailingComma, 1) ;
-        return errJsonTrailingComma ;
+        result = errJsonTrailingComma ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
     } else if (token != T_ARRAY_END) {
-      ReportError(errJsonSyntaxError, 1) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1) ;
+      return result ;
     }
   }
 
   if (callbacks_.end_array_callback) {
-    Error result = callbacks_.end_array_callback(pos_) ;
+    result = callbacks_.end_array_callback(pos_) ;
     if (V8_ERROR_FAILED(result)) {
-      ReportError(result, 1) ;
+      ReportCallbackErrorM(result, 1) ;
       return result ;
     }
   }
@@ -485,7 +514,7 @@ Error JsonSaxParser::ConsumeString() {
     std::string value = string.DestructiveAsString() ;
     result = callbacks_.string_callback(value.c_str(), value.length()) ;
     if (V8_ERROR_FAILED(result)) {
-      ReportError(result, (int)-value.length()) ;
+      ReportCallbackErrorM(result, (int)-value.length()) ;
     }
   }
 
@@ -493,15 +522,18 @@ Error JsonSaxParser::ConsumeString() {
 }
 
 Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
+  Error result = errOk ;
   if (*pos_ != '"') {
-    ReportError(errJsonUnexpectedToken, 1) ;
-    return errJsonUnexpectedToken ;
+    result = errJsonUnexpectedToken ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   // Strings are at minimum two characters: the surrounding double quotes.
   if (!CanConsume(2)) {
-    ReportError(errJsonSyntaxError, 1) ;
-    return errJsonSyntaxError ;
+    result = errJsonSyntaxError ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   // StringBuilder will internally build a StringPiece unless a UTF-16
@@ -526,8 +558,9 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
     U8_NEXT(start_pos_, index_, length, next_char) ;
     if (next_char < 0 || !IsValidCharacter(next_char)) {
       if ((options_ & JSON_REPLACE_INVALID_CHARACTERS) == 0) {
-        ReportError(errJsonUnsupportedEncoding, 1) ;
-        return errJsonUnsupportedEncoding ;
+        result = errJsonUnsupportedEncoding ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
 
       U8_NEXT(start_pos_, start_index, length, next_char) ;
@@ -558,14 +591,16 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
       string.Convert() ;
 
       if (!CanConsume(1)) {
-        ReportError(errJsonInvalidEscape, 0) ;
-        return errJsonInvalidEscape ;
+        result = errJsonInvalidEscape ;
+        ReportErrorM(result, 0) ;
+        return result ;
       }
 
       NextChar() ;
       if (!CanConsume(1)) {
-        ReportError(errJsonInvalidEscape, 0) ;
-        return errJsonInvalidEscape ;
+        result = errJsonInvalidEscape ;
+        ReportErrorM(result, 0) ;
+        return result ;
       }
 
       switch (*pos_) {
@@ -574,15 +609,17 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
           // UTF-8 \x escape sequences are not allowed in the spec, but they
           // are supported here for backwards-compatiblity with the old parser.
           if (!CanConsume(3)) {
-            ReportError(errJsonInvalidEscape, 1) ;
-            return errJsonInvalidEscape ;
+            result = errJsonInvalidEscape ;
+            ReportErrorM(result, 1) ;
+            return result ;
           }
 
           std::int32_t hex_digit = 0 ;
           if (!HexStringToInt32(std::string(NextChar(), 2), &hex_digit) ||
               !IsValidCharacter(hex_digit)) {
-            ReportError(errJsonInvalidEscape, -1) ;
-            return errJsonInvalidEscape ;
+            result = errJsonInvalidEscape ;
+            ReportErrorM(result, -1) ;
+            return result ;
           }
 
           NextChar() ;
@@ -597,8 +634,9 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
         case 'u': {  // UTF-16 sequence.
           // UTF units are of the form \uXXXX.
           if (!CanConsume(5)) {  // 5 being 'u' and four HEX digits.
-            ReportError(errJsonInvalidEscape, 0) ;
-            return errJsonInvalidEscape ;
+            result = errJsonInvalidEscape ;
+            ReportErrorM(result, 0) ;
+            return result ;
           }
 
           // Skip the 'u'.
@@ -606,8 +644,9 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
 
           std::string utf8_units ;
           if (!DecodeUTF16(&utf8_units)) {
-            ReportError(errJsonInvalidEscape, -1) ;
-            return errJsonInvalidEscape ;
+            result = errJsonInvalidEscape ;
+            ReportErrorM(result, -1) ;
+            return result ;
           }
 
           string.AppendString(utf8_units.data(), utf8_units.length()) ;
@@ -642,14 +681,16 @@ Error JsonSaxParser::ConsumeStringRaw(StringBuilder* out) {
           break ;
         // All other escape squences are illegal.
         default:
-          ReportError(errJsonInvalidEscape, 0) ;
-          return errJsonInvalidEscape ;
+          result = errJsonInvalidEscape ;
+          ReportErrorM(result, 0) ;
+          return result ;
       }
     }
   }
 
-  ReportError(errJsonSyntaxError, 0) ;
-  return errJsonSyntaxError   ;
+  result = errJsonSyntaxError ;
+  ReportErrorM(result, 0) ;
+  return result ;
 }
 
 bool JsonSaxParser::DecodeUTF16(std::string* dest_string) {
@@ -756,14 +797,16 @@ Error JsonSaxParser::ConsumeNumber() {
   const char* num_start = pos_ ;
   const int start_index = index_ ;
   int end_index = start_index ;
+  Error result = errOk ;
 
   if (*pos_ == '-') {
     NextChar() ;
   }
 
   if (!ReadInt(false)) {
-    ReportError(errJsonSyntaxError, 1) ;
-    return errJsonSyntaxError ;
+    result = errJsonSyntaxError ;
+    ReportErrorM(result, 1) ;
+    return result ;
   }
 
   end_index = index_ ;
@@ -772,8 +815,9 @@ Error JsonSaxParser::ConsumeNumber() {
   if (CanConsume(1) && *pos_ == '.') {
     NextChar() ;
     if (!ReadInt(true)) {
-      ReportError(errJsonSyntaxError, 1) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1) ;
+      return result ;
     }
 
     end_index = index_ ;
@@ -783,8 +827,9 @@ Error JsonSaxParser::ConsumeNumber() {
   if (CanConsume(1) && (*pos_ == 'e' || *pos_ == 'E')) {
     NextChar() ;
     if (!CanConsume(1)) {
-      ReportError(errJsonSyntaxError, 1) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1) ;
+      return result ;
     }
 
     if (*pos_ == '-' || *pos_ == '+') {
@@ -792,8 +837,9 @@ Error JsonSaxParser::ConsumeNumber() {
     }
 
     if (!ReadInt(true)) {
-      ReportError(errJsonSyntaxError, 1);
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1);
+      return result ;
     }
 
     end_index = index_ ;
@@ -813,8 +859,9 @@ Error JsonSaxParser::ConsumeNumber() {
     case T_END_OF_INPUT:
       break;
     default:
-      ReportError(errJsonSyntaxError, 1) ;
-      return errJsonSyntaxError ;
+      result = errJsonSyntaxError ;
+      ReportErrorM(result, 1) ;
+      return result ;
   }
 
   pos_ = exit_pos ;
@@ -822,13 +869,12 @@ Error JsonSaxParser::ConsumeNumber() {
 
   std::string num_string(num_start, end_index - start_index) ;
 
-  Error result = errOk ;
   std::int64_t num_int ;
   if (StringToInt64(num_string, &num_int)) {
     if (callbacks_.integer_callback) {
       result = callbacks_.integer_callback(num_int) ;
       if (V8_ERROR_FAILED(result)) {
-        ReportError(result, start_index - end_index) ;
+        ReportCallbackErrorM(result, start_index - end_index) ;
       }
     }
 
@@ -841,15 +887,16 @@ Error JsonSaxParser::ConsumeNumber() {
     if (callbacks_.double_callback) {
       result = callbacks_.double_callback(num_double) ;
       if (V8_ERROR_FAILED(result)) {
-        ReportError(result, start_index - end_index) ;
+        ReportCallbackErrorM(result, start_index - end_index) ;
       }
     }
 
     return result ;
   }
 
-  ReportError(errJsonSyntaxError, start_index - end_index) ;
-  return errJsonSyntaxError ;
+  result = errJsonSyntaxError ;
+  ReportErrorM(result, start_index - end_index) ;
+  return result ;
 }
 
 bool JsonSaxParser::ReadInt(bool allow_leading_zeros) {
@@ -881,21 +928,22 @@ bool JsonSaxParser::ReadInt(bool allow_leading_zeros) {
 }
 
 Error JsonSaxParser::ConsumeLiteral() {
+  Error result = errOk ;
   switch (*pos_) {
     case 't': {
       const char kTrueLiteral[] = "true" ;
       const int kTrueLen = static_cast<int>(strlen(kTrueLiteral)) ;
       if (!CanConsume(kTrueLen) ||
           !StringsAreEqual(pos_, kTrueLiteral, kTrueLen)) {
-        ReportError(errJsonSyntaxError, 1) ;
-        return errJsonSyntaxError ;
+        result = errJsonSyntaxError ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
 
-      Error result = errOk ;
       if (callbacks_.boolean_callback) {
         result = callbacks_.boolean_callback(true) ;
         if (V8_ERROR_FAILED(result)) {
-          ReportError(result, 1) ;
+          ReportCallbackErrorM(result, 1) ;
         }
       }
 
@@ -907,15 +955,16 @@ Error JsonSaxParser::ConsumeLiteral() {
       const int kFalseLen = static_cast<int>(strlen(kFalseLiteral));
       if (!CanConsume(kFalseLen) ||
           !StringsAreEqual(pos_, kFalseLiteral, kFalseLen)) {
-        ReportError(errJsonSyntaxError, 1) ;
-        return errJsonSyntaxError ;
+        result = errJsonSyntaxError ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
 
       Error result = errOk ;
       if (callbacks_.boolean_callback) {
         result = callbacks_.boolean_callback(false) ;
         if (V8_ERROR_FAILED(result)) {
-          ReportError(result, 1) ;
+          ReportCallbackErrorM(result, 1) ;
         }
       }
 
@@ -927,15 +976,15 @@ Error JsonSaxParser::ConsumeLiteral() {
       const int kNullLen = static_cast<int>(strlen(kNullLiteral));
       if (!CanConsume(kNullLen) ||
           !StringsAreEqual(pos_, kNullLiteral, kNullLen)) {
-        ReportError(errJsonSyntaxError, 1) ;
-        return errJsonSyntaxError ;
+        result = errJsonSyntaxError ;
+        ReportErrorM(result, 1) ;
+        return result ;
       }
 
-      Error result = errOk ;
       if (callbacks_.null_callback) {
         result = callbacks_.null_callback() ;
         if (V8_ERROR_FAILED(result)) {
-          ReportError(result, 1) ;
+          ReportCallbackErrorM(result, 1) ;
         }
       }
 
@@ -943,8 +992,9 @@ Error JsonSaxParser::ConsumeLiteral() {
       return result ;
     }
     default:
-      ReportError(errJsonUnexpectedToken, 1) ;
-      return errJsonUnexpectedToken ;
+      result = errJsonUnexpectedToken ;
+      ReportErrorM(result, 1) ;
+      return result ;
   }
 }
 
@@ -953,7 +1003,7 @@ bool JsonSaxParser::StringsAreEqual(
   return strncmp(left, right, len) == 0 ;
 }
 
-void JsonSaxParser::ReportError(Error error, int column_adjust) {
+void JsonSaxParser::ReportError(Error& error, int column_adjust) {
   error_ = error ;
   error_line_ = line_number_ ;
   error_column_ = index_ - index_last_line_ + column_adjust ;
@@ -961,10 +1011,11 @@ void JsonSaxParser::ReportError(Error error, int column_adjust) {
 
 // static
 std::string JsonSaxParser::FormatErrorMessage(
-    int line, int column, const std::string& description) {
+    const char* origin, int line, int column, const std::string& description) {
   if (line || column) {
-    return vvi::StringPrintf("Line: %i, column: %i, %s",
-        line, column, description.c_str()) ;
+    return (origin ? StringPrintf("Origin:\'%s\' ", origin) : "") +
+        StringPrintf("Line:%i Column:%i - %s",
+            line, column, description.c_str()) ;
   }
 
   return description ;

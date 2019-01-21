@@ -48,6 +48,7 @@ Error ScriptRunner::Run() {
     Error result = errJSUnknown ;
     if (try_catch.HasCaught()) {
       result = errJSException ;
+      V8_ERROR_ADD_MSG_BY_TRY_CATCH(*context_, result, try_catch) ;
       printf("ERROR: Exception occurred "
              "during a script running. (Message: %s)\n",
              ValueToUtf8(*context_, try_catch.Exception()).c_str()) ;
@@ -127,6 +128,7 @@ Error ScriptRunner::Create(
       res = errJSUnknown ;
       if (try_catch.HasCaught()) {
         res = errJSException ;
+        V8_ERROR_ADD_MSG_BY_TRY_CATCH(*result->context_, res, try_catch) ;
         printf("ERROR: Exception occurred "
                "during a main script running. (Message: %s)\n",
                ValueToUtf8(*result->context_, try_catch.Exception()).c_str()) ;

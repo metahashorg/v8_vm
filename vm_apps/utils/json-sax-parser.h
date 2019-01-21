@@ -49,7 +49,7 @@ class JsonSaxParser {
   ~JsonSaxParser() ;
 
   // Parses the input string according to the set options.
-  Error Parse(const char* input, std::int32_t size) ;
+  Error Parse(const char* input, const char* origin, std::int32_t size) ;
 
   // Returns the error code.
   Error error() const ;
@@ -204,15 +204,19 @@ class JsonSaxParser {
   // Sets the error information to |code| at the current column, based on
   // |index_| and |index_last_line_|, with an optional positive/negative
   // adjustment by |column_adjust|.
-  void ReportError(Error code, int column_adjust) ;
+  void ReportError(Error& code, int column_adjust) ;
 
   // Given the line and column number of an error, formats one of the error
   // message contants from json_reader.h for human display.
   static std::string FormatErrorMessage(
-      int line, int column, const std::string& description) ;
+      const char* origin, int line, int column,
+      const std::string& description) ;
 
   // Callbacks
   Callbacks callbacks_ ;
+
+  // Origin of json
+  std::string origin_ ;
 
   // Options that control parsing.
   const int options_ ;

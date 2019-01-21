@@ -100,6 +100,63 @@ Error RunScriptByFile(
 
 }  // namespace
 
+std::size_t Error::message_count() const {
+  return (messages_ ? messages_->size() : 0) + 1 ;
+}
+
+const Error::Message& Error::message(std::size_t index) const {
+  std::size_t message_count = (messages_ ? messages_->size() : 0) ;
+
+  if (error_message_position_ > message_count) {
+    error_message_position_ = message_count ;
+  }
+
+  if (index == error_message_position_ || index > message_count) {
+    if (!error_message_) {
+      error_message_.reset(new Message()) ;
+    }
+
+    error_message_->message = description() ;
+    error_message_->file = file() ;
+    error_message_->line = line() ;
+    return *error_message_ ;
+  }
+
+  return (*messages_)[index < error_message_position_ ? index : index - 1] ;
+}
+
+void Error::AddMessage(
+    const std::string& msg, const char* file, std::uint32_t line,
+    std::uint32_t back_offset) {
+  std::size_t msg_count = message_count() ;
+  // Check the back offset for we don't move fixed messages
+  if (back_offset > (msg_count - fixed_message_count_)) {
+    back_offset = static_cast<std::uint32_t>(msg_count - fixed_message_count_) ;
+  }
+
+  // Check a position of an error message
+  if ((msg_count - back_offset) <= error_message_position_) {
+    ++error_message_position_ ;
+    --back_offset ;
+  }
+
+  // Create queue of messages
+  if (!messages_) {
+    messages_ = std::make_shared<std::deque<Message>>() ;
+  }
+
+  // Find a position for insertion
+  auto pos = messages_->end() ;
+  for (; back_offset > 0 && pos != messages_->begin(); --back_offset, --pos) ;
+
+  // Insert message
+  messages_->insert(pos, Message{msg, file, line}) ;
+}
+
+void Error::FixCurrentMessageQueue() {
+  fixed_message_count_ = message_count() ;
+}
+
 void InitializeV8(const char* app_path) {
   V8HANDLE()->Initialize(app_path) ;
 }

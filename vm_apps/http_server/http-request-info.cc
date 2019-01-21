@@ -62,7 +62,7 @@ void HttpRequestInfo::Clear() {
 }
 
 std::string HttpRequestInfo::ToString() const {
-  std::string output = vvi::StringPrintf(
+  std::string output = StringPrintf(
       "%s %s HTTP/%d.%d\r\n",
       method_.empty() ? Method::Get : method_.c_str(),
       uri_.empty() ? "/" : uri_.c_str(),

@@ -144,6 +144,8 @@ V8_ERROR(Json, true, UnquotedDictionaryKey, 0x8,
     "The dictionary key has to be quoted")
 V8_ERROR(Json, true, InappropriateType, 0x9,
     "Inappropriate type was encountered")
+V8_ERROR(Json, true, InappropriateValue, 0xa,
+    "Inappropriate value was encountered")
 #endif  // defined(V8_ERROR)
 
 // Net errors

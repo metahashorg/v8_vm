@@ -5,10 +5,11 @@
 #ifndef INCLUDE_V8_VM_ERROR_H_
 #define INCLUDE_V8_VM_ERROR_H_
 
+#include <deque>
+#include <memory>
 #include <string>
 
 #include "v8.h"  // NOLINT(build/include)
-
 
 namespace v8 {
 namespace vm {
@@ -166,6 +167,14 @@ static inline const char* GetErrorName(ErrorCodes error) {
   if (V8_ERROR_FAILED(e)) { \
     return (e) ; \
   }
+#define V8_ERROR_ADD_MSG(error, msg) V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, 0)
+#define V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, back_offset) \
+  error.AddMessage(msg, V8_PROJECT_FILE_NAME, __LINE__, back_offset)
+#define V8_ERROR_ADD_MSG_SP(error, ...) \
+  V8_ERROR_ADD_MSG_BACK_OFFSET(error, StringPrintf(__VA_ARGS__), 0)
+#define V8_ERROR_ADD_MSG_SP_BACK_OFFSET(error, back_offset, ...) \
+  V8_ERROR_ADD_MSG_BACK_OFFSET(error, StringPrintf(__VA_ARGS__), back_offset)
+#define V8_ERROR_FIX_CURRENT_QUEUE(error) error.FixCurrentMessageQueue()
 
 // Main error descriptor
 class V8_EXPORT Error {
@@ -180,7 +189,10 @@ class V8_EXPORT Error {
   Error(ErrorCodes code, const char* file, std::uint32_t line)
     : code_(code), file_(file), line_(line) {}
   Error(const Error& error)
-    : code_(error.code_), file_(error.file_), line_(error.line_) {}
+    : code_(error.code_), file_(error.file_), line_(error.line_),
+      messages_(error.messages_),
+      fixed_message_count_(error.fixed_message_count_),
+      error_message_position_(error.error_message_position_) {}
 
   // Operators
   operator ErrorCodeType() const { return static_cast<ErrorCodeType>(code_) ; }
@@ -189,6 +201,9 @@ class V8_EXPORT Error {
     code_ = error.code_ ;
     file_ = error.file_ ;
     line_ = error.line_ ;
+    messages_ = error.messages_ ;
+    fixed_message_count_ = error.fixed_message_count_ ;
+    error_message_position_ = error.error_message_position_ ;
     return *this ;
   }
   bool operator ==(const Error& error) { return code_ == error.code() ; }
@@ -202,23 +217,21 @@ class V8_EXPORT Error {
   std::uint32_t line() const { return line_ ; }
 
   // Messages
-  std::size_t message_count() const { return 1 ; }
-  const Message& message(std::size_t index) const {
-    if (!error_message_) {
-      error_message_.reset(new Message()) ;
-    }
-
-    error_message_->message = description() ;
-    error_message_->file = file() ;
-    error_message_->line = line() ;
-    return *error_message_ ;
-  }
+  const Message& message(std::size_t index) const ;
+  std::size_t message_count() const ;
+  void AddMessage(
+      const std::string& msg, const char* file, std::uint32_t line,
+      std::uint32_t back_offset = 0) ;
+  void FixCurrentMessageQueue() ;
 
  private:
   ErrorCodes code_ = ErrorCodes::errOk ;
   const char* file_ = "" ;
   std::uint32_t line_ = 0 ;
 
+  std::shared_ptr<std::deque<Message>> messages_ ;
+  std::size_t fixed_message_count_ = 0 ;
+  mutable std::size_t error_message_position_ = 0 ;
   mutable std::unique_ptr<Message> error_message_ ;
 };
 
@@ -282,6 +295,8 @@ class V8_EXPORT Error {
   V8_ERROR_CODE_DEFINITION(errJsonUnquotedDictionaryKey)
 #define errJsonInappropriateType \
   V8_ERROR_CODE_DEFINITION(errJsonInappropriateType)
+#define errJsonInappropriateValue \
+  V8_ERROR_CODE_DEFINITION(errJsonInappropriateValue)
 // Net errors
 #define errNetIOPending V8_ERROR_CODE_DEFINITION(errNetIOPending)
 #define errNetInternetDisconnected \

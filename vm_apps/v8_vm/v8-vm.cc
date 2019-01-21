@@ -58,6 +58,14 @@ ModeType GetModeType(const CommandLine& cmd_line) {
   return result ;
 }
 
+void OutputError(const Error& error) {
+  for (std::size_t i = 0, size = error.message_count(); i < size; ++i) {
+    const Error::Message& msg = error.message(i) ;
+    printf("ERROR MSG: %s (File:\'%s\' Line:%i)\n",
+           msg.message.c_str(), msg.file, msg.line) ;
+  }
+}
+
 int DoUnknown() {
   const char usage[] =
       "usage: v8_vm --mode=<mode_type> <args>\n\n"
@@ -94,6 +102,7 @@ int DoCompile(const CommandLine& cmd_line) {
         ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
       printf("ERROR: File \'%s\' hasn't been compiled.\n", it.c_str()) ;
+      OutputError(result) ;
       error = true ;
     }
   }
@@ -149,6 +158,7 @@ int DoRun(const CommandLine& cmd_line) {
   if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Run of a command script is failed. (File: %s)\n",
            cmd_line.GetSwitchValueNative(kSwitchCommand).c_str()) ;
+    OutputError(result) ;
   }
 
   // Deinitialize V8
