@@ -94,15 +94,7 @@ Error CompileScript(
   if (!ScriptCompiler::Compile(
           context, &script_source, option).ToLocal(&script)) {
     Error result = errJSUnknown ;
-    if (try_catch.HasCaught()) {
-      result = errJSException ;
-      V8_ERROR_ADD_MSG_BY_TRY_CATCH(context, result, try_catch) ;
-      printf("ERROR: Exception occurred during comilation. (Message: %s)\n",
-             ValueToUtf8(context, try_catch.Exception()).c_str()) ;
-    } else {
-      printf("ERROR: Unknown error occurred during comilation.") ;
-    }
-
+    V8_ERROR_CREATE_BY_TRY_CATCH(context, result, try_catch) ;
     return result ;
   }
 

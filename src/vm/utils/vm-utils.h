@@ -10,22 +10,25 @@
 #include "src/vm/utils/string-printf.h"
 
 // Macros for writing an exception into an error
-#define V8_ERROR_ADD_MSG_BY_TRY_CATCH(context, error, try_catch) \
+#define V8_ERROR_CREATE_BY_TRY_CATCH(context, error, try_catch) \
   Local<v8::Message> tc_msg = try_catch.Message() ; \
-  if (!tc_msg.IsEmpty()) { \
-    V8_ERROR_ADD_MSG_SP_BACK_OFFSET( \
-      error, \
-      1, \
-      "Origin:\'%s\' Line:%i Column:%i Source line:\'%s\' - %s", \
-      ValueToUtf8( \
-          context, tc_msg->GetScriptOrigin().ResourceName()).c_str(), \
-      tc_msg->GetLineNumber(context).FromMaybe(0), \
-      tc_msg->GetStartColumn(context).FromMaybe(-1) + 1, \
-      ValueToUtf8( \
-          context, \
-          tc_msg->GetSourceLine(context).FromMaybe(Local<String>())) \
-          .c_str(), \
-      ValueToUtf8(context, tc_msg->Get()).c_str()) ; \
+  if (try_catch.HasCaught() && !tc_msg.IsEmpty()) { \
+    error = V8_ERROR_CREATE_WITH_MSG_SP( \
+        errJSException, \
+        "Origin:\'%s\' Line:%i Column:%i Source line:\'%s\' - %s", \
+        ValueToUtf8( \
+            context, tc_msg->GetScriptOrigin().ResourceName()).c_str(), \
+        tc_msg->GetLineNumber(context).FromMaybe(0), \
+        tc_msg->GetStartColumn(context).FromMaybe(-1) + 1, \
+        ValueToUtf8( \
+            context, \
+            tc_msg->GetSourceLine(context).FromMaybe(Local<String>())) \
+            .c_str(), \
+        ValueToUtf8(context, tc_msg->Get()).c_str()) ; \
+  } else { \
+    error = try_catch.HasCaught() ? errJSException : errJSUnknown ; \
+    printf("JS ERROR: Unknown error occurred (File:%s Line:%d)", \
+           V8_PROJECT_FILE_NAME, __LINE__) ; \
   }
 
 // Helpful macros for a declaration of big enums

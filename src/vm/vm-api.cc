@@ -125,9 +125,9 @@ const Error::Message& Error::message(std::size_t index) const {
   return (*messages_)[index < error_message_position_ ? index : index - 1] ;
 }
 
-void Error::AddMessage(
+Error& Error::AddMessage(
     const std::string& msg, const char* file, std::uint32_t line,
-    std::uint32_t back_offset) {
+    std::uint32_t back_offset, bool write_log) {
   std::size_t msg_count = message_count() ;
   // Check the back offset for we don't move fixed messages
   if (back_offset > (msg_count - fixed_message_count_)) {
@@ -151,6 +151,17 @@ void Error::AddMessage(
 
   // Insert message
   messages_->insert(pos, Message{msg, file, line}) ;
+
+  // Write log
+  if (write_log) {
+    printf(
+        "%s: %s (Error:%s(0x%08x) File:%s Line:%i)\n",
+        V8_ERROR_FAILED(*this) ?
+            "ERROR" : (code_ == errOk) ? "INFO" : "WARN", msg.c_str(),
+        name(), code_, file, line) ;
+  }
+
+  return *this ;
 }
 
 void Error::FixCurrentMessageQueue() {

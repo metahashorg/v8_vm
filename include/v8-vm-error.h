@@ -16,7 +16,7 @@ namespace vm {
 
 // This file name in project
 // NOTE: Change definition if you move or rename it
-#define V8_ERROR_FILE_NAME "include/v8-vm-error.h"
+#define V8_ERROR_THIS_FILE_NAME "include/v8-vm-error.h"
 
 // Define a file name macro in the project
 constexpr std::int32_t string_length_with_delta(
@@ -25,9 +25,18 @@ constexpr std::int32_t string_length_with_delta(
 }
 
 constexpr std::int32_t kLocalPathPrefixLength = string_length_with_delta(
-    __FILE__, -string_length_with_delta(V8_ERROR_FILE_NAME)) ;
+    __FILE__, -string_length_with_delta(V8_ERROR_THIS_FILE_NAME)) ;
 
 #define V8_PROJECT_FILE_NAME (__FILE__ + ::v8::vm::kLocalPathPrefixLength)
+
+// Function name macro
+#if defined(V8_COMPILER_GCC)
+#define V8_FUNCTION __PRETTY_FUNCTION__
+#elif defined(V8_COMPILER_MSVC)
+#define V8_FUNCTION __FUNCSIG__
+#else
+#define V8_FUNCTION __FUNCTION__
+#endif
 
 // Define a type flag macro. |type| may be either WarningTypes or ErrorTypes
 #define V8_ERROR_TYPE_FLAG(type, name) \
@@ -161,19 +170,26 @@ static inline const char* GetErrorName(ErrorCodes error) {
 }
 
 // Helpful macros for errors
-#define V8_ERROR_SUCCESS(e) (!(e.code() & ::v8::vm::ErrorCodes::errFlag))
-#define V8_ERROR_FAILED(e) (e.code() & ::v8::vm::ErrorCodes::errFlag)
+#define V8_ERROR_SUCCESS(e) (!((e).code() & ::v8::vm::ErrorCodes::errFlag))
+#define V8_ERROR_FAILED(e) ((e).code() & ::v8::vm::ErrorCodes::errFlag)
 #define V8_ERROR_RETURN_IF_FAILED(e) \
   if (V8_ERROR_FAILED(e)) { \
+    V8_ERROR_ADD_MSG_SP((e), "\'%s\' is failed", V8_FUNCTION) ; \
     return (e) ; \
   }
-#define V8_ERROR_ADD_MSG(error, msg) V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, 0)
+#define V8_ERROR_ADD_MSG(error, msg) \
+  V8_ERROR_ADD_MSG_BACK_OFFSET((error), (msg), 0)
 #define V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, back_offset) \
-  error.AddMessage(msg, V8_PROJECT_FILE_NAME, __LINE__, back_offset)
+  error.AddMessage((msg), V8_PROJECT_FILE_NAME, __LINE__, back_offset, true)
 #define V8_ERROR_ADD_MSG_SP(error, ...) \
-  V8_ERROR_ADD_MSG_BACK_OFFSET(error, StringPrintf(__VA_ARGS__), 0)
+  V8_ERROR_ADD_MSG(error, ::v8::vm::internal::StringPrintf(__VA_ARGS__))
 #define V8_ERROR_ADD_MSG_SP_BACK_OFFSET(error, back_offset, ...) \
-  V8_ERROR_ADD_MSG_BACK_OFFSET(error, StringPrintf(__VA_ARGS__), back_offset)
+  V8_ERROR_ADD_MSG_BACK_OFFSET( \
+      error, ::v8::vm::internal::StringPrintf(__VA_ARGS__), back_offset)
+#define V8_ERROR_CREATE_WITH_MSG(error, msg) \
+  V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, 1)
+#define V8_ERROR_CREATE_WITH_MSG_SP(error, ...) \
+  V8_ERROR_CREATE_WITH_MSG(error, ::v8::vm::internal::StringPrintf(__VA_ARGS__))
 #define V8_ERROR_FIX_CURRENT_QUEUE(error) error.FixCurrentMessageQueue()
 
 // Main error descriptor
@@ -219,9 +235,9 @@ class V8_EXPORT Error {
   // Messages
   const Message& message(std::size_t index) const ;
   std::size_t message_count() const ;
-  void AddMessage(
+  Error& AddMessage(
       const std::string& msg, const char* file, std::uint32_t line,
-      std::uint32_t back_offset = 0) ;
+      std::uint32_t back_offset = 0, bool write_log = false) ;
   void FixCurrentMessageQueue() ;
 
  private:

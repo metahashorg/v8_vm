@@ -21,14 +21,16 @@
     V8_ERROR_ADD_MSG_BACK_OFFSET( \
         error, \
         FormatErrorMessage( \
-            origin_.c_str(), error_line_, error_column_, "json is invalid"), \
+            origin_.c_str(), error_line_, error_column_, \
+            "the json is invalid"), \
         1) ;
 #define ReportCallbackErrorM(error, ...) \
     ReportError(error, __VA_ARGS__) ; \
     V8_ERROR_ADD_MSG( \
         error, \
         FormatErrorMessage( \
-            origin_.c_str(), error_line_, error_column_, "json is invalid")) ;
+            origin_.c_str(), error_line_, error_column_, \
+            "the json is invalid")) ;
 
 namespace {
 
@@ -113,10 +115,7 @@ Error JsonSaxParser::Parse(
 
   // Parse the first and any nested tokens.
   Error result = ParseNextToken() ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Json is invalid\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Make sure the input stream is at an end.
   if (GetNextToken() != T_END_OF_INPUT) {

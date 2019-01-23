@@ -46,16 +46,7 @@ Error ScriptRunner::Run() {
   TryCatch try_catch(*context_) ;
   if (!script->Run(*context_).ToLocal(&result_)) {
     Error result = errJSUnknown ;
-    if (try_catch.HasCaught()) {
-      result = errJSException ;
-      V8_ERROR_ADD_MSG_BY_TRY_CATCH(*context_, result, try_catch) ;
-      printf("ERROR: Exception occurred "
-             "during a script running. (Message: %s)\n",
-             ValueToUtf8(*context_, try_catch.Exception()).c_str()) ;
-    } else {
-      printf("ERROR: Unknown error occurred during a script running.") ;
-    }
-
+    V8_ERROR_CREATE_BY_TRY_CATCH(*context_, result, try_catch) ;
     return result ;
   }
 
@@ -114,8 +105,8 @@ Error ScriptRunner::Create(
       StartupData snapshot = { data->data, data->size } ;
       result.reset(new ScriptRunner(&snapshot, snapshot_out)) ;
     } else {
-      printf("ERROR: Arguments of \'%s\' are wrong.\n", __FUNCTION__) ;
-      return errInvalidArgument ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          errInvalidArgument, "Arguments of \'%s\' are wrong", V8_FUNCTION) ;
     }
   }
 
@@ -125,18 +116,7 @@ Error ScriptRunner::Create(
     TryCatch try_catch(*result->context_) ;
     Local<Value> run_result ;
     if (!result->main_script_->Run(*result->context_).ToLocal(&run_result)) {
-      res = errJSUnknown ;
-      if (try_catch.HasCaught()) {
-        res = errJSException ;
-        V8_ERROR_ADD_MSG_BY_TRY_CATCH(*result->context_, res, try_catch) ;
-        printf("ERROR: Exception occurred "
-               "during a main script running. (Message: %s)\n",
-               ValueToUtf8(*result->context_, try_catch.Exception()).c_str()) ;
-      } else {
-        printf("ERROR: Unknown error occurred "
-               "during a main script running.") ;
-      }
-
+      V8_ERROR_CREATE_BY_TRY_CATCH(*result->context_, res, try_catch) ;
       return res ;
     }
   }
@@ -145,15 +125,13 @@ Error ScriptRunner::Create(
   Local<Script> script ;
   res = CompileScript(*result->context_, script_data, script) ;
   if (V8_ERROR_FAILED(res)) {
-    printf("ERROR: Command script hasn't been compiled. "
-           "(Script origin: %s)\n", script_data.origin.c_str()) ;
+    V8_ERROR_ADD_MSG(res, "Command script hasn't been compiled") ;
     return res ;
   }
 
   if (script.IsEmpty()) {
-    printf("ERROR: Command script compiling've ended failure. "
-           "(Script origin: %s)\n", script_data.origin.c_str()) ;
-    return errJSUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errJSUnknown, "Command script compiling've ended failure") ;
   }
 
   result->script_cache_.reset(ScriptCompiler::CreateCodeCache(
