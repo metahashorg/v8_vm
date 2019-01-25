@@ -544,12 +544,14 @@ Error RequestParser::OnString(const char* val, std::size_t size) {
 
     processed_.insert(kMethod) ;
   } else if (nesting_.back() == kState) {
-    if (!HexStringToBytes(std::string(val, size), &request_->state)) {
+    if (size && !HexStringToBytes(std::string(val, size), &request_->state)) {
       return V8_ERROR_CREATE_WITH_MSG(
           errInvalidArgument, "|state| parsing is failed") ;
     }
 
-    processed_.insert(kState) ;
+    if (size) {
+      processed_.insert(kState) ;
+    }
   } else if (nesting_.back() == kTransaction) {
     result = ParseTransaction(val, size) ;
     if (V8_ERROR_FAILED(result)) {
