@@ -1,3 +1,6 @@
+
+#include "src/base/build_config.h" // @metahash
+
 #include "rlp.h"
 #include "utils2.h"
 
@@ -27,7 +30,11 @@ std::string EncodeField(std::string field) {
         char sz = 0x80 + char(fs);
         rslt += sz;
         rslt += field;
+#if V8_TARGET_ARCH_64_BIT
     } else if (fs > 55 && fs < 0xFFFFFFFFFFFFFFFF) {
+#else  // V8_TARGET_ARCH_64_BIT
+    } else if (fs > 55 && fs < 0xFFFFFFFF) {
+#endif  // V8_TARGET_ARCH_64_BIT
         size_t sizelen = NumberSize(&fs);
 
         const std::string bigint = IntegerToBuffer(fs);
