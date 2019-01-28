@@ -409,6 +409,14 @@ Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
     }
   }
 
+  // Check that we have something for executing
+  if (request_->transaction.data.code.empty() &&
+      request_->transaction.data.function.empty()) {
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNotEnoughData,
+        "Either |code| or |function| must be in |transaction.data|") ;
+  }
+
   return result ;
 }
 
