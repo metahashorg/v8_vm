@@ -662,16 +662,14 @@ Error V8HttpServerSession::WriteErrorResponseBody(
   JsonGap child_gap(root_gap) ;
   http_body << kJsonLeftBracket[root_gap] ;
 
-  // Write |id| and |result| fields
+  // Write |id|
   if (request) {
     http_body << child_gap << kJsonFieldId[child_gap] << request->id
         << kJsonComma[child_gap] ;
-    http_body << child_gap << kJsonFieldResult[child_gap] ;
-    http_body << kJsonLeftBracket[root_gap] ;
   }
 
   // Write |error| field
-  JsonGap error_gap(request ? child_gap : root_gap) ;
+  JsonGap error_gap(root_gap) ;
   JsonGap error_item_gap(error_gap) ;
   http_body << error_gap << kJsonFieldError[error_gap] ;
   http_body << kJsonLeftBracket[error_gap] ;
@@ -707,12 +705,6 @@ Error V8HttpServerSession::WriteErrorResponseBody(
 
   http_body << kJsonNewLine[error_gap] << error_gap
       << kJsonRightBracket[error_gap] ;
-
-  // Write the end of |result| field
-  if (request) {
-    http_body << kJsonNewLine[child_gap] << child_gap
-        << kJsonRightBracket[child_gap] ;
-  }
 
   http_body << kJsonNewLine[root_gap] << kJsonRightBracket[root_gap] ;
 

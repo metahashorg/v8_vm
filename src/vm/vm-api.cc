@@ -341,9 +341,8 @@ void CreateDumpBySnapshotFromFile(
 
   fs.close() ;
 
-  printf(
-      "INFO: Created a dump by the snapshot-file \'%s\' and "
-      "saved result into \'%s\'\n",
+  V8_LOG_INF(
+      "Created a dump by the snapshot-file \'%s\' and saved result into \'%s\'",
       snapshot_path, result_path) ;
 }
 
@@ -360,7 +359,7 @@ Error RunScriptByFile(
   Error result = vi::ScriptRunner::CreateByFiles(
       file_type, file_path, script_path, runner, pdata) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Can't create ScriptRunner\n") ;
+    V8_ERROR_ADD_MSG(result, "Can't create ScriptRunner") ;
     return result ;
   }
 
@@ -520,7 +519,7 @@ Error CompileScript(
   vi::Data data ;
   Error res = vi::CompileScript(script, script_origin, data) ;
   if (V8_ERROR_FAILED(res)) {
-    printf("ERROR: Can't compile the script\n") ;
+    V8_ERROR_ADD_MSG(res, "Can't compile the script") ;
     return res ;
   }
 
@@ -579,15 +578,12 @@ Error RunScript(
   Error result = vi::ScriptRunner::Create(
       nullptr, script_data, runner, snapshot_out) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Can't create ScriptRunner\n") ;
+    V8_ERROR_ADD_MSG(result, "Can't create ScriptRunner") ;
     return result ;
   }
 
   result = runner->Run() ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Script run is failed\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // We've obtained a snapshot only after destruction of runner
   runner.reset() ;
@@ -622,7 +618,7 @@ Error RunScriptBySnapshot(
   Error result = vi::ScriptRunner::Create(
       &snapshot_data, script_data, runner, snapshot_out) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Can't create ScriptRunner\n") ;
+    V8_ERROR_ADD_MSG(result, "Can't create ScriptRunner") ;
     return result ;
   }
 
