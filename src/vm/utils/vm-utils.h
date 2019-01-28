@@ -15,7 +15,7 @@
   if (try_catch.HasCaught() && !tc_msg.IsEmpty()) { \
     error = V8_ERROR_CREATE_WITH_MSG_SP( \
         errJSException, \
-        "Origin:\'%s\' Line:%i Column:%i Source line:\'%s\' - %s", \
+        "Origin:\'%s\' Line:%i Column:%i Source line:\'%s\' - \'%s\'", \
         ValueToUtf8( \
             context, tc_msg->GetScriptOrigin().ResourceName()).c_str(), \
         tc_msg->GetLineNumber(context).FromMaybe(0), \

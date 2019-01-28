@@ -374,6 +374,10 @@ config("features") {
   if (v8_use_multi_snapshots) {
     defines += [ "V8_MULTI_SNAPSHOTS" ]
   }
+  # @metahash Enable a log subsystem
+  if (v8_vm_use_log) {
+    defines += [ "V8_VM_USE_LOG" ]
+  }
 }
 
 config("toolchain") {
@@ -1495,6 +1499,9 @@ v8_source_set("v8_base") {
     "include/v8-profiler.h",
     "include/v8-testing.h",
     "include/v8-util.h",
+    "include/v8-vm-error-list.h", # @metahash
+    "include/v8-vm-error.h", # @metahash
+    "include/v8-vm-log.h", # @metahash
     "include/v8-vm.h", # @metahash
     "include/v8.h",
     "include/v8config.h",

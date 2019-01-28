@@ -20,7 +20,7 @@ ScriptRunner::~ScriptRunner() {
 }
 
 Error ScriptRunner::Run() {
-  printf("VERBS: v8::vm::internal::ScriptRunner::Run().\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   // Get script from cache
   Local<Script> script ;
@@ -28,18 +28,18 @@ Error ScriptRunner::Run() {
       *context_, script_data_, script, script_cache_.get()) ;
   if (V8_ERROR_FAILED(result)) {
     printf("ERROR: Command script hasn't been compiled.\n") ;
-    return result ;
+    V8_LOG_RETURN result ;
   }
 
   if (script_cache_->rejected) {
     printf("ERROR: Command script compilation is corrupted\n") ;
-    return errJSCacheRejected ;
+    V8_LOG_RETURN errJSCacheRejected ;
   }
 
   if (script.IsEmpty()) {
     printf("ERROR: Unknown error occurred"
            "during comilation of command script.\n") ;
-    return errJSUnknown ;
+    V8_LOG_RETURN errJSUnknown ;
   }
 
   // Run script
@@ -47,20 +47,19 @@ Error ScriptRunner::Run() {
   if (!script->Run(*context_).ToLocal(&result_)) {
     Error result = errJSUnknown ;
     V8_ERROR_CREATE_BY_TRY_CATCH(*context_, result, try_catch) ;
-    return result ;
+    V8_LOG_RETURN result ;
   }
 
-  // TODO: Temporary output
-  printf("INFO: Result of command: %s\n",
-         ValueToUtf8(*context_, result_).c_str()) ;
-  return errOk ;
+  V8_LOG_INF("Result of command: %s", ValueToUtf8(*context_, result_).c_str()) ;
+  V8_LOG_RETURN errOk ;
 }
 
 Error ScriptRunner::Create(
     const Data* data, const Data& script_data,
     std::unique_ptr<ScriptRunner>& runner, StartupData* snapshot_out) {
-  printf("VERBS: v8::vm::internal::ScriptRunner::Create().\n") ;
   DCHECK_EQ(Data::Type::JSScript, script_data.type) ;
+
+  V8_LOG_FUNCTION_BODY() ;
 
   Error res = errOk ;
 
@@ -77,12 +76,12 @@ Error ScriptRunner::Create(
       res = CompileScript(*result->context_, *data, result->main_script_) ;
       if (V8_ERROR_FAILED(res)) {
         printf("ERROR: Main script hasn't been compiled.\n") ;
-        return res ;
+        V8_LOG_RETURN res ;
       }
 
       if (result->main_script_.IsEmpty()) {
         printf("ERROR: Main script compiling've ended failure\n") ;
-        return errJSUnknown ;
+        V8_LOG_RETURN errJSUnknown ;
       }
     } else if (data->type == Data::Type::Compilation) {
       // Create ScriptRunner
@@ -93,19 +92,19 @@ Error ScriptRunner::Create(
           *result->context_, *data, result->main_script_) ;
       if (V8_ERROR_FAILED(res)) {
         printf("ERROR: Main script hasn't been loaded.\n") ;
-        return res ;
+        V8_LOG_RETURN res ;
       }
 
       if (result->main_script_.IsEmpty()) {
         printf("ERROR: Main script loading've ended failure\n") ;
-        return errJSUnknown ;
+        V8_LOG_RETURN errJSUnknown ;
       }
     } else if (data->type == Data::Type::Snapshot) {
       // Create ScriptRunner
       StartupData snapshot = { data->data, data->size } ;
       result.reset(new ScriptRunner(&snapshot, snapshot_out)) ;
     } else {
-      return V8_ERROR_CREATE_WITH_MSG_SP(
+      V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG_SP(
           errInvalidArgument, "Arguments of \'%s\' are wrong", V8_FUNCTION) ;
     }
   }
@@ -117,7 +116,7 @@ Error ScriptRunner::Create(
     Local<Value> run_result ;
     if (!result->main_script_->Run(*result->context_).ToLocal(&run_result)) {
       V8_ERROR_CREATE_BY_TRY_CATCH(*result->context_, res, try_catch) ;
-      return res ;
+      V8_LOG_RETURN res ;
     }
   }
 
@@ -126,11 +125,11 @@ Error ScriptRunner::Create(
   res = CompileScript(*result->context_, script_data, script) ;
   if (V8_ERROR_FAILED(res)) {
     V8_ERROR_ADD_MSG(res, "Command script hasn't been compiled") ;
-    return res ;
+    V8_LOG_RETURN res ;
   }
 
   if (script.IsEmpty()) {
-    return V8_ERROR_CREATE_WITH_MSG(
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
         errJSUnknown, "Command script compiling've ended failure") ;
   }
 
@@ -141,7 +140,7 @@ Error ScriptRunner::Create(
   result->script_data_ = script_data ;
   result->script_data_.CopyData(script_data.data, script_data.size) ;
   std::swap(runner, result) ;
-  return errOk ;
+  V8_LOG_RETURN errOk ;
 }
 
 Error ScriptRunner::CreateByFiles(

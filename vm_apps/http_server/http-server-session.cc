@@ -33,12 +33,13 @@ HttpServerSession::HttpServerSession(
 
 Error HttpServerSession::GetBody(
     const char*& body, std::int32_t& body_size, bool& owned) {
-  printf("VERBS: HttpServerSession::GetBody()\n") ;
   // TODO: DCHECK(request_) ;
 
+  V8_LOG_FUNCTION_BODY() ;
+
   if (!request_) {
-    printf("ERROR: Can't get a body when request is NULL\n") ;
-    return errObjNotInit ;
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+        errObjNotInit, "Can't get a body when request is NULL") ;
   }
 
   // |owned| is false in any case
@@ -49,7 +50,7 @@ Error HttpServerSession::GetBody(
     // TODO: Sometimes we need to read before EOF
     body = nullptr ;
     body_size = 0 ;
-    return errOk ;
+    V8_LOG_RETURN errOk ;
   }
 
   // We might have already read something
@@ -74,7 +75,7 @@ Error HttpServerSession::GetBody(
 
   body = &raw_body_.at(0) ;
   body_size = static_cast<std::int32_t>(raw_body_.size()) ;
-  return result ;
+  V8_LOG_RETURN result ;
 }
 
 Error HttpServerSession::ReadRequestHeader() {
@@ -207,25 +208,26 @@ void HttpServerSession::SetResponseDefaultHeaders() {
 }
 
 Error HttpServerSession::Do() {
-  printf("VERBS: HttpServerSession::Do()\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   // Read a request
   Error result = ReadRequestHeader() ;
   SetResponseDefaultHeaders() ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: ReadRequestHeader() is failed\n") ;
+    V8_ERROR_ADD_MSG(result, "ReadRequestHeader(...) is failed") ;
     SendResponse() ;
-    return result ;
+    V8_LOG_RETURN result ;
   }
 
-  printf("INFO: Host: \'%s\' Uri:\'%s\'\n",
-         request_->host().c_str(), request_->uri().c_str()) ;
+  V8_LOG_INF(
+      "Host: \'%s\' Uri:\'%s\'", request_->host().c_str(),
+      request_->uri().c_str()) ;
 
   // Call a handler if it exists
   if (session_handler_) {
     result = session_handler_(*request_, *response_) ;
     if (V8_ERROR_FAILED(result)) {
-      printf("ERROR: session_handler_() is failed\n") ;
+      V8_ERROR_ADD_MSG(result, "session_handler_(...) is failed") ;
       // Refresh a response because of a handler call
       response_.reset(new HttpResponseInfo(HTTP_INTERNAL_SERVER_ERROR)) ;
       SetResponseDefaultHeaders() ;
@@ -243,7 +245,7 @@ Error HttpServerSession::Do() {
 
   // Send a response
   result = SendResponse() ;
-  return result ;
+  V8_LOG_RETURN result ;
 }
 
 TcpServerSession* HttpServerSession::New(

@@ -7,6 +7,7 @@
 #include "vm_apps/http_server/http-server-session.h"
 #include "vm_apps/http_server/tcp-server.h"
 #include "vm_apps/http_server/v8-http-server-session.h"
+#include "vm_apps/utils/app-utils.h"
 #include "vm_apps/utils/command-line.h"
 #include "vm_apps/utils/string-number-conversions.h"
 
@@ -22,14 +23,19 @@ const std::int32_t kBodyBufferSize = 256 * 1024 ; // because of snapshots
 // Wrapper for to initialize V8
 class V8Initializer {
  public:
-  V8Initializer(const char* app_path) {
-    vv::InitializeV8(app_path) ;
-  }
-
-  ~V8Initializer() {
-    vv::DeinitializeV8() ;
-  }
+  V8Initializer(const CommandLine& cmd_line) ;
+  ~V8Initializer() ;
 };
+
+V8Initializer::V8Initializer(const CommandLine& cmd_line) {
+  InitializeLog(LogLevels::Verbose) ;
+  InitializeV8(cmd_line.GetProgram().c_str()) ;
+}
+
+V8Initializer::~V8Initializer() {
+  DeinitializeV8() ;
+  DeinitializeLog() ;
+}
 
 }  //namespace
 
@@ -44,16 +50,19 @@ int main(int argc, char* argv[]) {
     return 1 ;
   }
 
+  // Initialize V8
+  V8Initializer v8_initializer(cmd_line) ;
+
+  // Get a http-server port
   std::uint16_t server_port = 0 ;
   if (!StringToUint16(
           cmd_line.GetSwitchValueNative(kSwitchPort).c_str(), &server_port)) {
-    printf("ERROR: Server port is ivalid (Port: %s)\n",
-           cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "The server port is ivalid (Port: %s)",
+        cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
   }
 
-  // Initialize V8
-  V8Initializer v8_initializer(cmd_line.GetProgram().c_str()) ;
+  V8_LOG_MSG("Server port: %d", server_port) ;
 
   // Start server
   TcpServer server ;

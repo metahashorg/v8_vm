@@ -7,6 +7,7 @@
 
 #include "v8.h"  // NOLINT(build/include)
 #include "v8-vm-error.h"
+#include "v8-vm-log.h"
 
 
 namespace v8 {

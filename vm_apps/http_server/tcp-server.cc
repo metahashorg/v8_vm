@@ -92,7 +92,8 @@ Error TcpServer::Wait() {
 }
 
 void TcpServer::OnSessionClosed(TcpServerSession* session) {
-  printf("VERBS: TcpServer::OnSessionClosed()\n") ;
+  V8_LOG_FUNCTION_BODY() ;
+
   std::unique_lock<std::mutex> locker(sessions_lock_) ;
   sessions_.erase(session) ;
   delete session ;

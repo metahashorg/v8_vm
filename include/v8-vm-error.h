@@ -10,6 +10,7 @@
 #include <string>
 
 #include "v8.h"  // NOLINT(build/include)
+#include "src/base/compiler-specific.h"
 
 namespace v8 {
 namespace vm {

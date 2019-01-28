@@ -53,6 +53,9 @@ declare_args() {
 
   # Enable monolithic static library for embedders.
   v8_monolithic = false
+
+  # @metahash Enable a log subsystem
+  v8_vm_use_log = true
 }
 
 if (v8_use_external_startup_data == "") {

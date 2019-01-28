@@ -638,7 +638,7 @@ FormattedJson V8HttpServerSession::json_formatted_ = FormattedJson::True ;
 
 Error V8HttpServerSession::ProcessSession(
     HttpRequestInfo& request, HttpResponseInfo& response) {
-  printf("VERBS: V8HttpServerSession::ProcessSession()\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   // We process the only post-messages
   if (request.method() != HttpRequestInfo::Method::Post) {
@@ -646,12 +646,12 @@ Error V8HttpServerSession::ProcessSession(
     response.SetHeader(
         HttpPackageInfo::Header::Allow, HttpRequestInfo::Method::Post) ;
     WriteErrorResponseBody(nullptr, errNetActionNotAllowed, response) ;
-    return errOk ;
+    V8_LOG_RETURN errOk ;
   }
 
   V8HttpServerSession session(request, response) ;
   Error result = session.Do() ;
-  return result ;
+  V8_LOG_RETURN result ;
 }
 
 Error V8HttpServerSession::WriteErrorResponseBody(
@@ -727,15 +727,16 @@ V8HttpServerSession::V8HttpServerSession(
     http_response_(response) {}
 
 Error V8HttpServerSession::Do() {
-  printf("VERBS: V8HttpServerSession::Do()\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   const char* body = nullptr ;
   std::int32_t body_size = 0 ;
   Error result = http_request_.GetBody(body, body_size) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: http_request_.GetBody() is failed\n") ;
+    V8_ERROR_ADD_MSG(result, "http_request_.GetBody(...) is failed") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
+    V8_LOG_RETURN WriteErrorResponseBody(
+        request_.get(), result, http_response_) ;
   }
 
   // TODO: Add IP-address to origin - "http-request from 127.0.0.1:8080"
@@ -743,7 +744,8 @@ Error V8HttpServerSession::Do() {
   result = parser.Parse(body, "http-request", body_size, request_) ;
   if (V8_ERROR_FAILED(result)) {
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
+    V8_LOG_RETURN WriteErrorResponseBody(
+        request_.get(), result, http_response_) ;
   }
 
   if (request_->method == Method::Compile) {
@@ -754,7 +756,8 @@ Error V8HttpServerSession::Do() {
     result = V8_ERROR_CREATE_WITH_MSG(
         errJsonUnexpectedToken, "|method| is unknown") ;
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
-    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
+    V8_LOG_RETURN WriteErrorResponseBody(
+        request_.get(), result, http_response_) ;
   }
 
   if (V8_ERROR_FAILED(result)) {
@@ -762,23 +765,25 @@ Error V8HttpServerSession::Do() {
     http_response_.SetStatusCode(
         result == errNetInvalidPackage ? HTTP_BAD_REQUEST :
                                          HTTP_INTERNAL_SERVER_ERROR) ;
-    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
+    V8_LOG_RETURN WriteErrorResponseBody(
+        request_.get(), result, http_response_) ;
   }
 
   result = WriteResponseBody() ;
   if (V8_ERROR_FAILED(result)) {
     V8_ERROR_ADD_MSG(result, "Can't write a response body") ;
     http_response_.SetStatusCode(HTTP_INTERNAL_SERVER_ERROR) ;
-    return WriteErrorResponseBody(request_.get(), result, http_response_) ;
+    V8_LOG_RETURN WriteErrorResponseBody(
+        request_.get(), result, http_response_) ;
   }
 
-  return errOk ;
+  V8_LOG_RETURN errOk ;
 }
 
 Error V8HttpServerSession::CompileScript() {
   static const char script_template[] = ";\ncontract = new %s(%s);" ;
 
-  printf("VERBS: V8HttpServerSession::CompileScript().\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   // Create script
   std::string script = request_->transaction.data.code ;
@@ -789,11 +794,11 @@ Error V8HttpServerSession::CompileScript() {
   }
 
   if (!script.length()) {
-    printf("ERROR: Script is absent.\n") ;
-    return errNetInvalidPackage ;
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+        errNetInvalidPackage, "JS-script is absent") ;
   }
 
-  printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
+  V8_LOG_VBS("Script for running: \n%s\n", script.c_str()) ;
 
   // Run script
   v8::StartupData data = { nullptr, 0 } ;
@@ -806,8 +811,7 @@ Error V8HttpServerSession::CompileScript() {
 
   if (V8_ERROR_FAILED(result)) {
     V8_ERROR_ADD_MSG(result, "Script running is failed") ;
-    printf("ERROR: vv::RunScript() is failed.\n") ;
-    return result ;
+    V8_LOG_RETURN result ;
   }
 
   // Create an address of a new contract
@@ -815,17 +819,17 @@ Error V8HttpServerSession::CompileScript() {
       request_->address, static_cast<int>(request_->transaction.nonce),
       response_address_) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Can't create a address.\n") ;
-    return result ;
+    V8_ERROR_ADD_MSG(result, "Can't create a transaction address") ;
+    V8_LOG_RETURN result ;
   }
 
-  return errOk ;
+  V8_LOG_RETURN errOk ;
 }
 
 Error V8HttpServerSession::RunCommandScript() {
   static const char script_template[] = ";\ncontract.%s(%s);" ;
 
-  printf("VERBS: V8HttpServerSession::RunCommandScript().\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   // Create script
   std::string script = request_->transaction.data.code ;
@@ -836,11 +840,11 @@ Error V8HttpServerSession::RunCommandScript() {
   }
 
   if (!script.length()) {
-    printf("ERROR: Script is absent.\n") ;
-    return errNetInvalidPackage ;
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+        errNetInvalidPackage, "JS-script is absent") ;
   }
 
-  printf("VERBS: Script for running: \'%s\'.\n", script.c_str()) ;
+  V8_LOG_VBS("Script for running: \n%s\n", script.c_str()) ;
 
   // Run script
   v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
@@ -856,11 +860,10 @@ Error V8HttpServerSession::RunCommandScript() {
 
   if (V8_ERROR_FAILED(result)) {
     V8_ERROR_ADD_MSG(result, "Script running by snapshot is failed") ;
-    printf("ERROR: vv::RunScriptBySnapshot() is failed.\n") ;
-    return result ;
+    V8_LOG_RETURN result ;
   }
 
-  return errOk ;
+  V8_LOG_RETURN errOk ;
 }
 
 Error V8HttpServerSession::WriteResponseBody() {

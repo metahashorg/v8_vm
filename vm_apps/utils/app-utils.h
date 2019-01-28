@@ -23,6 +23,11 @@ using FormattedJson = v8::vm::FormattedJson ;
 using JsonGapArray = v8::vm::internal::JsonGapArray ;
 using JsonGap = v8::vm::internal::JsonGap ;
 
+using v8::vm::DeinitializeLog ;
+using v8::vm::DeinitializeV8 ;
+using v8::vm::InitializeLog ;
+using v8::vm::InitializeV8 ;
+using v8::vm::LogLevels ;
 using v8::vm::internal::EncodeJsonString ;
 using v8::vm::internal::kJsonComma ;
 using v8::vm::internal::kJsonLeftBracket ;

@@ -5,7 +5,13 @@
 #include "include/v8-vm.h"
 
 #include <fstream>
+#include <iostream>
+#include <mutex>
+#include <deque>
+#include <thread>
 
+#include "src/base/platform/platform.h"
+#include "src/base/platform/time.h"
 #include "src/utils.h"
 #include "src/vm/dumper.h"
 #include "src/vm/script-runner.h"
@@ -15,11 +21,289 @@
 #include "src/vm/vm-compiler.h"
 
 namespace vi = v8::vm::internal ;
+using OS = v8::base::OS ;
+using Time = v8::base::Time ;
+using TimeDelta = v8::base::TimeDelta ;
 
 namespace v8 {
 namespace vm {
 
 namespace {
+
+#if defined(V8_VM_USE_LOG)
+
+class Logger {
+  // Log message
+  struct Message {
+    Time time = Time::Now() ;
+    int thread_id = OS::GetCurrentThreadId() ;
+    LogLevels log_level ;
+    std::string message ;
+  };
+
+ public:
+  // Initializes a log
+  static void InitializeLog(
+    LogLevels log_level, const char* log_path, const char* file_prefix,
+    std::int32_t log_file_size, bool stdout_flag, bool stderr_flag) ;
+
+  // Deinitializes the log
+  static void DeinitializeLog() ;
+
+  // Prints a message into the log
+  static void PrintLogMessage(
+      LogLevels log_level, const Error* error, const char* file,
+      std::int32_t line, const char* msg, va_list ap) PRINTF_FORMAT(5, 0) ;
+
+ private:
+  // Constructor
+  Logger(
+      LogLevels log_level, const char* log_path, const char* file_prefix,
+      std::int32_t log_file_size, bool stdout_flag, bool stderr_flag) ;
+
+  // Destructor
+  ~Logger() ;
+
+  // Prints a header of the log
+  void PrintHeader() ;
+
+  // Prints a footer of the log
+  void PrintFooter() ;
+
+  // Puts a message into a message queue
+  void PrintMessage(
+      LogLevels log_level, const Error* error, const char* file,
+      std::int32_t line, const char* msg, va_list ap) PRINTF_FORMAT(6, 0) ;
+
+  // Prints a message into the log
+  void PrintMessage(const Message& msg) ;
+
+  // Main function of a log thread
+  void Run() ;
+
+  // Delimiter of message fields
+  std::string field_delimiter_ ;
+
+  std::unique_ptr<std::thread> thread_ ;
+  Time beginning_time_ = Time::Now() ;
+  std::int32_t log_id_ ;
+  std::atomic<LogLevels> log_level_ ;
+  std::string log_path_ ;
+  std::string file_prefix_ ;
+  std::int32_t log_file_size_ ;
+  bool stdout_flag_ ;
+  bool stderr_flag_ ;
+  std::deque<Message> messages_ ;
+  std::mutex message_lock_ ;
+  std::condition_variable message_cv_ ;
+
+  // Instance of a logger
+  static std::unique_ptr<Logger> instance_ ;
+
+  template<class T> friend struct std::default_delete ;
+  template<class T, class D> friend class std::unique_ptr ;
+};
+
+std::unique_ptr<Logger> Logger::instance_ = nullptr ;
+
+void Logger::InitializeLog(
+  LogLevels log_level, const char* log_path, const char* file_prefix,
+  std::int32_t log_file_size, bool stdout_flag, bool stderr_flag) {
+  if (instance_) {
+    DeinitializeLog() ;
+  }
+
+  if (log_level == LogLevels::None ||
+      ((!log_path || !strlen(log_path)) && !stdout_flag && !stderr_flag)) {
+    return ;
+  }
+
+  instance_.reset(new Logger(
+      log_level, log_path, file_prefix, log_file_size, stdout_flag,
+      stderr_flag)) ;
+}
+
+void Logger::DeinitializeLog() {
+  instance_.reset() ;
+}
+
+void Logger::PrintLogMessage(
+    LogLevels log_level, const Error* error, const char* file,
+    std::int32_t line, const char* msg, va_list ap) {
+  if (!instance_ || log_level > instance_->log_level_) {
+    return ;
+  }
+
+  instance_->PrintMessage(log_level, error, file, line, msg, ap) ;
+}
+
+Logger::Logger(
+    LogLevels log_level, const char* log_path, const char* file_prefix,
+    std::int32_t log_file_size, bool stdout_flag, bool stderr_flag)
+  : field_delimiter_(" ") , log_level_(log_level),
+    log_path_(log_path ? log_path : ""),
+    file_prefix_(file_prefix ? file_prefix : ""), log_file_size_(log_file_size),
+    stdout_flag_(stdout_flag), stderr_flag_(stderr_flag) {
+  USE(log_file_size_) ;
+  // Generate a log id
+  log_id_ = static_cast<std::int32_t>(std::time(nullptr)) ;
+  // Start a server thread
+  thread_.reset(new std::thread(&Logger::Run, std::ref(*this))) ;
+  // Print a header of the log
+  PrintHeader() ;
+}
+
+Logger::~Logger() {
+  // Print a footer of the log
+  PrintFooter() ;
+  // Set flag of stopping a log
+  log_level_ = LogLevels::None ;
+  // Stop and wait a logger thread
+  if (thread_.get() && thread_->joinable()) {
+    message_cv_.notify_all() ;
+    thread_->join() ;
+  }
+
+  thread_.reset() ;
+}
+
+void Logger::PrintHeader() {
+  static const char header_template[] =
+      "============================== Log:%08X - The beginning "
+      "(%04d-%02d-%02d %02d:%02d:%02d) ==============================\n"
+      "Time                      %sThread id %sLevel%sMessage" ;
+
+  Time::Exploded time ;
+  beginning_time_.LocalExplode(&time) ;
+  Message msg{
+      .log_level = LogLevels::Message,
+      .message = vi::StringPrintf(
+          header_template, log_id_, time.year, time.month, time.day_of_month,
+          time.hour, time.minute, time.second, field_delimiter_.c_str(),
+          field_delimiter_.c_str(), field_delimiter_.c_str()) } ;
+  std::unique_lock<std::mutex> locker(message_lock_) ;
+  messages_.emplace_back(std::move(msg)) ;
+  message_cv_.notify_all() ;
+}
+
+void Logger::PrintFooter() {
+  static const char header_template[] =
+      "============================== Log:%08X - The end "
+      "(%04d-%02d-%02d %02d:%02d:%02d) ==============================" ;
+
+  Time::Exploded time ;
+  Time::Now().LocalExplode(&time) ;
+  Message msg{
+      .log_level = LogLevels::Message,
+      .message = vi::StringPrintf(
+          header_template, log_id_, time.year, time.month, time.day_of_month,
+          time.hour, time.minute, time.second) } ;
+  std::unique_lock<std::mutex> locker(message_lock_) ;
+  messages_.emplace_back(std::move(msg)) ;
+  message_cv_.notify_all() ;
+}
+
+void Logger::PrintMessage(
+    LogLevels log_level, const Error* error, const char* file,
+    std::int32_t line, const char* msg, va_list ap) {
+  static const char message_file[] = " (File:%s Line:%d)" ;
+  static const char message_error[] = " (Error:%s(0x%08x))" ;
+  static const char message_file_error[] =
+      " (Error:%s(0x%08x) File:%s Line:%d)" ;
+
+  std::string msg_suffix ;
+  if (log_level > LogLevels::Message) {
+    if (file && error) {
+      msg_suffix = vi::StringPrintf(
+          message_file_error, error->name(), error->code(), file, line) ;
+    } else if (file) {
+      msg_suffix = vi::StringPrintf(message_file, file, line) ;
+    } else if (error) {
+      msg_suffix = vi::StringPrintf(
+          message_error, error->name(), error->code()) ;
+    }
+  }
+
+  Message msg_obj{
+      .log_level = log_level,
+      .message = vi::StringPrintV(msg, ap) + msg_suffix } ;
+  std::unique_lock<std::mutex> locker(message_lock_) ;
+  messages_.emplace_back(std::move(msg_obj)) ;
+  message_cv_.notify_all() ;
+}
+
+void Logger::PrintMessage(const Message& msg) {
+  static const char full_msg_template[] =
+      "%04d-%02d-%02d %02d:%02d:%02d.%06d" "%s" "0x%08x" "%s" "%s" "%s" "%s\n" ;
+
+  // Create a message
+  std::string msg_str ;
+  if (msg.log_level > LogLevels::Message) {
+    // Get time of the message
+    Time::Exploded time ;
+    msg.time.LocalExplode(&time) ;
+    // Get a message type as string (the length equates five symbols)
+    const char* msg_type = "NONE " ;
+    switch (msg.log_level) {
+      case LogLevels::Error: msg_type = "ERROR" ; break ;
+      case LogLevels::Warning: msg_type = "WARN " ; break ;
+      case LogLevels::Info: msg_type = "INFO " ; break ;
+      case LogLevels::Verbose: msg_type = "VERBS" ; break ;
+      default: break ;
+    };
+
+    msg_str = vi::StringPrintf(
+        full_msg_template, time.year, time.month, time.day_of_month, time.hour,
+        time.minute, time.second, time.microsecond, field_delimiter_.c_str(),
+        msg.thread_id, field_delimiter_.c_str(), msg_type,
+        field_delimiter_.c_str(), msg.message.c_str()) ;
+  } else {
+    msg_str = msg.message + "\n" ;
+  }
+
+  if (stdout_flag_) {
+    std::cout << msg_str ;
+  }
+
+  if (stderr_flag_ && msg.log_level <= LogLevels::Warning) {
+    std::cerr << msg_str ;
+  }
+}
+
+void Logger::Run() {
+  for (;;) {
+    // Get a message queue
+    std::deque<Message> messages ;
+    {
+      std::unique_lock<std::mutex> locker(message_lock_) ;
+      if (messages_.empty() && log_level_ != LogLevels::None) {
+        message_cv_.wait(locker) ;
+      }
+
+      messages.swap(messages_) ;
+    }
+
+    // Check on stopping
+    if (messages.empty() && log_level_ == LogLevels::None) {
+      break ;
+    }
+
+    // Print messages
+    for (auto it = messages.begin(); it != messages.end(); ++it) {
+      PrintMessage(*it) ;
+    }
+  }
+
+  if (stdout_flag_) {
+    std::cout.flush() ;
+  }
+
+  if (stderr_flag_) {
+    std::cerr.flush() ;
+  }
+}
+
+#endif  // defined(V8_VM_USE_LOG)
 
 enum class DumpType {
   Context = 1,
@@ -154,11 +438,13 @@ Error& Error::AddMessage(
 
   // Write log
   if (write_log) {
-    printf(
-        "%s: %s (Error:%s(0x%08x) File:%s Line:%i)\n",
-        V8_ERROR_FAILED(*this) ?
-            "ERROR" : (code_ == errOk) ? "INFO" : "WARN", msg.c_str(),
-        name(), code_, file, line) ;
+    if (code_ != errOk) {
+      V8_LOG(
+          V8_ERROR_FAILED(*this) ? LogLevels::Error : LogLevels::Warning, this,
+          file, line, "%s", msg.c_str()) ;
+    } else {
+      V8_LOG(LogLevels::Info, nullptr, file, line, "%s", msg.c_str()) ;
+    }
   }
 
   return *this ;
@@ -167,6 +453,58 @@ Error& Error::AddMessage(
 void Error::FixCurrentMessageQueue() {
   fixed_message_count_ = message_count() ;
 }
+
+void InitializeLog(
+    LogLevels log_level, const char* log_path, const char* file_prefix,
+    std::int32_t log_file_size, bool stdout_flag, bool stderr_flag) {
+#if defined(V8_VM_USE_LOG)
+  Logger::InitializeLog(
+      log_level, log_path, file_prefix, log_file_size, stdout_flag,
+      stderr_flag) ;
+#endif  // defined(V8_VM_USE_LOG)
+}
+
+void DeinitializeLog() {
+#if defined(V8_VM_USE_LOG)
+  Logger::DeinitializeLog() ;
+#endif  // defined(V8_VM_USE_LOG)
+}
+
+#if defined(V8_VM_USE_LOG)
+
+void PrintLogMessage(
+  LogLevels log_level, const Error* error, const char* file, std::int32_t line,
+  const char* msg, ...) {
+  va_list ap ;
+  va_start(ap, msg) ;
+  Logger::PrintLogMessage(log_level, error, file, line, msg, ap) ;
+  va_end(ap) ;
+}
+
+FunctionBodyLog::FunctionBodyLog(
+    const char* function, const char* file, std::int32_t line, bool log_flag)
+  : function_(function), file_(file), line_(line), log_flag_(log_flag),
+    beginning_time_(new Time(Time::Now())) {
+  if (log_flag_) {
+    V8_LOG(
+        LogLevels::Verbose, nullptr, file_, line_, "\'%s\' - the beginning",
+        function_) ;
+  }
+}
+
+FunctionBodyLog::~FunctionBodyLog() {
+  if (log_flag_) {
+    TimeDelta delta = Time::Now() - *beginning_time_ ;
+    V8_LOG(
+        LogLevels::Verbose, nullptr, file_, line_, "\'%s\' - the end "
+        "(Execution time: %d.%06d seconds)", function_,
+        static_cast<std::int32_t>(delta.InSeconds()),
+        static_cast<std::int32_t>(
+            delta.InMicroseconds() % Time::kMicrosecondsPerSecond)) ;
+  }
+}
+
+#endif  // defined(V8_VM_USE_LOG)
 
 void InitializeV8(const char* app_path) {
   V8HANDLE()->Initialize(app_path) ;
@@ -234,7 +572,7 @@ void CreateHeapGraphDumpBySnapshotFromFile(
 Error RunScript(
     const char* script, const char* script_origin /*= nullptr*/,
     StartupData* snapshot_out /*= nullptr*/) {
-  printf("VERBS: v8::vm::RunScript().\n") ;
+  V8_LOG_FUNCTION_BODY() ;
 
   vi::Data script_data(vi::Data::Type::JSScript, script_origin, script) ;
   std::unique_ptr<vi::ScriptRunner> runner ;
