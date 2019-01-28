@@ -363,6 +363,45 @@ class V8_BASE_EXPORT Time final : public time_internal::TimeBase<Time> {
   static Time FromJsTime(double ms_since_epoch);
   double ToJsTime() const;
 
+  // @metahash
+
+  // Represents an exploded time that can be formatted nicely. This is kind of
+  // like the Win32 SYSTEMTIME structure or the Unix "struct tm" with a few
+  // additions and changes to prevent errors.
+  struct V8_BASE_EXPORT Exploded {
+    int year ;          // Four digit year "2007"
+    int month ;         // 1-based month (values 1 = January, etc.)
+    int day_of_week ;   // 0-based day of week (0 = Sunday, etc.)
+    int day_of_month ;  // 1-based day of month (1-31)
+    int hour ;          // Hour within the current day (0-23)
+    int minute ;        // Minute within the current hour (0-59)
+    int second ;        // Second within the current minute (0-59 plus leap
+                       //   seconds which may take it up to 60).
+    int millisecond ;   // Milliseconds within the current second (0-999)
+    int microsecond ;   // Microseconds within the current second (0-999999)
+
+    // A cursory test for whether the data members are within their
+    // respective ranges. A 'true' return value does not guarantee the
+    // Exploded value can be successfully converted to a Time value.
+    bool HasValidValues() const ;
+  };
+
+  // Fills the given exploded structure with either the local time or UTC from
+  // this time structure (containing UTC).
+  void UTCExplode(Exploded* exploded) const {
+    return Explode(false, exploded) ;
+  }
+  void LocalExplode(Exploded* exploded) const {
+    return Explode(true, exploded) ;
+  }
+
+ private:
+  // Explodes the given time to either local time |is_local = true| or UTC
+  // |is_local = false|.
+  void Explode(bool is_local, Exploded* exploded) const ;
+
+  // @metahash end
+
  private:
   friend class time_internal::TimeBase<Time>;
   explicit constexpr Time(int64_t us) : TimeBase(us) {}

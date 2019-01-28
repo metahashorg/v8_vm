@@ -288,6 +288,23 @@ struct timespec TimeDelta::ToTimespec() const {
 
 #endif  // V8_OS_POSIX
 
+// @metahash
+
+inline bool is_in_range(int value, int lo, int hi) {
+  return lo <= value && value <= hi;
+}
+
+bool Time::Exploded::HasValidValues() const {
+  return is_in_range(month, 1, 12) &&
+         is_in_range(day_of_week, 0, 6) &&
+         is_in_range(day_of_month, 1, 31) &&
+         is_in_range(hour, 0, 23) &&
+         is_in_range(minute, 0, 59) &&
+         is_in_range(second, 0, 60) &&
+         is_in_range(millisecond, 0, 999);
+}
+
+// @metahash end
 
 #if V8_OS_WIN
 
@@ -395,6 +412,67 @@ FILETIME Time::ToFiletime() const {
   return ft;
 }
 
+// @metahash
+
+void MicrosecondsToFileTime(int64_t us, FILETIME* ft) {
+  // Time is less than 0, negative values are not representable in FILETIME
+  DCHECK_GE(us, 0LL) ;
+
+  // Multiply by 10 to convert microseconds to 100-nanoseconds. Bit_cast will
+  // handle alignment problems. This only works on little-endian machines.
+  *ft = bit_cast<FILETIME, int64_t>(us * 10) ;
+}
+
+void Time::Explode(bool is_local, Exploded* exploded) const {
+  if (us_ < 0LL) {
+    // We are not able to convert it to FILETIME.
+    ZeroMemory(exploded, sizeof(*exploded)) ;
+    return ;
+  }
+
+  // FILETIME in UTC.
+  FILETIME utc_ft ;
+  MicrosecondsToFileTime(us_ + kTimeToEpochInMicroseconds, &utc_ft) ;
+
+  // FILETIME in local time if necessary.
+  bool success = true ;
+  // FILETIME in SYSTEMTIME (exploded).
+  SYSTEMTIME st{} ;
+  if (is_local) {
+    SYSTEMTIME utc_st ;
+    // We don't use FileTimeToLocalFileTime here, since it uses the current
+    // settings for the time zone and daylight saving time. Therefore, if it is
+    // daylight saving time, it will take daylight saving time into account,
+    // even if the time you are converting is in standard time.
+    success = FileTimeToSystemTime(&utc_ft, &utc_st) &&
+              SystemTimeToTzSpecificLocalTime(nullptr, &utc_st, &st);
+  } else {
+    success = !!FileTimeToSystemTime(&utc_ft, &st) ;
+  }
+
+  if (!success) {
+    // Unable to convert time, don't know why
+    UNREACHABLE() ;
+    ZeroMemory(exploded, sizeof(*exploded)) ;
+    return ;
+  }
+
+  exploded->year = st.wYear ;
+  exploded->month = st.wMonth ;
+  exploded->day_of_week = st.wDayOfWeek ;
+  exploded->day_of_month = st.wDay ;
+  exploded->hour = st.wHour ;
+  exploded->minute = st.wMinute ;
+  exploded->second = st.wSecond ;
+  exploded->millisecond = st.wMilliseconds ;
+  // Make this nonnegative (and between 0 and 999999 inclusive).
+  exploded->microsecond = us_ % kMicrosecondsPerSecond ;
+  if (exploded->microsecond < 0)
+    exploded->microsecond += kMicrosecondsPerSecond ;
+}
+
+// @metahash end
+
 #elif V8_OS_POSIX
 
 Time Time::Now() {
@@ -474,6 +552,191 @@ struct timeval Time::ToTimeval() const {
   tv.tv_usec = us_ % kMicrosecondsPerSecond;
   return tv;
 }
+
+// @metahash
+
+#if V8_OS_MACOSX
+
+void Time::Explode(bool is_local, Exploded* exploded) const {
+  // Avoid rounding issues, by only putting the integral number of seconds
+  // (rounded towards -infinity) into a |CFAbsoluteTime| (which is a |double|).
+  int64_t microsecond = us_ % kMicrosecondsPerSecond ;
+  if (microsecond < 0)
+    microsecond += kMicrosecondsPerSecond ;
+  CFAbsoluteTime seconds = ((us_ - microsecond) / kMicrosecondsPerSecond) -
+                           kCFAbsoluteTimeIntervalSince1970 ;
+
+  base::ScopedCFTypeRef<CFTimeZoneRef> time_zone(
+      is_local
+          ? CFTimeZoneCopySystem()
+          : CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0)) ;
+  base::ScopedCFTypeRef<CFCalendarRef> gregorian(CFCalendarCreateWithIdentifier(
+      kCFAllocatorDefault, kCFGregorianCalendar)) ;
+  CFCalendarSetTimeZone(gregorian, time_zone) ;
+  int second, day_of_week ;
+  // 'E' sets the day of week, but is not defined in componentDesc in Apple
+  // documentation. It can be found in open source code here:
+  // http://www.opensource.apple.com/source/CF/CF-855.17/CFCalendar.c
+  CFCalendarDecomposeAbsoluteTime(gregorian, seconds, "yMdHmsE",
+                                  &exploded->year, &exploded->month,
+                                  &exploded->day_of_month, &exploded->hour,
+                                  &exploded->minute, &second, &day_of_week) ;
+  // Make sure seconds are rounded down towards -infinity.
+  exploded->second = floor(second) ;
+  // |Exploded|'s convention for day of week is 0 = Sunday, i.e. different
+  // from CF's 1 = Sunday.
+  exploded->day_of_week = (day_of_week - 1) % 7 ;
+  // Calculate milliseconds ourselves, since we rounded the |seconds|, making
+  // sure to round towards -infinity.
+  exploded->millisecond =
+      (microsecond >= 0) ? microsecond / kMicrosecondsPerMillisecond :
+                           (microsecond - kMicrosecondsPerMillisecond + 1) /
+                               kMicrosecondsPerMillisecond ;
+  exploded->millisecond =
+      (microsecond >= 0) ? microsecond :
+                           (microsecond + kMicrosecondsPerSecond) ;
+}
+
+#else  // V8_OS_MACOSX
+
+// This prevents a crash on traversing the environment global and looking up
+// the 'TZ' variable in libc. See: crbug.com/390567.
+Mutex* GetSysTimeToTimeStructLock() {
+  static auto* lock = new Mutex();
+  return lock;
+}
+
+// Define a system-specific SysTime that wraps either to a time_t or
+// a time64_t depending on the host system, and associated convertion.
+// See crbug.com/162007
+#if defined(V8_OS_ANDROID) && !defined(__LP64__)
+typedef time64_t SysTime;
+
+SysTime SysTimeFromTimeStruct(struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    return mktime64(timestruct);
+  else
+    return timegm64(timestruct);
+}
+
+void SysTimeToTimeStruct(SysTime t, struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    localtime64_r(&t, timestruct);
+  else
+    gmtime64_r(&t, timestruct);
+}
+
+#elif defined(V8_OS_AIX)
+
+// The function timegm is not available on AIX.
+time_t aix_timegm(struct tm* tm) {
+  time_t ret;
+  char* tz;
+
+  tz = getenv("TZ");
+  if (tz) {
+    tz = strdup(tz);
+  }
+  setenv("TZ", "GMT0", 1);
+  tzset();
+  ret = mktime(tm);
+  if (tz) {
+    setenv("TZ", tz, 1);
+    free(tz);
+  } else {
+    unsetenv("TZ");
+  }
+  tzset();
+  return ret;
+}
+
+typedef time_t SysTime;
+
+SysTime SysTimeFromTimeStruct(struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    return mktime(timestruct);
+  else
+    return aix_timegm(timestruct);
+}
+
+void SysTimeToTimeStruct(SysTime t, struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    localtime_r(&t, timestruct);
+  else
+    gmtime_r(&t, timestruct);
+}
+
+#else   // V8_OS_ANDROID && !__LP64__
+typedef time_t SysTime;
+
+SysTime SysTimeFromTimeStruct(struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    return mktime(timestruct);
+  else
+    return timegm(timestruct);
+}
+
+void SysTimeToTimeStruct(SysTime t, struct tm* timestruct, bool is_local) {
+  LockGuard<Mutex> locked(GetSysTimeToTimeStructLock());
+  if (is_local)
+    localtime_r(&t, timestruct);
+  else
+    gmtime_r(&t, timestruct);
+}
+#endif  // V8_OS_ANDROID
+
+void Time::Explode(bool is_local, Exploded* exploded) const {
+  // Time stores times with microsecond resolution.
+  int64_t microseconds = us_ ;
+  // The following values are all rounded towards -infinity.
+  int64_t milliseconds ;  // Milliseconds since epoch.
+  SysTime seconds ;       // Seconds since epoch.
+  int millisecond ;       // Exploded millisecond value (0-999).
+  int microsecond ;       // Exploded microsecond value (0-999999).
+  if (microseconds >= 0) {
+    // Rounding towards -infinity <=> rounding towards 0, in this case.
+    milliseconds = microseconds / kMicrosecondsPerMillisecond ;
+    seconds = milliseconds / kMillisecondsPerSecond ;
+    millisecond = milliseconds % kMillisecondsPerSecond ;
+    microsecond = microseconds % kMicrosecondsPerSecond ;
+  } else {
+    // Round these *down* (towards -infinity).
+    milliseconds = (microseconds - kMicrosecondsPerMillisecond + 1) /
+                   kMicrosecondsPerMillisecond ;
+    seconds =
+        (milliseconds - kMillisecondsPerSecond + 1) / kMillisecondsPerSecond ;
+    // Make this nonnegative (and between 0 and 999 inclusive).
+    millisecond = milliseconds % kMillisecondsPerSecond ;
+    if (millisecond < 0)
+      millisecond += kMillisecondsPerSecond ;
+    // Make this nonnegative (and between 0 and 999999 inclusive).
+    microsecond = microseconds % kMicrosecondsPerSecond ;
+    if (microsecond < 0)
+      microsecond += kMicrosecondsPerSecond ;
+  }
+
+  struct tm timestruct ;
+  SysTimeToTimeStruct(seconds, &timestruct, is_local) ;
+
+  exploded->year = timestruct.tm_year + 1900 ;
+  exploded->month = timestruct.tm_mon + 1 ;
+  exploded->day_of_week = timestruct.tm_wday ;
+  exploded->day_of_month = timestruct.tm_mday ;
+  exploded->hour = timestruct.tm_hour ;
+  exploded->minute = timestruct.tm_min ;
+  exploded->second = timestruct.tm_sec ;
+  exploded->millisecond = millisecond ;
+  exploded->microsecond = microsecond ;
+}
+
+#endif  // V8_OS_MACOSX
+
+// @metahash end
 
 #endif  // V8_OS_WIN
 
