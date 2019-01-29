@@ -49,7 +49,7 @@ class JsonSaxParser {
   ~JsonSaxParser() ;
 
   // Parses the input string according to the set options.
-  Error Parse(const char* input, const char* origin, std::int32_t size) ;
+  Error Parse(const char* origin, const char* input, std::int32_t size) ;
 
   // Returns the error code.
   Error error() const ;

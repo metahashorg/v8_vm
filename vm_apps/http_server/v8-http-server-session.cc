@@ -150,7 +150,7 @@ class RequestParser {
 
   // Parse a json-request
   Error Parse(
-      const char* json, const char* origin, std::int32_t size,
+      const char* origin, const char* json, std::int32_t size,
       std::unique_ptr<V8HttpServerSession::Request>& result) ;
 
  private:
@@ -246,7 +246,7 @@ RequestParser::RequestParser() {
 }
 
 Error RequestParser::Parse(
-  const char* json, const char* origin, std::int32_t size,
+  const char* origin, const char* json, std::int32_t size,
   std::unique_ptr<V8HttpServerSession::Request>& result) {
   // Clear nesting
   nesting_.clear() ;
@@ -265,7 +265,7 @@ Error RequestParser::Parse(
 
   // Try to parse a json
   JsonSaxParser parser(callbacks_, JsonSaxParser::JSON_PARSE_RFC) ;
-  Error res = parser.Parse(json, origin_, size) ;
+  Error res = parser.Parse(origin_, json, size) ;
   if (V8_ERROR_FAILED(res)) {
     V8_ERROR_ADD_MSG(res, "Can't have parsed the json of the request") ;
     return res ;
@@ -384,8 +384,8 @@ Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
       processed_fileds_count_, arraysize(kTransactionProcessedFields)) ;
       JsonSaxParser parser(callbacks_, JsonSaxParser::JSON_PARSE_RFC) ;
   result = parser.Parse(
-      reinterpret_cast<const char*>(position),
       (std::string(origin_) + ": |transaction.data|").c_str(),
+      reinterpret_cast<const char*>(position),
       static_cast<std::int32_t>(data_size)) ;
   if (V8_ERROR_FAILED(result)) {
     V8_ERROR_ADD_MSG(
@@ -741,7 +741,7 @@ Error V8HttpServerSession::Do() {
 
   // TODO: Add IP-address to origin - "http-request from 127.0.0.1:8080"
   RequestParser parser ;
-  result = parser.Parse(body, "http-request", body_size, request_) ;
+  result = parser.Parse("http-request", body, body_size, request_) ;
   if (V8_ERROR_FAILED(result)) {
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
     V8_LOG_RETURN WriteErrorResponseBody(

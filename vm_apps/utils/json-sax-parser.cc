@@ -90,7 +90,7 @@ JsonSaxParser::JsonSaxParser(const Callbacks& callbacks, int options)
 JsonSaxParser::~JsonSaxParser() {}
 
 Error JsonSaxParser::Parse(
-    const char* input, const char* origin, std::int32_t size) {
+    const char* origin, const char* input, std::int32_t size) {
   origin_ = origin ;
   start_pos_ = input ;
   pos_ = start_pos_ ;
