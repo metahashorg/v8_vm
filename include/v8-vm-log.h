@@ -66,13 +66,13 @@ void V8_EXPORT DeinitializeLog() ;
 
 #define V8_LOG(level, error, file, line, msg, ...) \
   V8_DBG_LOG() ; \
-  PrintLogMessage((level), error, file, line, msg, __VA_ARGS__)
+  ::v8::vm::PrintLogMessage((level), error, file, line, msg, __VA_ARGS__)
 
 #else  // V8_OS_WIN
 
 #define V8_LOG(level, error, file, line, msg, ...) \
   V8_DBG_LOG() ; \
-  PrintLogMessage((level), error, file, line, msg, ## __VA_ARGS__)
+  ::v8::vm::PrintLogMessage((level), error, file, line, msg, ## __VA_ARGS__)
 
 #endif  // V8_OS_WIN
 

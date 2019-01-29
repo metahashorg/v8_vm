@@ -19,6 +19,7 @@
 #include "src/vm/utils/vm-utils.h"
 #include "src/vm/v8-handle.h"
 #include "src/vm/vm-compiler.h"
+#include "src/vm/vm-version.h"
 
 namespace vi = v8::vm::internal ;
 using OS = v8::base::OS ;
@@ -460,6 +461,10 @@ void InitializeLog(
   Logger::InitializeLog(
       log_level, log_path, file_prefix, log_file_size, stdout_flag,
       stderr_flag) ;
+  V8_LOG_MSG("V8 version: %s", V8::GetVersion()) ;
+  V8_LOG_MSG(
+      "V8 VM version: %d.%d.%d", V8_VM_MAJOR_VERSION, V8_VM_MINOR_VERSION,
+      V8_VM_BUILD_NUMBER) ;
 #endif  // defined(V8_VM_USE_LOG)
 }
 

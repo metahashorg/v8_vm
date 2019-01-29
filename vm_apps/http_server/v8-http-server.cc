@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         cmd_line.GetSwitchValueNative(kSwitchPort).c_str()) ;
   }
 
-  V8_LOG_MSG("Server port: %d", server_port) ;
+  V8_LOG_MSG("HTTP-server port: %d", server_port) ;
 
   // Start server
   TcpServer server ;

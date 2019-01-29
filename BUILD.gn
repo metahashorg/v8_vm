@@ -2472,6 +2472,7 @@ v8_source_set("v8_base") {
     "src/vm/vm-compiler.cc", # @metahash
     "src/vm/vm-compiler.h", # @metahash
     "src/vm/vm-value.h", # @metahash
+    "src/vm/vm-version.h", # @metahash
     "src/vm/work-context.cc", # @metahash
     "src/vm/work-context.h", # @metahash
     "src/wasm/baseline/liftoff-assembler-defs.h",
