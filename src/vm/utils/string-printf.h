@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "include/v8.h"
 #include "src/base/build_config.h"
 #include "src/base/compiler-specific.h"
 
@@ -19,26 +20,27 @@ namespace vm {
 namespace internal {
 
 // Return a C++ string given printf-like input.
-std::string StringPrintf(_Printf_format_string_ const char* format, ...)
+V8_EXPORT std::string StringPrintf(
+    _Printf_format_string_ const char* format, ...)
     PRINTF_FORMAT(1, 2) V8_WARN_UNUSED_RESULT ;
 
 // Return a C++ string given vprintf-like input.
-std::string StringPrintV(const char* format, va_list ap)
+V8_EXPORT std::string StringPrintV(const char* format, va_list ap)
     PRINTF_FORMAT(1, 0) V8_WARN_UNUSED_RESULT ;
 
 // Store result into a supplied string and return it.
-const std::string& SStringPrintf(
+V8_EXPORT const std::string& SStringPrintf(
     std::string* dst, _Printf_format_string_ const char* format, ...)
     PRINTF_FORMAT(2, 3) ;
 
 // Append result to a supplied string.
-void StringAppendF(
+V8_EXPORT void StringAppendF(
     std::string* dst, _Printf_format_string_ const char* format, ...)
     PRINTF_FORMAT(2, 3) ;
 
 // Lower-level routine that takes a va_list and appends to a specified
 // string.  All other routines are just convenience wrappers around it.
-void StringAppendV(std::string* dst, const char* format, va_list ap)
+V8_EXPORT void StringAppendV(std::string* dst, const char* format, va_list ap)
     PRINTF_FORMAT(2, 0) ;
 
 }  // namespace internal

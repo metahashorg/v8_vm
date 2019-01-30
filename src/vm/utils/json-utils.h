@@ -38,7 +38,7 @@ constexpr const char* kJsonRightBracket[] = { "}", "}" } ;
 constexpr const char* kJsonRightSquareBracket[] = { "]", "]" } ;
 
 // Encodes a string for Json
-std::string EncodeJsonString(const std::string& str) ;
+V8_EXPORT std::string EncodeJsonString(const std::string& str) ;
 
 // Class-wrapper of Json gaps if we use a formatted ouput
 class JsonGap {

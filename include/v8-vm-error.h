@@ -11,6 +11,7 @@
 
 #include "v8.h"  // NOLINT(build/include)
 #include "src/base/compiler-specific.h"
+#include "src/vm/utils/string-printf.h"
 
 namespace v8 {
 namespace vm {
@@ -294,6 +295,11 @@ class V8_EXPORT Error {
 #define errNotEnoughData V8_ERROR_CODE_DEFINITION(errNotEnoughData)
 #define errFileNotExists V8_ERROR_CODE_DEFINITION(errFileNotExists)
 #define errFileEmpty V8_ERROR_CODE_DEFINITION(errFileEmpty)
+#define errFileInUse V8_ERROR_CODE_DEFINITION(errFileInUse)
+#define errTooManyOpenFiles V8_ERROR_CODE_DEFINITION(errTooManyOpenFiles)
+#define errInvalidOperation V8_ERROR_CODE_DEFINITION(errInvalidOperation)
+#define errIOError V8_ERROR_CODE_DEFINITION(errIOError)
+#define errPathNotDirectory V8_ERROR_CODE_DEFINITION(errPathNotDirectory)
 // JS errors
 #define errJSUnknown V8_ERROR_CODE_DEFINITION(errJSUnknown)
 #define errJSException V8_ERROR_CODE_DEFINITION(errJSException)

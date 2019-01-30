@@ -110,6 +110,16 @@ V8_ERROR(Common, false, NotEnoughData, 0x14,
     "Not enough data to complete operation")
 V8_ERROR(Common, false, FileNotExists, 0x15, "The file does not exist")
 V8_ERROR(Common, false, FileEmpty, 0x16, "The file is empty")
+V8_ERROR(Common, false, FileInUse, 0x17,
+    "The process cannot access the file "
+    "because it is being used by another process")
+V8_ERROR(Common, false, TooManyOpenFiles, 0x18,
+    "The system cannot open the file")
+V8_ERROR(Common, false, InvalidOperation, 0x19,
+    "The requested operation cannot be performed")
+V8_ERROR(Common, false, IOError, 0x1a,
+    "The request could not be performed because of an I/O device error")
+V8_ERROR(Common, false, PathNotDirectory, 0x1b, "The path is not a directory")
 #endif  // defined(V8_ERROR)
 
 // JS errors
