@@ -20,23 +20,6 @@ const char kSwitchPort[] = "port" ;
 const char kServerName[] = "v8-http-server/1.0" ;
 const std::int32_t kBodyBufferSize = 256 * 1024 ; // because of snapshots
 
-// Wrapper for to initialize V8
-class V8Initializer {
- public:
-  V8Initializer(const CommandLine& cmd_line) ;
-  ~V8Initializer() ;
-};
-
-V8Initializer::V8Initializer(const CommandLine& cmd_line) {
-  InitializeLog(LogLevels::Verbose) ;
-  InitializeV8(cmd_line.GetProgram().c_str()) ;
-}
-
-V8Initializer::~V8Initializer() {
-  DeinitializeV8() ;
-  DeinitializeLog() ;
-}
-
 }  //namespace
 
 void HowToUse() {

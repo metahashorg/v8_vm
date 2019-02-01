@@ -15,6 +15,7 @@
 #include "src/utils.h"
 #include "src/vm/dumper.h"
 #include "src/vm/script-runner.h"
+#include "src/vm/utils/file-path.h"
 #include "src/vm/utils/string-printf.h"
 #include "src/vm/utils/vm-utils.h"
 #include "src/vm/v8-handle.h"
@@ -32,6 +33,23 @@ namespace vm {
 namespace {
 
 #if defined(V8_VM_USE_LOG)
+
+const char* LogLevelToStr(LogLevels level) {
+  switch (level) {
+    case LogLevels::Message:
+      return "Message" ;
+    case LogLevels::Error:
+      return "Error" ;
+    case LogLevels::Warning:
+      return "Warning" ;
+    case LogLevels::Info:
+      return "Info" ;
+    case LogLevels::Verbose:
+      return "Verbose" ;
+    default:
+    return "None" ;
+  }
+}
 
 class Logger {
   // Log message
@@ -65,6 +83,12 @@ class Logger {
   // Destructor
   ~Logger() ;
 
+  // Creates a free file name
+  std::string CreateFreeFileName(const std::string& suffix = "") ;
+
+  // Initializes a log file
+  void InitializeLogFile() ;
+
   // Prints a header of the log
   void PrintHeader() ;
 
@@ -82,6 +106,9 @@ class Logger {
   // Main function of a log thread
   void Run() ;
 
+  // Reopens a log file if it is more than a maximum log file size
+  void UpdateLogFile() ;
+
   // Delimiter of message fields
   std::string field_delimiter_ ;
 
@@ -89,9 +116,12 @@ class Logger {
   Time beginning_time_ = Time::Now() ;
   std::int32_t log_id_ ;
   std::atomic<LogLevels> log_level_ ;
-  std::string log_path_ ;
+  vi::FilePath log_path_ ;
+  vi::FilePath log_file_path_ ;
+  std::unique_ptr<std::fstream> log_file_ ;
   std::string file_prefix_ ;
-  std::int32_t log_file_size_ ;
+  std::int32_t max_log_file_size_ ;
+  std::int32_t log_file_size_ = 0 ;
   bool stdout_flag_ ;
   bool stderr_flag_ ;
   std::deque<Message> messages_ ;
@@ -122,6 +152,14 @@ void Logger::InitializeLog(
   instance_.reset(new Logger(
       log_level, log_path, file_prefix, log_file_size, stdout_flag,
       stderr_flag)) ;
+
+  V8_LOG_MSG("Log level: %s", LogLevelToStr(instance_->log_level_)) ;
+  if (!instance_->log_path_.empty()) {
+    V8_LOG_MSG("Log path: %s", instance_->log_path_.value().c_str()) ;
+  }
+
+  V8_LOG_MSG("Log stdout: %s", instance_->stdout_flag_ ? "true" : "false") ;
+  V8_LOG_MSG("Log stderr: %s", instance_->stderr_flag_ ? "true" : "false") ;
 }
 
 void Logger::DeinitializeLog() {
@@ -143,11 +181,19 @@ Logger::Logger(
     std::int32_t log_file_size, bool stdout_flag, bool stderr_flag)
   : field_delimiter_(" ") , log_level_(log_level),
     log_path_(log_path ? log_path : ""),
-    file_prefix_(file_prefix ? file_prefix : ""), log_file_size_(log_file_size),
-    stdout_flag_(stdout_flag), stderr_flag_(stderr_flag) {
-  USE(log_file_size_) ;
+    file_prefix_(file_prefix ? file_prefix : ""),
+    max_log_file_size_(log_file_size), stdout_flag_(stdout_flag),
+    stderr_flag_(stderr_flag) {
   // Generate a log id
   log_id_ = static_cast<std::int32_t>(std::time(nullptr)) ;
+  // Initialize a log file
+  InitializeLogFile() ;
+  // Check that we have some output
+  if (!log_file_ && !stdout_flag_ && !stderr_flag_) {
+    log_level_ = LogLevels::None ;
+    return ;
+  }
+
   // Start a server thread
   thread_.reset(new std::thread(&Logger::Run, std::ref(*this))) ;
   // Print a header of the log
@@ -166,6 +212,81 @@ Logger::~Logger() {
   }
 
   thread_.reset() ;
+  log_file_.reset() ;
+}
+
+std::string Logger::CreateFreeFileName(const std::string& suffix) {
+  static const char file_name_template[] =
+      "%s%08x_%04d-%02d-%02d_%02d-%02d-%02d.%06d%s.log" ;
+  static const int magic_number = 73387 ;
+
+  // Try 1000 times to find a free name
+  for (int i = 0; i < 100; ++i) {
+    Time::Exploded time ;
+    Time::Now().LocalExplode(&time) ;
+    for (int j = 0; j < 10; ++j) {
+      std::string file_name = vi::StringPrintf(
+          file_name_template,
+          file_prefix_.empty() ? file_prefix_.c_str() :
+                                 (file_prefix_ + "_").c_str(),
+          log_id_, time.year, time.month, time.day_of_month, time.hour,
+          time.minute, time.second, time.microsecond,
+          suffix.empty() ? suffix.c_str() : ("_" + suffix).c_str()) ;
+      if (!PathExists(log_path_.Append(file_name))) {
+        return file_name ;
+      }
+
+      time.microsecond =
+          (time.microsecond + magic_number) % Time::kMicrosecondsPerSecond ;
+    }
+  }
+
+  printf("ERROR: Can't find a free name of a file\n") ;
+  return "" ;
+}
+
+void Logger::InitializeLogFile() {
+  if (log_path_.empty()) {
+    return ;
+  }
+
+  Error result = vi::CreateDirectory(log_path_) ;
+  if (V8_ERROR_FAILED(result)) {
+    printf(
+        "ERROR: Can't create a directory - \'%s\'\n",
+        log_path_.value().c_str()) ;
+    return ;
+  }
+
+  std::string file_name = CreateFreeFileName() ;
+  if (file_name.empty()) {
+    printf("ERROR: Can't create a log file name\n") ;
+    return ;
+  }
+
+  log_file_path_ = log_path_.Append(file_name) ;
+  log_file_.reset(
+      new std::fstream(
+          log_file_path_.value(), std::fstream::out | std::fstream::binary)) ;
+  if (!log_file_ || !log_file_->is_open()) {
+    log_path_.clear() ;
+    log_file_path_.clear() ;
+    log_file_.reset() ;
+    printf(
+        "ERROR: Can't open a log file - \'%s\'\n",
+        log_file_path_.value().c_str()) ;
+    return ;
+  }
+
+  vi::FilePath absolute_log_file_path = MakeAbsoluteFilePath(log_file_path_) ;
+  if (!absolute_log_file_path.empty()) {
+    log_file_path_ = absolute_log_file_path ;
+    log_path_ = log_file_path_.DirName() ;
+  }
+
+  if (max_log_file_size_ <= 0) {
+    max_log_file_size_ = kDefaultLogFileSize ;
+  }
 }
 
 void Logger::PrintHeader() {
@@ -262,6 +383,12 @@ void Logger::PrintMessage(const Message& msg) {
     msg_str = msg.message + "\n" ;
   }
 
+  if (log_file_) {
+    (*log_file_) << msg_str ;
+    log_file_size_ += msg_str.length() ;
+    UpdateLogFile() ;
+  }
+
   if (stdout_flag_) {
     std::cout << msg_str ;
   }
@@ -295,6 +422,11 @@ void Logger::Run() {
     }
   }
 
+  // Flush all streams
+  if (log_file_) {
+    log_file_->flush() ;
+  }
+
   if (stdout_flag_) {
     std::cout.flush() ;
   }
@@ -302,6 +434,44 @@ void Logger::Run() {
   if (stderr_flag_) {
     std::cerr.flush() ;
   }
+}
+
+void Logger::UpdateLogFile() {
+  static const char footer_template[] =
+      "============================== Log:%08X - Next file: "
+      "%s ==============================\n" ;
+  static const char header_template[] =
+      "============================== Log:%08X - Previous file: "
+      "%s ==============================\n" ;
+
+  if (log_file_size_ <= max_log_file_size_ || log_level_ == LogLevels::None) {
+    return ;
+  }
+
+  std::string file_name = CreateFreeFileName() ;
+  if (file_name.empty()) {
+    return ;
+  }
+
+  vi::FilePath log_file_path = log_path_.Append(file_name) ;
+  std::unique_ptr<std::fstream> log_file(
+      new std::fstream(
+          log_file_path.value(), std::fstream::out | std::fstream::binary)) ;
+  if (!log_file || !log_file->is_open()) {
+    return ;
+  }
+
+  std::string msg = vi::StringPrintf(
+      footer_template, log_id_, log_file_path.BaseName().value().c_str()) ;
+  *log_file_ << msg ;
+  log_file_->flush() ;
+  msg = vi::StringPrintf(
+      header_template, log_id_, log_file_path_.BaseName().value().c_str()) ;
+  *log_file << msg ;
+
+  log_file_.swap(log_file) ;
+  log_file_path_ = std::move(log_file_path) ;
+  log_file_size_ = 0 ;
 }
 
 #endif  // defined(V8_VM_USE_LOG)

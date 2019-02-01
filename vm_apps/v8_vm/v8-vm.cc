@@ -92,9 +92,6 @@ int DoUnknown() {
 }
 
 int DoCompile(const CommandLine& cmd_line) {
-  // Initialize V8
-  v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
-
   bool error = false ;
   for (auto it : cmd_line.GetArgs()) {
     Error result = v8::vm::CompileScriptFromFile(
@@ -107,15 +104,10 @@ int DoCompile(const CommandLine& cmd_line) {
     }
   }
 
-  // Deinitialize V8
-  v8::vm::DeinitializeV8() ;
   return (error ? errIncompleteOperation : 0) ;
 }
 
 int DoRun(const CommandLine& cmd_line) {
-  // Initialize V8
-  v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
-
   std::string js_path ;
   if (cmd_line.HasSwitch(kSwitchJSScript)) {
     js_path = cmd_line.GetSwitchValueNative(kSwitchJSScript) ;
@@ -161,15 +153,10 @@ int DoRun(const CommandLine& cmd_line) {
     OutputError(result) ;
   }
 
-  // Deinitialize V8
-  v8::vm::DeinitializeV8() ;
   return (result != errOk ? result : 0) ;
 }
 
 int DoDump(const CommandLine& cmd_line) {
-  // Initialize V8
-  v8::vm::InitializeV8(cmd_line.GetProgram().c_str()) ;
-
   for (auto it : cmd_line.GetArgs()) {
     v8::vm::CreateContextDumpBySnapshotFromFile(
         it.c_str(),
@@ -184,8 +171,6 @@ int DoDump(const CommandLine& cmd_line) {
         ChangeFileExtension(it.c_str(), kHeapGraphDumpFileExtension).c_str()) ;
   }
 
-  // Deinitialize V8
-  v8::vm::DeinitializeV8() ;
   return 0 ;
 }
 
@@ -212,6 +197,10 @@ int DoErrorList() {
 
 int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
+
+  // Initialize V8
+  V8Initializer v8_initializer(cmd_line) ;
+
   ModeType mode_type = GetModeType(cmd_line) ;
   int result = 0 ;
   if (mode_type == ModeType::Unknown) {

@@ -15,6 +15,7 @@
 #include "src/vm/utils/json-utils.h"
 #include "src/vm/utils/string-printf.h"
 #include "src/vm/utils/string-utils.h"
+#include "vm_apps/utils/command-line.h"
 
 // Using directives
 namespace vv = v8::vm ;
@@ -27,10 +28,12 @@ using v8::vm::ErrorCodeType ;
 using v8::vm::FormattedJson ;
 using v8::vm::InitializeLog ;
 using v8::vm::InitializeV8 ;
+using v8::vm::kDefaultLogFileSize ;
 using v8::vm::LogLevels ;
 using v8::vm::internal::EncodeJsonString ;
 using v8::vm::internal::EqualsCaseInsensitiveASCII ;
 using v8::vm::internal::FilePath ;
+using v8::vm::internal::GetExecutablePath ;
 using v8::vm::internal::JsonGap ;
 using v8::vm::internal::JsonGapArray ;
 using v8::vm::internal::kJsonComma ;
@@ -48,5 +51,14 @@ using v8::vm::internal::TRIM_ALL ;
 // Changes a file extension
 std::string ChangeFileExtension(
     const char* file_name, const char* new_extension) ;
+
+// Wrapper for to initialize V8
+class V8Initializer {
+ public:
+  // Constructor
+  V8Initializer(const CommandLine& cmd_line) ;
+  // Destructor
+  ~V8Initializer() ;
+};
 
 #endif  // V8_VM_APPS_UTILS_APP_UTILS_H_

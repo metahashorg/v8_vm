@@ -650,10 +650,14 @@ Error V8HttpServerSession::ProcessSession(
 
   // We process the only post-messages
   if (request.method() != HttpRequestInfo::Method::Post) {
+    Error result = V8_ERROR_CREATE_WITH_MSG_SP(
+        errNetActionNotAllowed,
+        "The method \'%s\' is not allowed, the only \'POST\'",
+        request.method().c_str()) ;
     response.SetStatusCode(HTTP_METHOD_NOT_ALLOWED) ;
     response.SetHeader(
         HttpPackageInfo::Header::Allow, HttpRequestInfo::Method::Post) ;
-    WriteErrorResponseBody(nullptr, errNetActionNotAllowed, response) ;
+    WriteErrorResponseBody(nullptr, result, response) ;
     V8_LOG_RETURN errOk ;
   }
 
