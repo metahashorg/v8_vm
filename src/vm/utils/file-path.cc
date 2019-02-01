@@ -22,7 +22,9 @@
 #endif
 
 #if defined(V8_OS_POSIX)
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif  // defined(V8_OS_POSIX)
 
 #if defined(V8_OS_WIN)
@@ -1403,6 +1405,17 @@ Error OSErrorToVMError(DWORD last_error) {
 
 }  // namespace
 
+FilePath MakeAbsoluteFilePath(const FilePath& input) {
+  char file_path[MAX_PATH] ;
+  if (!_fullpath(file_path, input.value().c_str(), MAX_PATH))
+    return FilePath() ;
+  return FilePath(file_path) ;
+}
+
+bool PathExists(const FilePath& path) {
+  return (GetFileAttributesA(path.value().c_str()) != INVALID_FILE_ATTRIBUTES) ;
+}
+
 bool DirectoryExists(const FilePath& path) {
   DWORD fileattr = GetFileAttributesA(path.value().c_str()) ;
   if (fileattr != INVALID_FILE_ATTRIBUTES) {
@@ -1468,6 +1481,13 @@ Error CreateDirectory(const FilePath& full_path) {
   return errOk ;
 }
 
+FilePath GetExecutablePath() {
+  char full_path[MAX_PATH] ;
+  if (GetModuleFileNameA(NULL, full_path, MAX_PATH) == 0)
+    return FilePath() ;
+  return MakeAbsoluteFilePath(FilePath(full_path)) ;
+}
+
 #elif defined(V8_OS_POSIX)
 
 #if defined(V8_OS_BSD) || defined(V8_OS_MACOSX) || defined(V8_OS_NACL)
@@ -1520,6 +1540,26 @@ Error OSErrorToVMError(int saved_errno) {
 
 }  // namespace
 
+#if !defined(V8_OS_NACL_NONSFI)
+FilePath MakeAbsoluteFilePath(const FilePath& input) {
+  char full_path[PATH_MAX] ;
+  if (realpath(input.value().c_str(), full_path) == NULL) {
+    return FilePath() ;
+  }
+
+  return FilePath(full_path) ;
+}
+#endif  // !defined(OS_NACL_NONSFI)
+
+bool PathExists(const FilePath& path) {
+#if defined(V8_OS_ANDROID)
+  if (path.IsContentUri()) {
+    return ContentUriExists(path) ;
+  }
+#endif
+  return access(path.value().c_str(), F_OK) == 0 ;
+}
+
 bool DirectoryExists(const FilePath& path) {
   stat_wrapper_t file_info ;
   if (CallStat(path.value().c_str(), &file_info) != 0)
@@ -1561,6 +1601,39 @@ Error CreateDirectory(const FilePath& full_path) {
   }
 
   return errOk ;
+}
+
+FilePath GetExecutablePath() {
+#if defined(V8_OS_LINUX)
+  static const char kProcSelfExe[] = "/proc/self/exe" ;
+  char path[PATH_MAX] ;
+  ssize_t count = readlink(kProcSelfExe, path, arraysize(path)) ;
+  if (count <= 0) {
+    return FilePath() ;
+  }
+
+  return MakeAbsoluteFilePath(FilePath(FilePath::StringType(path, count))) ;
+#elif defined(V8_OS_FREEBSD)
+  int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 } ;
+  char path[PATH_MAX + 1] ;
+  size_t length = sizeof(path) ;
+  // Upon return, |length| is the number of bytes written to |path|
+  // including the string terminator.
+  int error = sysctl(name, 4, path, &length, NULL, 0) ;
+  if (error < 0 || length <= 1) {
+    return FilePath() ;
+  }
+
+  return MakeAbsoluteFilePath(
+      FilePath(FilePath::StringType(path, length - 1))) ;
+#elif defined(V8_OS_SOLARIS)
+  char path[PATH_MAX + 1] ;
+  if (realpath(getexecname(), path) == NULL) {
+    return FilePath() ;
+  }
+
+  return FilePath(path) ;
+#endif  // defined(V8_OS_LINUX)
 }
 
 #endif  // defined(V8_OS_WIN)

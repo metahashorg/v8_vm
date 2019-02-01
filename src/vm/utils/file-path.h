@@ -464,6 +464,15 @@ class V8_EXPORT FilePath {
 V8_EXPORT std::ostream& operator<<(
     std::ostream& out, const FilePath& file_path);
 
+// Returns an absolute version of a relative path. Returns an empty path on
+// error. On POSIX, this function fails if the path does not exist. This
+// function can result in I/O so it can be slow.
+V8_EXPORT FilePath MakeAbsoluteFilePath(const FilePath& input) ;
+
+// Returns true if the given path exists on the local filesystem,
+// false otherwise.
+V8_EXPORT bool PathExists(const FilePath& path) ;
+
 // Returns true if the given path exists and is a directory, false otherwise.
 V8_EXPORT bool DirectoryExists(const FilePath& path) ;
 
@@ -471,6 +480,9 @@ V8_EXPORT bool DirectoryExists(const FilePath& path) ;
 // don't exist. Returns errOk on successful creation, or if the directory
 // already exists.
 V8_EXPORT Error CreateDirectory(const FilePath& full_path) ;
+
+// Returns an absolute path of the executable
+V8_EXPORT FilePath GetExecutablePath() ;
 
 }  // namespace internal
 }  // namespace vm
