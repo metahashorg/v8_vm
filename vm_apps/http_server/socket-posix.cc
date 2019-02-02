@@ -80,13 +80,16 @@ Error SocketPosix::Open(int address_family) {
       address_family, SOCK_STREAM,
       address_family == AF_UNIX ? 0 : IPPROTO_TCP) ;
   if (socket_fd_ < 0) {
-    printf("ERROR: CreatePlatformSocket() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "CreatePlatformSocket() is failed, the last system error is %d",
+        errno) ;
   }
 
   if (!SetNonBlocking(socket_fd_)) {
-    Error rv = MapSystemError(errno) ;
-    printf("ERROR: SetNonBlocking() returned a failure\n") ;
+    Error rv = V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "SetNonBlocking() is failed, the last system error is %d", errno) ;
     Close() ;
     return rv ;
   }
@@ -97,11 +100,7 @@ Error SocketPosix::Open(int address_family) {
 Error SocketPosix::AdoptConnectedSocket(
     SocketDescriptor socket, const SockaddrStorage& address) {
   Error rv = AdoptUnconnectedSocket(socket) ;
-  if (rv != errOk) {
-    printf("ERROR: AdoptUnconnectedSocket() returned an error\n") ;
-    return rv ;
-  }
-
+  V8_ERROR_RETURN_IF_FAILED(rv) ;
   SetPeerAddress(address) ;
   return errOk ;
 }
@@ -112,8 +111,9 @@ Error SocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
   socket_fd_ = socket ;
 
   if (!SetNonBlocking(socket_fd_)) {
-    Error rv = MapSystemError(errno) ;
-    printf("ERROR: SetNonBlocking() returned a failure\n") ;
+    Error rv = V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "SetNonBlocking() is failed, the last system error is %d", errno) ;
     Close() ;
     return rv ;
   }
@@ -126,8 +126,9 @@ Error SocketPosix::Bind(const SockaddrStorage& address) {
 
   int rv = bind(socket_fd_, address.addr, address.addr_len) ;
   if (rv < 0) {
-    printf("ERROR: bind() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno), "bind() is failed, the last system error is %d",
+        errno) ;
   }
 
   return errOk ;
@@ -140,8 +141,9 @@ Error SocketPosix::Listen(int backlog) {
 
   int rv = listen(socket_fd_, backlog) ;
   if (rv < 0) {
-    printf("ERROR: listen() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "listen() is failed, the last system error is %d", errno) ;
   }
 
   return errOk ;
@@ -167,8 +169,9 @@ Error SocketPosix::Accept(
   int wait_result = HANDLE_EINTR(select(
       socket_fd_ + 1, &set, NULL, NULL, timeout_pval)) ;
   if(wait_result < 0) {
-    printf("ERROR: select() returned an error\n") ;
-    return MapAcceptError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapAcceptError(errno),
+        "select() is failed, the last system error is %d", errno) ;
   } else if (wait_result == 0) {
     return errTimeout ;
   }
@@ -177,8 +180,9 @@ Error SocketPosix::Accept(
   int new_socket = HANDLE_EINTR(accept(
       socket_fd_, new_peer_address.addr, &new_peer_address.addr_len)) ;
   if (new_socket < 0) {
-    printf("ERROR: accept() returned an error\n") ;
-    return MapAcceptError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapAcceptError(errno),
+        "accept() is failed, the last system error is %d", errno) ;
   }
 
   std::unique_ptr<SocketPosix> accepted_socket(new SocketPosix) ;
@@ -299,8 +303,9 @@ Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   int wait_result = HANDLE_EINTR(select(
       socket_fd_ + 1, &set, NULL, NULL, timeout_pval)) ;
   if(wait_result < 0) {
-    printf("ERROR: select() returned an error\n") ;
-    return MapAcceptError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapAcceptError(errno),
+        "select() is failed, the last system error is %d", errno) ;
   } else if (wait_result == 0) {
     return errTimeout ;
   }
@@ -308,8 +313,9 @@ Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   // Try to read
   long rv = HANDLE_EINTR(read(socket_fd_, buf, local_buf_len)) ;
   if (rv < 0) {
-    printf("ERROR: read() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "read() is failed, the last system error is %d", errno) ;
   }
 
   buf_len = static_cast<std::int32_t>(rv) ;
@@ -343,10 +349,9 @@ Error SocketPosix::Write(
   int wait_result = HANDLE_EINTR(select(
       socket_fd_ + 1, NULL, &set, NULL, timeout_pval)) ;
   if(wait_result < 0) {
-    Error net_error = MapAcceptError(errno) ;
-    printf("ERROR: select() returned an error (Net error: 0x%08x)\n",
-           net_error.code()) ;
-    return net_error ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapAcceptError(errno),
+        "select() is failed, the last system error is %d", errno) ;
   } else if (wait_result == 0) {
     return errTimeout ;
   }
@@ -362,8 +367,9 @@ Error SocketPosix::Write(
 #endif
 
   if (rv < 0) {
-    printf("ERROR: send() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "send() is failed, the last system error is %d", errno) ;
   }
 
   buf_len = static_cast<std::int32_t>(rv) ;
@@ -374,8 +380,9 @@ Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
   // TODO: DCHECK(address) ;
 
   if (getsockname(socket_fd_, address->addr, &address->addr_len) < 0) {
-    printf("ERROR: getsockname() returned an error\n") ;
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "getsockname() is failed, the last system error is %d", errno) ;
   }
 
   return errOk ;
@@ -385,7 +392,8 @@ Error SocketPosix::GetPeerAddress(SockaddrStorage* address) const {
   // TODO: DCHECK(address);
 
   if (!HasPeerAddress()) {
-    return errNetSocketNotConnected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   *address = *peer_address_ ;
@@ -411,7 +419,9 @@ bool SocketPosix::HasPeerAddress() const {
 void SocketPosix::Close() {
   if (socket_fd_ != kInvalidSocket) {
     if (IGNORE_EINTR(close(socket_fd_)) < 0) {
-      printf("ERROR: close() returned an error (%d)\n", errno) ;
+      V8_LOG_ERR(
+          MapSystemError(errno),
+          "close() is failed, the last system error is %d", errno) ;
     }
 
     socket_fd_ = kInvalidSocket ;

@@ -65,11 +65,11 @@ Error SetSocketReceiveBufferSize(SocketDescriptor fd, int32_t size) {
 #elif defined(V8_OS_WIN)
   int os_error = WSAGetLastError() ;
 #endif
-  Error net_error = (rv == -1) ? MapSystemError(os_error) : errOk ;
-  if (!!rv) {
-    printf("ERROR: Could not set socket receive buffer size\n") ;
-  }
-
+  Error net_error = (rv == -1) ?
+      V8_ERROR_CREATE_WITH_MSG(
+          MapSystemError(os_error),
+          "Could not set socket receive buffer size") :
+      errOk ;
   return net_error ;
 }
 
@@ -81,10 +81,10 @@ Error SetSocketSendBufferSize(SocketDescriptor fd, int32_t size) {
 #elif defined(V8_OS_WIN)
   int os_error = WSAGetLastError() ;
 #endif
-  Error net_error = (rv == -1) ? MapSystemError(os_error) : errOk ;
-  if (!!rv) {
-    printf("ERROR:Could not set socket sent buffer size\n") ;
-  }
-
+  Error net_error = (rv == -1) ?
+      V8_ERROR_CREATE_WITH_MSG(
+          MapSystemError(os_error),
+          "Could not set socket sent buffer size") :
+      errOk ;
   return net_error;
 }

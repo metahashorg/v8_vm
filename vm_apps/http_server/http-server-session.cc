@@ -136,24 +136,21 @@ Error HttpServerSession::ReadRequestHeader() {
     }
   }
 
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Net error's occurred or HTTP header is corrupted\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Parse http-headers
   request_.reset(new HttpRequestInfo()) ;
   result = request_->Parse(
       &raw_headers_.at(0), static_cast<std::int32_t>(raw_headers_.size())) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: request_->Parse() is failed\n") ;
     request_.reset() ;
     response_.reset(new HttpResponseInfo(HTTP_BAD_REQUEST)) ;
     if (error_handler_) {
       error_handler_(result, *response_) ;
     }
 
-    return errNetInvalidPackage ;
+    return V8_ERROR_CREATE_BASED_ON_WITH_MSG(
+        errNetInvalidPackage, result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   response_.reset(new HttpResponseInfo()) ;
@@ -172,25 +169,16 @@ Error HttpServerSession::SendResponse() {
   std::string headers = response_->ToString() ;
   std::int32_t buf_len = static_cast<std::int32_t>(headers.length()) ;
   Error result = Write(headers.c_str(), buf_len) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Sending response headers is failed\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Send a body if it exists
   const char* body = nullptr ;
   result = response_->GetBody(body, buf_len) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: response_->GetBody() is failed\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   if (buf_len > 0) {
     result = Write(body, buf_len) ;
-    if (V8_ERROR_FAILED(result)) {
-      printf("ERROR: Sending a body is failed\n") ;
-      return result ;
-    }
+    V8_ERROR_RETURN_IF_FAILED(result) ;
   }
 
   return result ;

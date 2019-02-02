@@ -105,7 +105,7 @@ int IPEndPoint::GetSockAddrFamily() const {
       return AF_INET6;
     default:
       // TODO: NOTREACHED() << "Bad IP address" ;
-      printf("ERROR: Bad IP address\n") ;
+      V8_LOG_ERR(errUnknown, "Bad IP address") ;
       return AF_UNSPEC ;
   }
 }

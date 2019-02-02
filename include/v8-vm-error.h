@@ -176,7 +176,7 @@ static inline const char* GetErrorName(ErrorCodes error) {
 #define V8_ERROR_FAILED(e) ((e).code() & ::v8::vm::ErrorCodes::errFlag)
 #define V8_ERROR_RETURN_IF_FAILED(e) \
   if (V8_ERROR_FAILED(e)) { \
-    V8_ERROR_ADD_MSG_SP((e), "\'%s\' is failed", V8_FUNCTION) ; \
+    V8_ERROR_ADD_MSG((e), V8_ERROR_MSG_FUNCTION_FAILED()) ; \
     return (e) ; \
   }
 #define V8_ERROR_ADD_MSG(error, msg) \
@@ -192,7 +192,16 @@ static inline const char* GetErrorName(ErrorCodes error) {
   V8_ERROR_ADD_MSG_BACK_OFFSET(error, msg, 1)
 #define V8_ERROR_CREATE_WITH_MSG_SP(error, ...) \
   V8_ERROR_CREATE_WITH_MSG(error, ::v8::vm::internal::StringPrintf(__VA_ARGS__))
+#define V8_ERROR_CREATE_BASED_ON(error, parent_error) \
+  error.CopyMessages(parent_error)
+#define V8_ERROR_CREATE_BASED_ON_WITH_MSG(error, parent_error, msg) \
+  V8_ERROR_CREATE_BASED_ON(V8_ERROR_CREATE_WITH_MSG(error, msg), parent_error)
+#define V8_ERROR_CREATE_BASED_ON_WITH_MSG_SP(error, parent_error, ...) \
+  V8_ERROR_CREATE_BASED_ON(V8_ERROR_CREATE_WITH_MSG_SP( \
+      error, __VA_ARGS__), parent_error)
 #define V8_ERROR_FIX_CURRENT_QUEUE(error) error.FixCurrentMessageQueue()
+#define V8_ERROR_MSG_FUNCTION_FAILED() \
+  ::v8::vm::internal::StringPrintf("\'%s\' is failed", V8_FUNCTION).c_str()
 
 // Main error descriptor
 class V8_EXPORT Error {
@@ -240,6 +249,7 @@ class V8_EXPORT Error {
   Error& AddMessage(
       const std::string& msg, const char* file, std::uint32_t line,
       std::uint32_t back_offset = 0, bool write_log = false) ;
+  Error& CopyMessages(const Error& error, std::uint32_t offset = 0) ;
   void FixCurrentMessageQueue() ;
 
  private:
@@ -264,13 +274,15 @@ class V8_EXPORT Error {
 //
 // In the meanwhile we use a macro implementation of it
 #define V8_ERROR_CODE_DEFINITION(code) \
-  Error(::v8::vm::ErrorCodes:: code, V8_PROJECT_FILE_NAME, __LINE__)
+  ::v8::vm::Error(::v8::vm::ErrorCodes:: code, V8_PROJECT_FILE_NAME, __LINE__)
 
 // Code of success
 #define errOk V8_ERROR_CODE_DEFINITION(errOk)
 // Common warnings
 #define wrnIncompleteOperation V8_ERROR_CODE_DEFINITION(wrnIncompleteOperation)
 #define wrnObjNotInit V8_ERROR_CODE_DEFINITION(wrnObjNotInit)
+#define wrnInvalidArgument V8_ERROR_CODE_DEFINITION(wrnInvalidArgument)
+#define wrnArgumentOmitted V8_ERROR_CODE_DEFINITION(wrnArgumentOmitted)
 // Common errors
 #define errUnknown V8_ERROR_CODE_DEFINITION(errUnknown)
 #define errFailed V8_ERROR_CODE_DEFINITION(errFailed)
@@ -300,6 +312,7 @@ class V8_EXPORT Error {
 #define errInvalidOperation V8_ERROR_CODE_DEFINITION(errInvalidOperation)
 #define errIOError V8_ERROR_CODE_DEFINITION(errIOError)
 #define errPathNotDirectory V8_ERROR_CODE_DEFINITION(errPathNotDirectory)
+#define errFileNotOpened V8_ERROR_CODE_DEFINITION(errFileNotOpened)
 // JS errors
 #define errJSUnknown V8_ERROR_CODE_DEFINITION(errJSUnknown)
 #define errJSException V8_ERROR_CODE_DEFINITION(errJSException)
@@ -320,6 +333,9 @@ class V8_EXPORT Error {
   V8_ERROR_CODE_DEFINITION(errJsonInappropriateType)
 #define errJsonInappropriateValue \
   V8_ERROR_CODE_DEFINITION(errJsonInappropriateValue)
+// Net warnings
+#define wrnNetUnknownAddressFamily \
+  V8_ERROR_CODE_DEFINITION(wrnNetUnknownAddressFamily)
 // Net errors
 #define errNetIOPending V8_ERROR_CODE_DEFINITION(errNetIOPending)
 #define errNetInternetDisconnected \

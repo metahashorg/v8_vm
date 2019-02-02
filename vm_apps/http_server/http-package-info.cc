@@ -241,29 +241,33 @@ Error HttpPackageInfo::ParseHttpVersion(
   const char* p = str_begin ;
   if ((str_end - str_begin) < 8 ||
       !EqualsCaseInsensitiveASCII(std::string(str_begin, 4), "http")) {
-    printf("ERROR: ParseHttpVersion is failed (Line:%d)\n", __LINE__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "HTTP version is invalid - \'%s\'",
+        std::string(str_begin, str_end).c_str()) ;
   }
 
   p += 4 ;
 
   if (*p != '/') {
-    printf("ERROR: HTTP version is omitted (Line:%d)\n", __LINE__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "HTTP version is omitted - \'%s\'",
+        std::string(str_begin, str_end).c_str()) ;
   }
 
   const char* dot = std::find(p, str_end, '.') ;
   if (dot == str_end) {
-    printf("ERROR: HTTP version is malformed (Line:%d)\n", __LINE__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "HTTP version is malformed - \'%s\'",
+        std::string(str_begin, str_end).c_str()) ;
   }
 
   ++p ;  // from / to first digit.
   ++dot ;  // from . to second digit.
 
   if (!std::isdigit(*p) || !std::isdigit(*dot)) {
-    printf("ERROR: HTTP version is malformed (Line:%d)\n", __LINE__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "HTTP version is malformed - \'%s\'",
+        std::string(str_begin, str_end).c_str()) ;
   }
 
   uint16_t major = *p - '0' ;
@@ -288,8 +292,9 @@ void HttpPackageInfo::SetHttpVersion(const HttpVersion& http_version) {
 
   if (http_version != http_version_) {
     // TODO: DCHECK(http_version == http_version_) ;
-    printf("WARN: Try to set a corrupted HTTP version (HTTP/%d.%d)\n",
-           http_version.major_value(), http_version.minor_value()) ;
+    V8_LOG_WRN(
+        wrnInvalidArgument, "Try to set a corrupted HTTP version (HTTP/%d.%d)",
+        http_version.major_value(), http_version.minor_value()) ;
   }
 }
 
@@ -319,9 +324,9 @@ Error HttpPackageInfo::SetHeader(
   // DCHECK(IsValidHeaderValue(value)) ;
 
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
-    printf("ERROR: SetHeader is failed (key: \'%s\' value: \'%s\')\n",
-           key.c_str(), value.c_str()) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "SetHeader() is failed (key: \'%s\' value: \'%s\')",
+        key.c_str(), value.c_str()) ;
   }
 
   HeaderVector::iterator it = FindHeader(key) ;
@@ -342,9 +347,10 @@ Error HttpPackageInfo::SetHeaderIfMissing(
   // DCHECK(IsValidHeaderValue(value)) ;
 
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
-    printf("ERROR: SetHeaderIfMissing is failed (key: \'%s\' value: \'%s\')\n",
-           key.c_str(), value.c_str()) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument,
+        "SetHeaderIfMissing() is failed (key: \'%s\' value: \'%s\')",
+        key.c_str(), value.c_str()) ;
   }
 
   HeaderVector::iterator it = FindHeader(key) ;
@@ -428,25 +434,24 @@ Error HttpPackageInfo::ParseInternal(
   if (raw_headers_size_ < 2 ||
       raw_headers_[raw_headers_size_ - 2] != '\r' ||
       raw_headers_[raw_headers_size_ - 1] != '\n') {
-    printf("ERROR: HttpPackageInfo::Parse is failed\n") ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
-  Error result = errOk ;
   std::string headers_str(raw_headers_, raw_headers_size_) ;
   HeadersIterator headers_it(
       headers_str.begin(), headers_str.end(), std::string("\r\n")) ;
   while (headers_it.GetNext()) {
-    result = SetHeader(
+    raw_headers_error_ = SetHeader(
         std::string(headers_it.name_begin(), headers_it.name_end()),
         std::string(headers_it.values_begin(), headers_it.values_end())) ;
     if (V8_ERROR_FAILED(raw_headers_error_)) {
-      printf("ERROR: HttpPackageInfo::Parse is failed on SetHeader()\n") ;
+      V8_ERROR_ADD_MSG(raw_headers_error_, V8_ERROR_MSG_FUNCTION_FAILED()) ;
       break ;
     }
   }
 
-  return result ;
+  return raw_headers_error_ ;
 }
 
 void HttpPackageInfo::UpdateInfoByHeader(

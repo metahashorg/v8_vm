@@ -12,6 +12,7 @@
 
 #include <vector>
 
+#include "include/v8-vm.h"
 #include "src/vm/utils/scoped-clear-errno.h"
 
 namespace {
@@ -107,7 +108,9 @@ static void StringAppendVT(StringType* dst,
       // That should be plenty, don't try anything larger.  This protects
       // against huge allocations when using vsnprintfT implementations that
       // return -1 for reasons other than overflow without setting errno.
-      printf("WARN: Unable to printf the requested string due to size.") ;
+      V8_LOG_ERR(
+          errInvalidArgument,
+          "Unable to printf the requested string due to size") ;
       return ;
     }
 

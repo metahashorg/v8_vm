@@ -1019,25 +1019,34 @@ void SerializeHeapNode(
 
 }  // namespace
 
-void CreateContextDump(
+Error CreateContextDump(
     Local<Context> context, std::ostream& result,
     FormattedJson formatted /*= FormattedJson::False*/) {
+  V8_LOG_FUNCTION_BODY() ;
+
   ValueSerializer serializer(context, formatted) ;
   serializer.Serialize(context->Global(), result) ;
+  return errOk ;
 }
 
-void CreateHeapDump(Isolate* isolate, std::ostream& result) {
+Error CreateHeapDump(Isolate* isolate, std::ostream& result) {
+  V8_LOG_FUNCTION_BODY() ;
+
   HeapProfiler* heap_profile = isolate->GetHeapProfiler() ;
   const HeapSnapshot* heap_shapshort = heap_profile->TakeHeapSnapshot() ;
   if (heap_shapshort) {
     HeapSerializer serializer(result) ;
     heap_shapshort->Serialize(&serializer, HeapSnapshot::kJSON) ;
   }
+
+  return errOk ;
 }
 
-void CreateHeapGraphDump(
+Error CreateHeapGraphDump(
     Isolate* isolate, std::ostream& result,
     FormattedJson formatted /*= FormattedJson::False*/) {
+  V8_LOG_FUNCTION_BODY() ;
+
   HeapProfiler* heap_profile = isolate->GetHeapProfiler() ;
   const HeapSnapshot* heap_shapshort = heap_profile->TakeHeapSnapshot() ;
   if (heap_shapshort) {
@@ -1059,6 +1068,8 @@ void CreateHeapGraphDump(
 
     result << kJsonNewLine[root_gap] << kJsonRightBracket[root_gap] ;
   }
+
+  return errOk ;
 }
 
 }  // namespace internal

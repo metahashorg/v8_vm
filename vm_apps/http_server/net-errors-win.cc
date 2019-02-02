@@ -110,7 +110,8 @@ Error MapSystemError(SystemErrorCode os_error) {
     case ERROR_SUCCESS:
        return errOk;
     default:
-      printf("ERROR: Unknown error - 0x%08X", (std::uint32_t)os_error) ;
-       return errFailed ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          errFailed, "Unknown error - %d",
+          static_cast<std::uint32_t>(os_error)) ;
   }
 }

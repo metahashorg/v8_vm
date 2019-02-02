@@ -22,8 +22,7 @@ TcpServerSession::~TcpServerSession() {
 
 Error TcpServerSession::Start() {
   if (!socket_.get()) {
-    printf("ERROR: Socket is invalid\n") ;
-    return errObjNotInit ;
+    return V8_ERROR_CREATE_WITH_MSG(errObjNotInit, "Socket is invalid") ;
   }
 
   thread_.reset(new std::thread(&TcpServerSession::Run, std::ref(*this))) ;
@@ -33,7 +32,8 @@ Error TcpServerSession::Start() {
 Error TcpServerSession::Stop() {
   stop_flag_ = true ;
   if (!thread_.get()) {
-    return errObjNotInit ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errObjNotInit, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;
@@ -41,7 +41,8 @@ Error TcpServerSession::Stop() {
 
 Error TcpServerSession::Wait() {
   if (!thread_.get()) {
-    return errObjNotInit ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errObjNotInit, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   // Wait the thread
@@ -83,15 +84,13 @@ Error TcpServerSession::Read(
   for (std::int32_t attempt_count = 0;
        attempt_count < read_and_write_attempt_count_ && local_buf_len > 0;) {
     if (stop_flag_) {
-      printf("ERROR: TcpServerSession have been stopped\n") ;
-      return errAborted ;
+      return V8_ERROR_CREATE_WITH_MSG(errAborted, "Session have been stopped") ;
     }
 
     std::int32_t circuit_buf_len = local_buf_len ;
     result = socket_->Read(buf, circuit_buf_len, kWaitForReadAndWrite) ;
     if (V8_ERROR_FAILED(result) && result != errTimeout) {
-      printf("ERROR: socket_->Read() returned an error\n") ;
-      return result ;
+      return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     }
 
     if (result == errTimeout || circuit_buf_len == 0) {
@@ -134,15 +133,13 @@ Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
   for (std::int32_t attempt_count = 0;
        attempt_count < read_and_write_attempt_count_ && local_buf_len > 0;) {
     if (stop_flag_) {
-      printf("ERROR: TcpServerSession have been stopped\n") ;
-      return errAborted ;
+      return V8_ERROR_CREATE_WITH_MSG(errAborted, "Session have been stopped") ;
     }
 
     std::int32_t circuit_buf_len = local_buf_len ;
     result = socket_->Write(buf, circuit_buf_len, kWaitForReadAndWrite) ;
     if (V8_ERROR_FAILED(result) && result != errTimeout) {
-      printf("ERROR: socket_->Write() returned an error\n") ;
-      return result ;
+      return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     }
 
     if (result == errTimeout || circuit_buf_len == 0) {

@@ -110,8 +110,9 @@ Error CompileModuleFromFile(const char* module_path, const char* result_path) {
   i::Vector<const char> file_content =
       i::ReadFile(module_path, &file_exists, true) ;
   if (!file_exists || file_content.size() == 0) {
-    printf("ERROR: File of a module source is empty (%s)\n", module_path) ;
-    return (file_exists ? errFileEmpty : errFileNotExists) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        (file_exists ? errFileEmpty : errFileNotExists),
+        "Can't read the module script file - \'%s\'", module_path) ;
   }
 
   // Need for a full compilation
@@ -123,21 +124,19 @@ Error CompileModuleFromFile(const char* module_path, const char* result_path) {
   Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
   Local<Module> module ;
   Error res = CompileModule(context->isolate(), module_data, module) ;
-  if (V8_ERROR_FAILED(res)) {
-    printf("ERROR: The module hasn't been compiled.\n") ;
-    return res ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(res) ;
 
   if (module.IsEmpty()) {
-    printf("ERROR: Unknown error occurred during comilation of the module.\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errUnknown, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   ScriptCompiler::CachedData* cache =
       ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()) ;
   i::WriteBytes(result_path, cache->data, cache->length, true) ;
-  printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-         module_path, result_path) ;
+  V8_LOG_INF(
+      "Compiled the file \'%s\' and saved result into \'%s\'\n",
+      module_path, result_path) ;
   return errOk ;
 }
 
@@ -152,14 +151,11 @@ Error CompileScript(
   Data script_data(Data::Type::JSScript, script_origin, script) ;
   Local<Script> script_obj ;
   Error res = CompileScript(*context, script_data, script_obj) ;
-  if (V8_ERROR_FAILED(res)) {
-    printf("ERROR: The script hasn't been compiled.\n") ;
-    return res ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(res) ;
 
   if (script_obj.IsEmpty()) {
-    printf("ERROR: Unknown error occurred during comilation of the script.\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errUnknown, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   ScriptCompiler::CachedData* cache =
@@ -175,21 +171,20 @@ Error CompileScriptFromFile(const char* script_path, const char* result_path) {
   i::Vector<const char> file_content =
       i::ReadFile(script_path, &file_exists, true) ;
   if (!file_exists || file_content.size() == 0) {
-    printf("ERROR: File of a script source is empty (%s)\n", script_path) ;
-    return (file_exists ? errFileEmpty : errFileNotExists) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        (file_exists ? errFileEmpty : errFileNotExists),
+        "Can't read the script file - \'%s\'", script_path) ;
   }
 
   Data result ;
   Error res = CompileScript(file_content.start(), script_path, result) ;
-  if (V8_ERROR_FAILED(res)) {
-    printf("ERROR: Can't compile the script\n") ;
-    return res ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(res)
 
   i::WriteBytes(result_path, reinterpret_cast<const std::uint8_t*>(result.data),
                 result.size, true) ;
-  printf("INFO: Compiled the file \'%s\' and saved result into \'%s\'\n",
-         script_path, result_path) ;
+  V8_LOG_INF(
+      "Compiled the file \'%s\' and saved result into \'%s\'\n",
+      script_path, result_path) ;
   return errOk ;
 }
 
@@ -211,16 +206,13 @@ Error LoadModuleCompilation(
   cache->use_hash_for_check = false ;
   Data module_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
   Error result = CompileModule(isolate, module_data, module, cache.get()) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: The script hasn't been compiled.\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {
-    printf("ERROR: The module compilation is corrupted\n") ;
     module.Clear() ;
-    return errJSCacheRejected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errJSCacheRejected, "The module compilation is corrupted") ;
   }
 
   return errOk ;
@@ -245,16 +237,13 @@ Error LoadScriptCompilation(
   cache->use_hash_for_check = false ;
   Data script_data(Data::Type::JSScript, compilation_data.origin.c_str(), "") ;
   Error result = CompileScript(context, script_data, script, cache.get()) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: The script hasn't been compiled.\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // We can't use a compilation of a script source because it's fake
   if (cache->rejected) {
-    printf("ERROR: The script compilation is corrupted\n") ;
     script.Clear() ;
-    return errJSCacheRejected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errJSCacheRejected, "The script compilation is corrupted") ;
   }
 
   return errOk ;

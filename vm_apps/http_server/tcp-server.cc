@@ -26,8 +26,8 @@ TcpServer::~TcpServer() {
 Error TcpServer::Start(
     std::uint16_t port, const TcpServerSession::Creator& session_creator) {
   if (!port || !session_creator) {
-    printf("ERROR: TcpServer::Start() - invalid argument\n") ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   // Remember callback of a tcp-session creation
@@ -55,7 +55,8 @@ Error TcpServer::Start(
 Error TcpServer::Stop() {
   stop_flag_ = true ;
   if (!thread_.get()) {
-    return errObjNotInit ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errObjNotInit, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;
@@ -63,7 +64,8 @@ Error TcpServer::Stop() {
 
 Error TcpServer::Wait() {
   if (!thread_.get()) {
-    return errObjNotInit ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errObjNotInit, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   // Wait the thread
@@ -122,7 +124,7 @@ void TcpServer::Run() {
     }
 
     if (result != errTimeout) {
-      printf("ERROR: TcpServer::Run() - Accept() returned an error\n") ;
+      V8_LOG_ERR(result, "Accept() is failed") ;
     }
   }
 }

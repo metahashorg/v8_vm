@@ -1470,11 +1470,10 @@ Error CreateDirectory(const FilePath& full_path) {
       // race to create the same directory.
       return errOk ;
     } else {
-      result = OSErrorToVMError(error_code) ;
-      V8_ERROR_ADD_MSG_SP(
-          result, "Failed to create directory \'%s\', last error is 0x%08x",
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          OSErrorToVMError(error_code),
+          "Failed to create directory \'%s\', last error is %d",
           full_path_str, error_code) ;
-      return result ;
     }
   }
 
@@ -1592,11 +1591,10 @@ Error CreateDirectory(const FilePath& full_path) {
     // time. Check to see if it exists and make sure it is a directory.
     int saved_errno = errno ;
     if (!DirectoryExists(*i)) {
-      Error result = OSErrorToVMError(saved_errno) ;
-      V8_ERROR_ADD_MSG_SP(
-          result, "Failed to create directory \'%s\', last error is 0x%08x",
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          OSErrorToVMError(saved_errno),
+          "Failed to create directory \'%s\', last error is %d",
           full_path.value().c_str(), saved_errno) ;
-      return result ;
     }
   }
 

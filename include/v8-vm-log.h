@@ -45,6 +45,7 @@ void V8_EXPORT DeinitializeLog() ;
 #if !defined(V8_VM_USE_LOG)
 
 #define V8_LOG(...) ((void) 0)
+#define V8_LOG_WITH_ERROR(...) ((void) 0)
 #define V8_LOG_MSG(...) ((void) 0)
 #define V8_LOG_ERR(...) ((void) 0)
 #define V8_LOG_WRN(...) ((void) 0)
@@ -64,47 +65,76 @@ void V8_EXPORT DeinitializeLog() ;
 // Main macros for working wtih a log
 #if defined(V8_OS_WIN)
 
-#define V8_LOG(level, error, file, line, msg, ...) \
+#define V8_LOG(level, file, line, msg, ...) \
+  V8_DBG_LOG() ; \
+  ::v8::vm::PrintLogMessage((level), file, line, msg, __VA_ARGS__)
+#define V8_LOG_WITH_ERROR(level, error, file, line, msg, ...) \
   V8_DBG_LOG() ; \
   ::v8::vm::PrintLogMessage((level), error, file, line, msg, __VA_ARGS__)
 
-#else  // V8_OS_WIN
-
-#define V8_LOG(level, error, file, line, msg, ...) \
-  V8_DBG_LOG() ; \
-  ::v8::vm::PrintLogMessage((level), error, file, line, msg, ## __VA_ARGS__)
-
-#endif  // V8_OS_WIN
-
 #define V8_LOG_MSG(msg, ...) \
-  V8_LOG(LogLevels::Message, nullptr, nullptr, 0, msg, __VA_ARGS__)
+  V8_LOG(::v8::vm::LogLevels::Message, nullptr, 0, msg, __VA_ARGS__)
 #define V8_LOG_ERR(error, msg, ...) \
-  V8_LOG( \
-      LogLevels::Error, &error, V8_PROJECT_FILE_NAME, __LINE__, \
+  V8_LOG_WITH_ERROR( \
+      ::v8::vm::LogLevels::Error, error, V8_PROJECT_FILE_NAME, __LINE__, \
       msg, __VA_ARGS__)
 #define V8_LOG_WRN(error, msg, ...) \
-  V8_LOG( \
-      LogLevels::Warning, &error, V8_PROJECT_FILE_NAME, __LINE__, \
+  V8_LOG_WITH_ERROR( \
+      ::v8::vm::LogLevels::Warning, error, V8_PROJECT_FILE_NAME, __LINE__, \
       msg, __VA_ARGS__)
 #define V8_LOG_INF(msg, ...) \
   V8_LOG( \
-      LogLevels::Info, nullptr, V8_PROJECT_FILE_NAME, __LINE__, \
+      ::v8::vm::LogLevels::Info, V8_PROJECT_FILE_NAME, __LINE__, \
       msg, __VA_ARGS__)
 #define V8_LOG_VBS(msg, ...) \
   V8_LOG( \
-      LogLevels::Verbose, nullptr, V8_PROJECT_FILE_NAME, __LINE__, \
+      ::v8::vm::LogLevels::Verbose, V8_PROJECT_FILE_NAME, __LINE__, \
       msg, __VA_ARGS__)
+
+#else  // V8_OS_WIN
+
+#define V8_LOG(level, file, line, msg, ...) \
+  V8_DBG_LOG() ; \
+  ::v8::vm::PrintLogMessage((level), file, line, msg, ##__VA_ARGS__)
+#define V8_LOG_WITH_ERROR(level, error, file, line, msg, ...) \
+  V8_DBG_LOG() ; \
+  ::v8::vm::PrintLogMessage((level), error, file, line, msg, ##__VA_ARGS__)
+
+#define V8_LOG_MSG(msg, ...) \
+  V8_LOG(::v8::vm::LogLevels::Message, nullptr, 0, msg, ##__VA_ARGS__)
+#define V8_LOG_ERR(error, msg, ...) \
+  V8_LOG_WITH_ERROR( \
+      ::v8::vm::LogLevels::Error, error, V8_PROJECT_FILE_NAME, __LINE__, \
+      msg, ##__VA_ARGS__)
+#define V8_LOG_WRN(error, msg, ...) \
+  V8_LOG_WITH_ERROR( \
+      ::v8::vm::LogLevels::Warning, error, V8_PROJECT_FILE_NAME, __LINE__, \
+      msg, ##__VA_ARGS__)
+#define V8_LOG_INF(msg, ...) \
+  V8_LOG( \
+      ::v8::vm::LogLevels::Info, V8_PROJECT_FILE_NAME, __LINE__, \
+      msg, ##__VA_ARGS__)
+#define V8_LOG_VBS(msg, ...) \
+  V8_LOG( \
+      ::v8::vm::LogLevels::Verbose, V8_PROJECT_FILE_NAME, __LINE__, \
+      msg, ##__VA_ARGS__)
+
+#endif  // V8_OS_WIN
 
 // Macros for tracing a function body
 #define V8_LOG_FUNCTION_BODY() V8_LOG_FUNCTION_BODY_WITH_FLAG(true)
 #define V8_LOG_FUNCTION_BODY_WITH_FLAG(flag) \
-  v8::vm::FunctionBodyLog v8_function_body_log( \
+  ::v8::vm::FunctionBodyLog v8_function_body_log( \
       V8_FUNCTION, V8_PROJECT_FILE_NAME, __LINE__, (flag))
 #define V8_LOG_RETURN v8_function_body_log.SetLine(__LINE__) ; return
 
 // Prints a message into a log
 void V8_EXPORT PrintLogMessage(
-    LogLevels log_level, const Error* error, const char* file,
+    LogLevels log_level, const char* file, std::int32_t line,
+    _Printf_format_string_ const char* msg, ...)
+    PRINTF_FORMAT(4, 5) ;
+void V8_EXPORT PrintLogMessage(
+    LogLevels log_level, const Error& error, const char* file,
     std::int32_t line, _Printf_format_string_ const char* msg, ...)
     PRINTF_FORMAT(5, 6) ;
 

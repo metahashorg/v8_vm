@@ -37,8 +37,10 @@ bool SetTCPKeepAlive(SOCKET socket, BOOL enable, int delay_secs) {
                     &bytes_returned, NULL, NULL) ;
   int os_error = WSAGetLastError() ;
   if (!!rv) {
-    printf("ERROR: Could not enable TCP Keep-Alive for socket (0x%08x)\n",
-           os_error) ;
+    V8_LOG_ERR(
+        MapSystemError(os_error),
+        "Could not enable TCP Keep-Alive for socket, "
+        "the last system error is %d", os_error) ;
   }
 
   // Disregard any failure in disabling nagle or enabling TCP Keep-Alive.
@@ -80,13 +82,16 @@ Error TcpSocketWin::Open(AddressFamily family) {
       ConvertAddressFamily(family), SOCK_STREAM, IPPROTO_TCP) ;
   int os_error = WSAGetLastError() ;
   if (socket_ == INVALID_SOCKET) {
-    printf("ERROR: CreatePlatformSocket() returned an error\n") ;
-    return MapSystemError(os_error) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "CreatePlatformSocket() is failed, the last system error is %d",
+        os_error) ;
   }
 
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    Error result = MapSystemError(os_error) ;
-    printf("ERROR: SetNonBlocking() returned an error\n") ;
+    Error result = V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "SetNonBlocking() is failed, the last system error is %d", os_error) ;
     Close() ;
     return result ;
   }
@@ -102,8 +107,9 @@ Error TcpSocketWin::AdoptConnectedSocket(
 
   int os_error ;
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    Error result = MapSystemError(os_error) ;
-    printf("ERROR: SetNonBlocking() returned an error\n") ;
+    Error result = V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "SetNonBlocking() is failed, the last system error is %d", os_error) ;
     Close() ;
     return result ;
   }
@@ -120,8 +126,9 @@ Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
 
   int os_error ;
   if (!SetNonBlockingAndGetError(socket_, &os_error)) {
-    Error result = MapSystemError(os_error) ;
-    printf("ERROR: SetNonBlocking() returned an error\n") ;
+    Error result = V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "SetNonBlocking() is failed, the last system error is %d", os_error) ;
     Close() ;
     return result ;
   }
@@ -138,14 +145,16 @@ Error TcpSocketWin::Bind(const IPEndPoint& address) {
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   int result = bind(socket_, storage.addr, storage.addr_len) ;
   int os_error = WSAGetLastError() ;
   if (result < 0) {
-    printf("ERROR: bind() returned an error\n") ;
-    return MapSystemError(os_error) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "bind() is failed, the last system error is %d", os_error) ;
   }
 
   return errOk ;
@@ -159,15 +168,17 @@ Error TcpSocketWin::Listen(int backlog) {
   accept_event_ = WSACreateEvent() ;
   int os_error = WSAGetLastError() ;
   if (accept_event_ == WSA_INVALID_EVENT) {
-    printf("ERROR: WSACreateEvent() returned an error\n") ;
-    return MapSystemError(os_error) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "WSACreateEvent() is failed, the last system error is %d", os_error) ;
   }
 
   int result = listen(socket_, backlog) ;
   os_error = WSAGetLastError() ;
   if (result < 0) {
-    printf("ERROR: listen() returned an error\n") ;
-    return MapSystemError(os_error) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "listen() is failed, the last system error is %d", os_error) ;
   }
 
   return errOk ;
@@ -190,11 +201,10 @@ Error TcpSocketWin::Accept(
   if (result != WSA_WAIT_EVENT_0) {
     Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
-      net_error = MapSystemError(os_error) ;
-    }
-
-    if (net_error != errTimeout) {
-      printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
+      net_error = V8_ERROR_CREATE_WITH_MSG_SP(
+          MapSystemError(os_error),
+          "WSAWaitForMultipleEvents() is failed, the last system error is %d",
+          os_error) ;
     }
 
     return net_error ;
@@ -204,30 +214,29 @@ Error TcpSocketWin::Accept(
   SOCKET new_socket = accept(socket_, storage.addr, &storage.addr_len) ;
   os_error = WSAGetLastError() ;
   if (new_socket < 0) {
-    Error net_error = MapSystemError(os_error) ;
-    printf("ERROR: accept() returned an error\n") ;
-    return net_error ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "accept() is failed, the last system error is %d", os_error) ;
   }
 
   IPEndPoint ip_end_point ;
   if (!ip_end_point.FromSockAddr(storage.addr, storage.addr_len)) {
     // TODO: NOTREACHED();
     if (closesocket(new_socket) < 0) {
-      printf("ERROR: closesocket() returned an error\n") ;
+      os_error = WSAGetLastError() ;
+      V8_LOG_ERR(
+          MapSystemError(os_error),
+          "closesocket() is failed, the last system error is %d", os_error) ;
     }
 
-    Error net_error = errNetAddressInvalid ;
-    printf("ERROR: ip_end_point.FromSockAddr() returned a failure\n") ;
-    return net_error;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   std::unique_ptr<TcpSocketWin> tcp_socket(new TcpSocketWin()) ;
   Error adopt_result =
       tcp_socket->AdoptConnectedSocket(new_socket, ip_end_point) ;
-  if (adopt_result != errOk) {
-    printf("ERROR: tcp_socket->AdoptConnectedSocket() returned an error\n") ;
-    return adopt_result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(adopt_result) ;
 
   *socket = std::move(tcp_socket) ;
   *address = ip_end_point ;
@@ -299,8 +308,9 @@ Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
     read_event_ = WSACreateEvent() ;
     int os_error = WSAGetLastError() ;
     if (read_event_ == WSA_INVALID_EVENT) {
-      printf("ERROR: WSACreateEvent() returned an error\n") ;
-      return MapSystemError(os_error) ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          MapSystemError(os_error),
+          "WSACreateEvent() is failed, the last system error is %d", os_error) ;
     }
   }
 
@@ -314,11 +324,10 @@ Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   if (result != WSA_WAIT_EVENT_0) {
     Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
-      net_error = MapSystemError(os_error) ;
-    }
-
-    if (net_error != errTimeout) {
-      printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
+      net_error = V8_ERROR_CREATE_WITH_MSG_SP(
+          MapSystemError(os_error),
+          "WSAWaitForMultipleEvents() is failed, the last system error is %d",
+          os_error) ;
     }
 
     return net_error ;
@@ -328,9 +337,9 @@ Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   result = recv(socket_, buf, local_buf_len, 0) ;
   os_error = WSAGetLastError() ;
   if (result == SOCKET_ERROR) {
-    Error net_error = MapSystemError(os_error) ;
-    printf("ERROR: recv() returned an error\n") ;
-    return net_error ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "recv() is failed, the last system error is %d", os_error) ;
   }
 
   buf_len = result ;
@@ -354,8 +363,9 @@ Error TcpSocketWin::Write(
     write_event_ = WSACreateEvent() ;
     int os_error = WSAGetLastError() ;
     if (write_event_ == WSA_INVALID_EVENT) {
-      printf("ERROR: WSACreateEvent() returned an error\n") ;
-      return MapSystemError(os_error) ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          MapSystemError(os_error),
+          "WSACreateEvent() is failed, the last system error is %d", os_error) ;
     }
   }
 
@@ -369,11 +379,10 @@ Error TcpSocketWin::Write(
   if (result != WSA_WAIT_EVENT_0) {
     Error net_error = errTimeout ;
     if (result != WSA_WAIT_TIMEOUT) {
-      net_error = MapSystemError(os_error) ;
-    }
-
-    if (net_error != errTimeout) {
-      printf("ERROR: WSAWaitForMultipleEvents() returned an error\n") ;
+      net_error = V8_ERROR_CREATE_WITH_MSG_SP(
+          MapSystemError(os_error),
+          "WSAWaitForMultipleEvents() is failed, the last system error is %d",
+          os_error) ;
     }
 
     return net_error ;
@@ -387,9 +396,9 @@ Error TcpSocketWin::Write(
   result = WSASend(socket_, &write_buffer, 1, &num, 0, NULL, NULL) ;
   os_error = WSAGetLastError() ;
   if (result == SOCKET_ERROR) {
-    Error net_error = MapSystemError(os_error) ;
-    printf("ERROR: WSASend() returned an error\n") ;
-    return net_error ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "WSASend() is failed, the last system error is %d", os_error) ;
   }
 
   buf_len = num ;
@@ -402,12 +411,13 @@ Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
   SockaddrStorage storage ;
   if (getsockname(socket_, storage.addr, &storage.addr_len)) {
     int os_error = WSAGetLastError() ;
-    printf("ERROR: getsockname() returned an error\n") ;
-    return MapSystemError(os_error) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(os_error),
+        "getsockname() is failed, the last system error is %d", os_error) ;
   }
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
-    printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;
@@ -416,7 +426,8 @@ Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
 Error TcpSocketWin::GetPeerAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
   if (!IsConnected()) {
-    return errNetSocketNotConnected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   *address = *peer_address_ ;
@@ -454,7 +465,9 @@ Error TcpSocketWin::SetExclusiveAddrUse() {
                       reinterpret_cast<const char*>(&true_value),
                       sizeof(true_value)) ;
   if (rv < 0) {
-    return MapSystemError(errno) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        MapSystemError(errno),
+        "setsockopt() is failed, the last system error is %d", errno) ;
   }
 
   return errOk ;
@@ -490,8 +503,11 @@ void TcpSocketWin::Close() {
     shutdown(socket_, SD_SEND) ;
 
     // This cancels any pending IO.
-    if (closesocket(socket_) < 0){
-      printf("ERROR: closesocket() returned an error\n") ;
+    if (closesocket(socket_) < 0) {
+      int os_error = WSAGetLastError() ;
+      V8_LOG_ERR(
+          MapSystemError(os_error),
+          "closesocket() is failed, the last system error is %d", os_error) ;
     }
 
     socket_ = INVALID_SOCKET ;

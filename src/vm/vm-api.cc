@@ -482,7 +482,7 @@ enum class DumpType {
   HeapGraph = 3,
 };
 
-void CreateDumpBySnapshotFromFile(
+Error CreateDumpBySnapshotFromFile(
     DumpType type, const char* snapshot_path, v8::vm::FormattedJson formatted,
     const char* result_path) {
   vi::Data data(vi::Data::Type::Snapshot, snapshot_path) ;
@@ -490,31 +490,34 @@ void CreateDumpBySnapshotFromFile(
     i::ReadBytes(snapshot_path, &data.size, true)) ;
   data.owner = true ;
   if (data.size == 0) {
-    printf("ERROR: Snapshot is corrupted (\'%s\')\n", snapshot_path) ;
-    return ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errFileNotExists,
+        "Snapshot file doesn't exist or is empty - \'%s\'", snapshot_path) ;
   }
 
   std::fstream fs(result_path, std::fstream::out | std::fstream::binary) ;
   if (fs.fail()) {
-    printf("ERROR: Can't open file \'%s\'\n", result_path) ;
-    return ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errFileNotOpened, "Can't open file \'%s\'", result_path) ;
   }
 
   StartupData snapshot = { data.data, data.size } ;
   std::unique_ptr<vi::WorkContext> context(vi::WorkContext::New(&snapshot)) ;
+  Error result = errOk ;
   if (type == DumpType::Context) {
-    CreateContextDump(*context, fs, formatted) ;
+    result = CreateContextDump(*context, fs, formatted) ;
   } else if (type == DumpType::Heap) {
-    CreateHeapDump(*context, fs) ;
+    result = CreateHeapDump(*context, fs) ;
   } else {
-    CreateHeapGraphDump(*context, fs, formatted) ;
+    result = CreateHeapGraphDump(*context, fs, formatted) ;
   }
 
   fs.close() ;
-
+  V8_ERROR_RETURN_IF_FAILED(result) ;
   V8_LOG_INF(
       "Created a dump by the snapshot-file \'%s\' and saved result into \'%s\'",
       snapshot_path, result_path) ;
+  return result ;
 }
 
 Error RunScriptByFile(
@@ -535,10 +538,7 @@ Error RunScriptByFile(
   }
 
   result = runner->Run() ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Script run is failed\n") ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // We've obtained a snapshot only after destruction of runner
   runner.reset() ;
@@ -609,12 +609,25 @@ Error& Error::AddMessage(
   // Write log
   if (write_log) {
     if (code_ != errOk) {
-      V8_LOG(
-          V8_ERROR_FAILED(*this) ? LogLevels::Error : LogLevels::Warning, this,
+      V8_LOG_WITH_ERROR(
+          V8_ERROR_FAILED(*this) ? LogLevels::Error : LogLevels::Warning, *this,
           file, line, "%s", msg.c_str()) ;
     } else {
-      V8_LOG(LogLevels::Info, nullptr, file, line, "%s", msg.c_str()) ;
+      V8_LOG(LogLevels::Info, file, line, "%s", msg.c_str()) ;
     }
+  }
+
+  return *this ;
+}
+
+Error& Error::CopyMessages(const Error& error, std::uint32_t offset) {
+  // Get a back offset
+  std::uint32_t back_offset =
+      static_cast<std::uint32_t>(message_count()) - offset ;
+  // Insert messages
+  for (std::size_t i = 0, size = error.message_count(); i < size; ++i) {
+    const Message& msg = error.message(i) ;
+    AddMessage(msg.message, msg.file, msg.line, back_offset) ;
   }
 
   return *this ;
@@ -647,11 +660,20 @@ void DeinitializeLog() {
 #if defined(V8_VM_USE_LOG)
 
 void PrintLogMessage(
-  LogLevels log_level, const Error* error, const char* file, std::int32_t line,
+  LogLevels log_level, const char* file, std::int32_t line,
   const char* msg, ...) {
   va_list ap ;
   va_start(ap, msg) ;
-  Logger::PrintLogMessage(log_level, error, file, line, msg, ap) ;
+  Logger::PrintLogMessage(log_level, nullptr, file, line, msg, ap) ;
+  va_end(ap) ;
+}
+
+void PrintLogMessage(
+  LogLevels log_level, const Error& error, const char* file, std::int32_t line,
+  const char* msg, ...) {
+  va_list ap ;
+  va_start(ap, msg) ;
+  Logger::PrintLogMessage(log_level, &error, file, line, msg, ap) ;
   va_end(ap) ;
 }
 
@@ -661,8 +683,7 @@ FunctionBodyLog::FunctionBodyLog(
     beginning_time_(new Time(Time::Now())) {
   if (log_flag_) {
     V8_LOG(
-        LogLevels::Verbose, nullptr, file_, line_, "\'%s\' - the beginning",
-        function_) ;
+        LogLevels::Verbose, file_, line_, "\'%s\' - the beginning", function_) ;
   }
 }
 
@@ -670,7 +691,7 @@ FunctionBodyLog::~FunctionBodyLog() {
   if (log_flag_) {
     TimeDelta delta = Time::Now() - *beginning_time_ ;
     V8_LOG(
-        LogLevels::Verbose, nullptr, file_, line_, "\'%s\' - the end "
+        LogLevels::Verbose, file_, line_, "\'%s\' - the end "
         "(Execution time: %d.%06d seconds)", function_,
         static_cast<std::int32_t>(delta.InSeconds()),
         static_cast<std::int32_t>(
@@ -723,23 +744,23 @@ Error CompileScriptFromFile(const char* script_path, const char* result_path) {
   return vi::CompileScriptFromFile(script_path, result_path) ;
 }
 
-void CreateContextDumpBySnapshotFromFile(
+Error CreateContextDumpBySnapshotFromFile(
     const char* snapshot_path, FormattedJson formatted,
     const char* result_path) {
-  CreateDumpBySnapshotFromFile(
+  return CreateDumpBySnapshotFromFile(
       DumpType::Context, snapshot_path, formatted, result_path) ;
 }
 
-void CreateHeapDumpBySnapshotFromFile(
+Error CreateHeapDumpBySnapshotFromFile(
     const char* snapshot_path, const char* result_path) {
-  CreateDumpBySnapshotFromFile(
+  return CreateDumpBySnapshotFromFile(
       DumpType::Heap, snapshot_path, FormattedJson::False, result_path) ;
 }
 
-void CreateHeapGraphDumpBySnapshotFromFile(
+Error CreateHeapGraphDumpBySnapshotFromFile(
     const char* snapshot_path, FormattedJson formatted,
     const char* result_path) {
-  CreateDumpBySnapshotFromFile(
+  return CreateDumpBySnapshotFromFile(
       DumpType::HeapGraph, snapshot_path, formatted, result_path) ;
 }
 

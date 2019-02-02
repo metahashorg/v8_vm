@@ -68,6 +68,8 @@ void WorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
 }
 
 SnapshotWorkContext::~SnapshotWorkContext() {
+  V8_LOG_FUNCTION_BODY() ;
+
   // We need to close context and scopes for obtaining a snapshot
   cscope_.reset() ;
   context_.Clear() ;

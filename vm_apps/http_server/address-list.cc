@@ -53,7 +53,8 @@ AddressList AddressList::CreateFromAddrinfo(const struct addrinfo* head) {
     if (ipe.FromSockAddr(ai->ai_addr, static_cast<socklen_t>(ai->ai_addrlen))) {
       list.push_back(ipe) ;
     } else{
-      printf("WARNING: Unknown family found in addrinfo\n");
+      V8_LOG_WRN(
+          wrnNetUnknownAddressFamily, "Unknown family found in addrinfo") ;
     }
   }
 

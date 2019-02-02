@@ -23,7 +23,10 @@ bool SetTCPKeepAlive(int fd, bool enable, int delay) {
   // Enabling TCP keepalives is the same on all platforms.
   int on = enable ? 1 : 0 ;
   if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on))) {
-    printf("ERROR: Failed to set SO_KEEPALIVE on fd\n") ;
+    V8_LOG_ERR(
+        MapSystemError(errno),
+        "Failed to set SO_KEEPALIVE on fd, the last system error is %d",
+        errno) ;
     return false ;
   }
 
@@ -37,17 +40,26 @@ bool SetTCPKeepAlive(int fd, bool enable, int delay) {
 
   // Set seconds until first TCP keep alive.
   if (setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &delay, sizeof(delay))) {
-    printf("ERROR: Failed to set TCP_KEEPIDLE on fd\n") ;
+    V8_LOG_ERR(
+        MapSystemError(errno),
+        "Failed to set TCP_KEEPIDLE on fd, the last system error is %d",
+        errno) ;
     return false ;
   }
   // Set seconds between TCP keep alives.
   if (setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &delay, sizeof(delay))) {
-    printf("ERROR: Failed to set TCP_KEEPINTVL on fd\n") ;
+    V8_LOG_ERR(
+        MapSystemError(errno),
+        "Failed to set TCP_KEEPINTVL on fd, the last system error is %d",
+        errno) ;
     return false ;
   }
 #elif defined(V8_OS_MACOSX) || defined(V8_OS_IOS)
   if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPALIVE, &delay, sizeof(delay))) {
-    printf("ERROR: Failed to set TCP_KEEPALIVE on fd\n") ;
+    V8_LOG_ERR(
+        MapSystemError(errno),
+        "Failed to set TCP_KEEPALIVE on fd, the last system error is %d",
+        errno) ;
     return false ;
   }
 #endif
@@ -67,7 +79,7 @@ Error TcpSocketPosix::Open(AddressFamily family) {
   socket_.reset(new SocketPosix) ;
   Error rv = socket_->Open(ConvertAddressFamily(family)) ;
   if (rv != errOk) {
-    printf("ERROR: socket_->Open() returned an error\n") ;
+    V8_ERROR_ADD_MSG(rv, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     socket_.reset() ;
   }
 
@@ -82,14 +94,14 @@ Error TcpSocketPosix::AdoptConnectedSocket(
   if (!peer_address.ToSockAddr(storage.addr, &storage.addr_len) &&
       // For backward compatibility, allows the empty address.
       !(peer_address == IPEndPoint())) {
-    printf("ERROR: peer_address.ToSockAddr() returned a failure\n") ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   socket_.reset(new SocketPosix) ;
   Error rv = socket_->AdoptConnectedSocket(socket, storage) ;
   if (rv != errOk) {
-    printf("ERROR: socket_->AdoptConnectedSocket() returned an error\n") ;
+    V8_ERROR_ADD_MSG(rv, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     socket_.reset() ;
   }
 
@@ -102,7 +114,7 @@ Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
   socket_.reset(new SocketPosix) ;
   Error rv = socket_->AdoptUnconnectedSocket(socket) ;
   if (rv != errOk) {
-    printf("ERROR: socket_->AdoptUnconnectedSocket() returned an error\n") ;
+    V8_ERROR_ADD_MSG(rv, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     socket_.reset() ;
   }
 
@@ -114,8 +126,8 @@ Error TcpSocketPosix::Bind(const IPEndPoint& address) {
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
-    printf("ERROR: address.ToSockAddr() returned a failure\n") ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return socket_->Bind(storage) ;
@@ -136,7 +148,7 @@ Error TcpSocketPosix::Accept(
   Error rv = socket_->Accept(&accept_socket, timeout) ;
   if (V8_ERROR_FAILED(rv)) {
     if (rv != errTimeout) {
-      printf("ERROR: socket_->Accept() returned an error\n") ;
+      V8_ERROR_ADD_MSG(rv, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     }
 
     return rv ;
@@ -145,9 +157,9 @@ Error TcpSocketPosix::Accept(
   SockaddrStorage storage ;
   if (accept_socket->GetPeerAddress(&storage) != errOk ||
       !address->FromSockAddr(storage.addr, storage.addr_len)) {
-    printf("ERROR: socket_->Accept() returned an invalid address\n") ;
     accept_socket.reset() ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   tcp_socket->reset(new TcpSocketPosix()) ;
@@ -187,19 +199,16 @@ Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address) ;
 
   if (!socket_) {
-    return errNetSocketNotConnected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   SockaddrStorage storage ;
   Error rv = socket_->GetLocalAddress(&storage) ;
-  if (rv != errOk) {
-    printf("ERROR: socket_->GetLocalAddress() returned an error\n") ;
-    return rv ;
-  }
-
+  V8_ERROR_RETURN_IF_FAILED(rv) ;
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
-    printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;
@@ -209,19 +218,17 @@ Error TcpSocketPosix::GetPeerAddress(IPEndPoint* address) const {
   // TODO: DCHECK(address);
 
   if (!IsConnected()) {
-    return errNetSocketNotConnected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   SockaddrStorage storage ;
   Error rv = socket_->GetPeerAddress(&storage) ;
-  if (rv != errOk) {
-    printf("ERROR: socket_->GetPeerAddress() returned an error\n") ;
-    return rv ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(rv) ;
 
   if (!address->FromSockAddr(storage.addr, storage.addr_len)) {
-    printf("ERROR: address->FromSockAddr() returned a failure\n") ;
-    return errNetAddressInvalid ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetAddressInvalid, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;

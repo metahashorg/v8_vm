@@ -47,8 +47,8 @@ void HttpResponseInfo::Clear() {
 
 Error HttpResponseInfo::SetStatusCode(std::int32_t status_code) {
   if (status_code < 100 || status_code > 599) {
-    printf("ERROR: SetStatusCode is failed.\n") ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errInvalidArgument, "Status code is invalid - %d", status_code) ;
   }
 
   status_code_ = static_cast<HttpStatusCode>(status_code) ;
@@ -74,17 +74,15 @@ Error HttpResponseInfo::ParseInternal(
   // Find http-headers
   const char* headers = std::find(response, response + size, '\r') ;
   if ((response + size - headers) < 2 || headers[1] != '\n') {
-    printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   headers += 2 ;
 
   // Read http-version
   Error result = ParseHttpVersion(response, headers) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Read status code
   response = std::find(response, headers, ' ') ;
@@ -104,7 +102,8 @@ Error HttpResponseInfo::ParseInternal(
           std::string(response, status_code_end).c_str(), &status_code)) {
     SetStatusCode(status_code) ;
   } else {
-    printf("WARN: Response status is omitted; assuming 200 OK\n") ;
+    V8_LOG_WRN(
+        wrnArgumentOmitted, "Response status is omitted; assuming 200 OK") ;
     SetStatusCode(HTTP_OK) ;
   }
 
@@ -112,10 +111,7 @@ Error HttpResponseInfo::ParseInternal(
   std::int32_t headers_size =
       size - static_cast<std::int32_t>(headers - raw_response_) ;
   result = HttpPackageInfo::ParseInternal(headers, headers_size, false) ;
-  if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: HttpRequestInfo::Parse is failed (Line:%d)\n", __LINE__) ;
-    return result ;
-  }
+  V8_ERROR_RETURN_IF_FAILED(result) ;
 
   return result ;
 }

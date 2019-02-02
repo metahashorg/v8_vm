@@ -58,14 +58,6 @@ ModeType GetModeType(const CommandLine& cmd_line) {
   return result ;
 }
 
-void OutputError(const Error& error) {
-  for (std::size_t i = 0, size = error.message_count(); i < size; ++i) {
-    const Error::Message& msg = error.message(i) ;
-    printf("ERROR MSG: %s (File:\'%s\' Line:%i)\n",
-           msg.message.c_str(), msg.file, msg.line) ;
-  }
-}
-
 int DoUnknown() {
   const char usage[] =
       "usage: v8_vm --mode=<mode_type> <args>\n\n"
@@ -98,8 +90,7 @@ int DoCompile(const CommandLine& cmd_line) {
         it.c_str(),
         ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
-      printf("ERROR: File \'%s\' hasn't been compiled.\n", it.c_str()) ;
-      OutputError(result) ;
+      V8_LOG_ERR(result, "File \'%s\' hasn't been compiled", it.c_str()) ;
       error = true ;
     }
   }
@@ -148,30 +139,56 @@ int DoRun(const CommandLine& cmd_line) {
   }
 
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Run of a command script is failed. (File: %s)\n",
-           cmd_line.GetSwitchValueNative(kSwitchCommand).c_str()) ;
-    OutputError(result) ;
+    V8_LOG_ERR(
+        result, "Run of a command script is failed. (File: %s)",
+        cmd_line.GetSwitchValueNative(kSwitchCommand).c_str()) ;
   }
 
   return (result != errOk ? result : 0) ;
 }
 
 int DoDump(const CommandLine& cmd_line) {
+  Error result = errOk ;
+  bool error_flag = false ;
   for (auto it : cmd_line.GetArgs()) {
-    v8::vm::CreateContextDumpBySnapshotFromFile(
+    result = v8::vm::CreateContextDumpBySnapshotFromFile(
         it.c_str(),
         v8::vm::FormattedJson::True,
         ChangeFileExtension(it.c_str(), kContextDumpFileExtension).c_str()) ;
-    v8::vm::CreateHeapDumpBySnapshotFromFile(
+    if (V8_ERROR_FAILED(result)) {
+      error_flag = true ;
+      V8_LOG_ERR(
+          result,
+          "CreateContextDumpBySnapshotFromFile is failed - the file is \'%s\'",
+          it.c_str()) ;
+    }
+
+    result = v8::vm::CreateHeapDumpBySnapshotFromFile(
         it.c_str(),
         ChangeFileExtension(it.c_str(), kHeapDumpFileExtension).c_str()) ;
-    v8::vm::CreateHeapGraphDumpBySnapshotFromFile(
+    if (V8_ERROR_FAILED(result)) {
+      error_flag = true ;
+      V8_LOG_ERR(
+          result,
+          "CreateHeapDumpBySnapshotFromFile is failed - the file is \'%s\'",
+          it.c_str()) ;
+    }
+
+    result = v8::vm::CreateHeapGraphDumpBySnapshotFromFile(
         it.c_str(),
         v8::vm::FormattedJson::True,
         ChangeFileExtension(it.c_str(), kHeapGraphDumpFileExtension).c_str()) ;
+    if (V8_ERROR_FAILED(result)) {
+      error_flag = true ;
+      V8_LOG_ERR(
+          result,
+          "CreateHeapGraphDumpBySnapshotFromFile is failed - "
+          "the file is \'%s\'",
+          it.c_str()) ;
+    }
   }
 
-  return 0 ;
+  return (error_flag ? errIncompleteOperation : 0) ;
 }
 
 int DoErrorList() {

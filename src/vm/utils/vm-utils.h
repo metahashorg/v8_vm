@@ -7,6 +7,7 @@
 
 #include <cstring>
 
+#include "include/v8-vm-log.h"
 #include "src/vm/utils/string-printf.h"
 
 // Macros for writing an exception into an error
@@ -26,9 +27,9 @@
             .c_str(), \
         ValueToUtf8(context, tc_msg->Get()).c_str()) ; \
   } else { \
-    error = try_catch.HasCaught() ? errJSException : errJSUnknown ; \
-    printf("JS ERROR: Unknown error occurred (File:%s Line:%d)", \
-           V8_PROJECT_FILE_NAME, __LINE__) ; \
+    error = V8_ERROR_CREATE_WITH_MSG( \
+        (try_catch.HasCaught() ? errJSException : errJSUnknown), \
+        V8_ERROR_MSG_FUNCTION_FAILED()) ; \
   }
 
 // Helpful macros for a declaration of big enums
@@ -140,7 +141,7 @@ static inline Local<String> Utf8ToStr(Isolate* isolate, const char* str) {
   TryCatch try_catch(isolate) ;
   if (!String::NewFromUtf8(isolate, str, NewStringType::kNormal)
           .ToLocal(&result)) {
-    printf("ERROR: Can't convert utf8-string to v8::String\n") ;
+    V8_LOG_ERR(errUnknown, "Can't convert utf8-string to v8::String") ;
     return Local<String>() ;
   }
 
@@ -163,7 +164,7 @@ static inline std::string ValueToUtf8(Isolate* isolate, T value) {
 template <class T>
 static inline std::string ValueToUtf8(Local<Context> context, T value) {
   if (context.IsEmpty()) {
-    printf("ERROR: Context is null\n") ;
+    V8_LOG_ERR(errInvalidArgument, "Context is null") ;
     return "" ;
 }
 

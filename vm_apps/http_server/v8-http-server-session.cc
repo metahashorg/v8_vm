@@ -50,8 +50,7 @@ Error CreateAddress(
   uint8_t hash[SHA256_DIGEST_LENGTH] ;
   if (sha3_256(hash, SHA256_DIGEST_LENGTH, (const uint8_t*)rlpenc.data(),
                rlpenc.size())) {
-    printf("ERROR: sha3_256() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "sha3_256() is failed") ;
   }
 
   // Form the first 21 bytes of an address
@@ -61,34 +60,28 @@ Error CreateAddress(
   // Calculate sha256 from the first 21 bytes of an address
   SHA256_CTX sha256_context ;
   if (!SHA256_Init(&sha256_context)) {
-    printf("ERROR: SHA256_Init() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Init() is failed") ;
   }
 
   if (!SHA256_Update(&sha256_context, address, 21)) {
-    printf("ERROR: SHA256_Update() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Update() is failed") ;
   }
 
   if (!SHA256_Final(hash, &sha256_context)) {
-    printf("ERROR: SHA256_Final() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Final() is failed") ;
   }
 
   // Calculate sha256 from previous hash
   if (!SHA256_Init(&sha256_context)) {
-    printf("ERROR: SHA256_Init() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Init() is failed") ;
   }
 
   if (!SHA256_Update(&sha256_context, hash, SHA256_DIGEST_LENGTH)) {
-    printf("ERROR: SHA256_Update() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Update() is failed") ;
   }
 
   if (!SHA256_Final(hash, &sha256_context)) {
-    printf("ERROR: SHA256_Update() is failed\n") ;
-    return errUnknown ;
+    return V8_ERROR_CREATE_WITH_MSG(errUnknown, "SHA256_Final() is failed") ;
   }
 
   // Set a checksum
@@ -109,8 +102,8 @@ Error ReadInt(
   // TODO: DCHECK(cur_pos + sizeof(T) <= end_pos) ;
 
   if ((cur_pos + sizeof(T)) > end_pos) {
-    printf("ERROR: ReadInt() can't read next integer.\n") ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, "ReadInt() can't read next integer") ;
   }
 
   result = *reinterpret_cast<T*>(cur_pos) ;
@@ -123,8 +116,8 @@ Error ReadVarInt(
   // TODO: DCHECK(cur_pos + sizeof(std::uint8_t) <= end_pos) ;
 
   if ((cur_pos + sizeof(std::uint8_t)) > end_pos) {
-    printf("ERROR: ReadVarInt() can't read next integer.\n") ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, "ReadVarInt() can't read next integer") ;
   }
 
   const uint8_t len = *cur_pos ;
@@ -140,8 +133,8 @@ Error ReadVarInt(
     return ReadInt<uint64_t>(cur_pos, end_pos, result) ;
   }
 
-  printf("ERROR: Unknown type of integer.\n") ;
-  return errUnsupportedType ;
+  return V8_ERROR_CREATE_WITH_MSG(
+      errUnsupportedType, "Unknown type of integer") ;
 }
 
 class RequestParser {

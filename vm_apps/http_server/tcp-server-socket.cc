@@ -22,30 +22,25 @@ Error TcpServerSocket::AdoptSocket(SocketDescriptor socket) {
 Error TcpServerSocket::Listen(const IPEndPoint& address, int backlog) {
   Error result = socket_.Open(address.GetFamily()) ;
   if (result != errOk) {
-    printf("ERROR: TcpSocket::Open() returned an error\n") ;
-    return result ;
+    return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   result = socket_.SetDefaultOptionsForServer() ;
   if (result != errOk) {
-    printf("ERROR: TcpSocket::SetDefaultOptionsForServer() "
-           "returned an error\n") ;
     socket_.Close() ;
-    return result ;
+    return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   result = socket_.Bind(address) ;
   if (result != errOk) {
-    printf("ERROR: TcpSocket::Bind() returned an error\n") ;
     socket_.Close() ;
-    return result ;
+    return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   result = socket_.Listen(backlog) ;
   if (result != errOk) {
-    printf("ERROR: TcpSocket::Listen() returned an error\n") ;
     socket_.Close() ;
-    return result ;
+    return V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return errOk ;
@@ -70,7 +65,7 @@ Error TcpServerSocket::Accept(
         new TcpClientSocket(std::move(accepted_socket), accepted_address)) ;
   } else {
     if (result != errTimeout) {
-      printf("ERROR: TcpSocket::Accept() returned an error\n") ;
+      V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
     }
   }
 

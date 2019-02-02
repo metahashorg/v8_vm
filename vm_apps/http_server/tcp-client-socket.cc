@@ -26,12 +26,14 @@ TcpClientSocket::~TcpClientSocket() {
 
 Error TcpClientSocket::Bind(const IPEndPoint& address) {
   // TODO:
-  return errNotImplemented ;
+  return V8_ERROR_CREATE_WITH_MSG(
+      errNotImplemented, V8_ERROR_MSG_FUNCTION_FAILED()) ;
 }
 
 Error TcpClientSocket::Connect() {
   // TODO:
-  return errNotImplemented ;
+  return V8_ERROR_CREATE_WITH_MSG(
+      errNotImplemented, V8_ERROR_MSG_FUNCTION_FAILED()) ;
 }
 
 void TcpClientSocket::Disconnect() {
@@ -61,7 +63,8 @@ Error TcpClientSocket::GetLocalAddress(IPEndPoint* address) const {
       return errOk ;
     }
 
-    return errNetSocketNotConnected ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return socket_->GetLocalAddress(address) ;
@@ -76,6 +79,8 @@ Error TcpClientSocket::Read(
   Error result = socket_->Read(buf, buf_len, timeout) ;
   if (V8_ERROR_SUCCESS(result)) {
     total_received_bytes_ += buf_len ;
+  } else {
+    V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   return result ;

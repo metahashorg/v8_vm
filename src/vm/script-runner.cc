@@ -27,19 +27,17 @@ Error ScriptRunner::Run() {
   Error result = CompileScript(
       *context_, script_data_, script, script_cache_.get()) ;
   if (V8_ERROR_FAILED(result)) {
-    printf("ERROR: Command script hasn't been compiled.\n") ;
-    V8_LOG_RETURN result ;
+    V8_LOG_RETURN V8_ERROR_ADD_MSG(result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   if (script_cache_->rejected) {
-    printf("ERROR: Command script compilation is corrupted\n") ;
-    V8_LOG_RETURN errJSCacheRejected ;
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+        errJSCacheRejected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   if (script.IsEmpty()) {
-    printf("ERROR: Unknown error occurred"
-           "during comilation of command script.\n") ;
-    V8_LOG_RETURN errJSUnknown ;
+    V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+        errJSUnknown, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   // Run script
@@ -75,13 +73,13 @@ Error ScriptRunner::Create(
       // Compile a main script
       res = CompileScript(*result->context_, *data, result->main_script_) ;
       if (V8_ERROR_FAILED(res)) {
-        printf("ERROR: Main script hasn't been compiled.\n") ;
-        V8_LOG_RETURN res ;
+        V8_LOG_RETURN V8_ERROR_ADD_MSG(
+            res, "Main script hasn't been compiled") ;
       }
 
       if (result->main_script_.IsEmpty()) {
-        printf("ERROR: Main script compiling've ended failure\n") ;
-        V8_LOG_RETURN errJSUnknown ;
+        V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+            errJSUnknown, "Main script compiling've ended failure") ;
       }
     } else if (data->type == Data::Type::Compilation) {
       // Create ScriptRunner
@@ -91,13 +89,12 @@ Error ScriptRunner::Create(
       res = LoadScriptCompilation(
           *result->context_, *data, result->main_script_) ;
       if (V8_ERROR_FAILED(res)) {
-        printf("ERROR: Main script hasn't been loaded.\n") ;
-        V8_LOG_RETURN res ;
+        V8_LOG_RETURN V8_ERROR_ADD_MSG(res, "Main script hasn't been loaded") ;
       }
 
       if (result->main_script_.IsEmpty()) {
-        printf("ERROR: Main script loading've ended failure\n") ;
-        V8_LOG_RETURN errJSUnknown ;
+        V8_LOG_RETURN V8_ERROR_CREATE_WITH_MSG(
+            errJSUnknown, "Main script loading've ended failure") ;
       }
     } else if (data->type == Data::Type::Snapshot) {
       // Create ScriptRunner
@@ -151,8 +148,9 @@ Error ScriptRunner::CreateByFiles(
   i::Vector<const char> script_source =
       i::ReadFile(script_path, &file_exists, true) ;
   if (!file_exists || script_source.size() == 0) {
-    printf("ERROR: Script file doesn't exist or is empty (%s)\n", script_path) ;
-    return (file_exists ? errFileEmpty : errFileNotExists) ;
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        (file_exists ? errFileEmpty : errFileNotExists),
+        "Can't read the command script file - \'%s\'", script_path) ;
   }
 
   // Load a file content
@@ -161,9 +159,9 @@ Error ScriptRunner::CreateByFiles(
   if (file_type == Data::Type::JSScript) {
     main_script_source = i::ReadFile(file_path, &file_exists, true) ;
     if (!file_exists || script_source.size() == 0) {
-      printf("ERROR: Main script file doesn't exist or is empty (%s)\n",
-             script_path) ;
-      return (file_exists ? errFileEmpty : errFileNotExists) ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          (file_exists ? errFileEmpty : errFileNotExists),
+          "Can't read the main script file - \'%s\'", file_path) ;
     }
 
     data.data = main_script_source.start() ;
@@ -174,12 +172,13 @@ Error ScriptRunner::CreateByFiles(
         i::ReadBytes(file_path, &data.size, true)) ;
     data.owner = true ;
     if (data.size == 0) {
-      printf("ERROR: File doesn't exist or is empty (%s)\n", file_path) ;
-      return errFileNotExists ;
+      return V8_ERROR_CREATE_WITH_MSG_SP(
+          errFileNotExists, "File doesn't exist or is empty - \'%s\'",
+          file_path) ;
     }
   } else if (file_type != Data::Type::None) {
-    printf("ERROR: Arguments of \'%s\' are wrong.\n", __FUNCTION__) ;
-    return errInvalidArgument ;
+    return V8_ERROR_CREATE_WITH_MSG(
+        errInvalidArgument, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
   Data script_data(Data::Type::JSScript, script_path, script_source.start()) ;

@@ -75,6 +75,8 @@ V8_WARNING_TYPE(Common)
 V8_WARNING(Common, false, IncompleteOperation, 0x1,
     "The operation was incomplete")
 V8_WARNING(Common, false, ObjNotInit, 0x2, "The object was not initialized")
+V8_WARNING(Common, false, InvalidArgument, 0x3, "Argument is invalid")
+V8_WARNING(Common, false, ArgumentOmitted, 0x4, "Argument is omitted")
 #endif  // defined(V8_WARNING)
 
 // Common errors
@@ -120,6 +122,7 @@ V8_ERROR(Common, false, InvalidOperation, 0x19,
 V8_ERROR(Common, false, IOError, 0x1a,
     "The request could not be performed because of an I/O device error")
 V8_ERROR(Common, false, PathNotDirectory, 0x1b, "The path is not a directory")
+V8_ERROR(Common, false, FileNotOpened, 0x1c, "The system cannot open the file")
 #endif  // defined(V8_ERROR)
 
 // JS errors
@@ -157,6 +160,16 @@ V8_ERROR(Json, true, InappropriateType, 0x9,
 V8_ERROR(Json, true, InappropriateValue, 0xa,
     "Inappropriate value was encountered")
 #endif  // defined(V8_ERROR)
+
+// Common warnings
+#if defined(V8_WARNING_TYPE)
+V8_WARNING_TYPE(Net)
+#endif  // defined(V8_WARNING_TYPE)
+
+#if defined(V8_WARNING)
+V8_WARNING(Net, true, UnknownAddressFamily, 0x1,
+    "Unknown address family has been found")
+#endif  // defined(V8_WARNING)
 
 // Net errors
 #if defined(V8_ERROR_TYPE)

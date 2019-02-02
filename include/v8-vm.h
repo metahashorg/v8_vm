@@ -41,22 +41,22 @@ Error V8_EXPORT CompileScriptFromFile(
 /**
  * Creates a context dump by a snapshot
  */
-void V8_EXPORT CreateContextDumpBySnapshotFromFile(
+Error V8_EXPORT CreateContextDumpBySnapshotFromFile(
     const char* snapshot_path, FormattedJson formatted,
-    const char* result_path) ;
+    const char* result_path) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Creates a heap dump by a snapshot
  */
-void V8_EXPORT CreateHeapDumpBySnapshotFromFile(
-    const char* snapshot_path, const char* result_path) ;
+Error V8_EXPORT CreateHeapDumpBySnapshotFromFile(
+    const char* snapshot_path, const char* result_path) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Creates a heap graph dump by a snapshot
  */
-void V8_EXPORT CreateHeapGraphDumpBySnapshotFromFile(
+Error V8_EXPORT CreateHeapGraphDumpBySnapshotFromFile(
     const char* snapshot_path, FormattedJson formatted,
-    const char* result_path) ;
+    const char* result_path) V8_WARN_UNUSED_RESULT ;
 
 /**
  * Runs the script.

@@ -13,13 +13,13 @@ namespace v8 {
 namespace vm {
 namespace internal {
 
-void CreateContextDump(
+Error CreateContextDump(
     Local<Context> context, std::ostream& result,
     FormattedJson formatted = FormattedJson::False) ;
 
-void CreateHeapDump(Isolate* isolate, std::ostream& result) ;
+Error CreateHeapDump(Isolate* isolate, std::ostream& result) ;
 
-void CreateHeapGraphDump(
+Error CreateHeapGraphDump(
     Isolate* isolate, std::ostream& result,
     FormattedJson formatted = FormattedJson::False) ;
 
