@@ -17,7 +17,7 @@ namespace internal {
 
 class V8Handle {
  public:
-  void Initialize(const char* app_path) ;
+  void Initialize(const char* app_path, int* argc, char** argv) ;
   void Deinitialize() ;
 
   const Isolate::CreateParams& create_params() const { return create_params_ ; }

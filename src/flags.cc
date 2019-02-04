@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "include/v8-vm-log.h" // @metahash
 #include "src/allocation.h"
 #include "src/assembler.h"
 #include "src/base/functional.h"
@@ -446,9 +447,12 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           // sense there.
           continue;
         } else {
-          PrintF(stderr, "Error: unrecognized flag %s\n", arg);
-          return_code = j;
-          break;
+          // @metahash Ignore unrecognized flags
+          // PrintF(stderr, "Error: unrecognized flag %s\n", arg);
+          // return_code = j;
+          // break;
+          continue ;
+          // @metahash end
         }
       }
 
@@ -535,6 +539,10 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
         return_code = j;
         break;
       }
+
+      // @metahash
+      V8_LOG_MSG(
+          "V8: FLAG_%s has been set (%s)", flag->name(), flag->comment()) ;
 
       // remove the flag & value from the command
       if (remove_flags) {

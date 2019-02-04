@@ -701,8 +701,8 @@ FunctionBodyLog::~FunctionBodyLog() {
 
 #endif  // defined(V8_VM_USE_LOG)
 
-void InitializeV8(const char* app_path) {
-  V8HANDLE()->Initialize(app_path) ;
+void InitializeV8(const char* app_path, int* argc, char** argv) {
+  V8HANDLE()->Initialize(app_path, argc, argv) ;
 }
 
 void DeinitializeV8() {

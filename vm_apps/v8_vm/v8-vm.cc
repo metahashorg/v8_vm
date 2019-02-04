@@ -216,7 +216,7 @@ int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
 
   // Initialize V8
-  V8Initializer v8_initializer(cmd_line) ;
+  V8Initializer v8_initializer(cmd_line, &argc, argv) ;
 
   ModeType mode_type = GetModeType(cmd_line) ;
   int result = 0 ;

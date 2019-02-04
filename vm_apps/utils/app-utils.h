@@ -56,7 +56,8 @@ std::string ChangeFileExtension(
 class V8Initializer {
  public:
   // Constructor
-  V8Initializer(const CommandLine& cmd_line) ;
+  V8Initializer(
+      const CommandLine& cmd_line, int* argc = nullptr, char** argv = nullptr) ;
   // Destructor
   ~V8Initializer() ;
 };

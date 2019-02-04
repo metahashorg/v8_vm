@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Initialize V8
-  V8Initializer v8_initializer(cmd_line) ;
+  V8Initializer v8_initializer(cmd_line, &argc, argv) ;
 
   // Get a http-server port
   std::uint16_t server_port = 0 ;

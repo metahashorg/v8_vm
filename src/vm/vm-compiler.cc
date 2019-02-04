@@ -5,7 +5,6 @@
 #include "src/vm/vm-compiler.h"
 
 #include "src/assert-scope.h"
-#include "src/flags.h"
 #include "src/globals.h"
 #include "src/utils.h"
 #include "src/vm/v8-handle.h"
@@ -115,11 +114,6 @@ Error CompileModuleFromFile(const char* module_path, const char* result_path) {
         "Can't read the module script file - \'%s\'", module_path) ;
   }
 
-  // Need for a full compilation
-  // TODO: Look at other flags
-  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
-  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
-
   std::unique_ptr<WorkContext> context(WorkContext::New()) ;
   Data module_data(Data::Type::JSScript, module_path, file_content.start()) ;
   Local<Module> module ;
@@ -142,10 +136,7 @@ Error CompileModuleFromFile(const char* module_path, const char* result_path) {
 
 Error CompileScript(
     const char* script, const char* script_origin, Data& result) {
-  // Need for a full compilation
-  // TODO: Look at other flags
-  TemporarilySetValue<bool> lazy(i::FLAG_lazy, false) ;
-  TemporarilySetValue<bool> log_code(i::FLAG_log_code, true) ;
+  V8_LOG_FUNCTION_BODY() ;
 
   std::unique_ptr<WorkContext> context(WorkContext::New()) ;
   Data script_data(Data::Type::JSScript, script_origin, script) ;
@@ -192,12 +183,6 @@ Error LoadModuleCompilation(
     Isolate* isolate, const Data& compilation_data, Local<Module>& module) {
   DCHECK_EQ(Data::Type::Compilation, compilation_data.type) ;
 
-#ifdef DEBUG
-  // Use for a verbose deserialization
-  TemporarilySetValue<bool> profile_deserialization(
-      i::FLAG_profile_deserialization, true) ;
-#endif  // DEBUG
-
   std::unique_ptr<ScriptCompiler::CachedData> cache(
     new ScriptCompiler::CachedData(
           reinterpret_cast<const uint8_t*>(compilation_data.data),
@@ -222,12 +207,6 @@ Error LoadScriptCompilation(
     Local<Context> context, const Data& compilation_data,
     Local<Script>& script) {
   DCHECK_EQ(Data::Type::Compilation, compilation_data.type) ;
-
-#ifdef DEBUG
-  // Use for a verbose deserialization
-  TemporarilySetValue<bool> profile_deserialization(
-      i::FLAG_profile_deserialization, true) ;
-#endif  // DEBUG
 
   std::unique_ptr<ScriptCompiler::CachedData> cache(
       new ScriptCompiler::CachedData(

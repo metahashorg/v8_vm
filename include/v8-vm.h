@@ -20,7 +20,8 @@ enum class FormattedJson {
 };
 
 /** Initializes V8 for working with virtual machine. */
-void V8_EXPORT InitializeV8(const char* app_path) ;
+void V8_EXPORT InitializeV8(
+    const char* app_path, int* argc = nullptr, char** argv = nullptr) ;
 
 /** Deinitializes V8. */
 void V8_EXPORT DeinitializeV8() ;

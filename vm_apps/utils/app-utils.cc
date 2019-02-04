@@ -43,7 +43,8 @@ std::string ChangeFileExtension(
   return file_path.ReplaceExtension(new_extension).value() ;
 }
 
-V8Initializer::V8Initializer(const CommandLine& cmd_line) {
+V8Initializer::V8Initializer(
+    const CommandLine& cmd_line, int* argc, char** argv) {
 #ifdef DEBUG
   LogLevels log_level = LogLevels::Verbose ;
 #else
@@ -86,7 +87,7 @@ V8Initializer::V8Initializer(const CommandLine& cmd_line) {
   InitializeLog(
       log_level, log_path.c_str(), log_file_prefix.c_str(), log_file_size,
       log_stdout, log_stderr) ;
-  InitializeV8(cmd_line.GetProgram().c_str()) ;
+  InitializeV8(cmd_line.GetProgram().c_str(), argc, argv) ;
 }
 
 V8Initializer::~V8Initializer() {
