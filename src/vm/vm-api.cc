@@ -10,6 +10,7 @@
 #include <deque>
 #include <thread>
 
+#include "src/base/debug/stack_trace.h"
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
 #include "src/utils.h"
@@ -109,6 +110,9 @@ class Logger {
   // Reopens a log file if it is more than a maximum log file size
   void UpdateLogFile() ;
 
+  // Callback on the process aborted
+  static void OnProcessAborted() ;
+
   // Delimiter of message fields
   std::string field_delimiter_ ;
 
@@ -152,6 +156,9 @@ void Logger::InitializeLog(
   instance_.reset(new Logger(
       log_level, log_path, file_prefix, log_file_size, stdout_flag,
       stderr_flag)) ;
+
+  // Set a callback on the process aborted
+  OS::AddAbortCallback(&OnProcessAborted) ;
 
   V8_LOG_MSG("Log level: %s", LogLevelToStr(instance_->log_level_)) ;
   if (!instance_->log_path_.empty()) {
@@ -478,6 +485,16 @@ void Logger::UpdateLogFile() {
   log_file_.swap(log_file) ;
   log_file_path_ = std::move(log_file_path) ;
   log_file_size_ = 0 ;
+}
+
+void Logger::OnProcessAborted() {
+  // Print a message with a stack trace
+  v8::base::debug::StackTrace trace ;
+  V8_LOG_ERR(
+      errAborted, "The process has been aborted:\n%s",
+      trace.ToString().c_str()) ;
+
+  DeinitializeLog() ;
 }
 
 #endif  // defined(V8_VM_USE_LOG)

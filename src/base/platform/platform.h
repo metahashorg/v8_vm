@@ -186,6 +186,13 @@ class V8_BASE_EXPORT OS {
   // Abort the current process.
   [[noreturn]] static void Abort();
 
+  // @metahash
+  // Add/remove a callback on the process aborted
+  typedef void (*AbortCallback)() ;
+  static void AddAbortCallback(AbortCallback callback) ;
+  static void RemoveAbortCallback(AbortCallback callback) ;
+  // @metahash end
+
   // Debug break.
   static void DebugBreak();
 
@@ -273,6 +280,10 @@ class V8_BASE_EXPORT OS {
   static void SetRandomMmapSeed(int64_t seed);
 
   static void* GetRandomMmapAddr();
+
+  // @metahash
+  // Calls abort callbacks
+  static void CallAbortCallbacks() ;
 
   V8_WARN_UNUSED_RESULT static void* Allocate(void* address, size_t size,
                                               size_t alignment,

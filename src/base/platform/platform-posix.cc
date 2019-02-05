@@ -393,6 +393,9 @@ void OS::Sleep(TimeDelta interval) {
 
 
 void OS::Abort() {
+  // @metahash Call calbacks
+  CallAbortCallbacks() ;
+
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }

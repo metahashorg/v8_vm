@@ -891,6 +891,9 @@ void OS::Abort() {
   fflush(stdout);
   fflush(stderr);
 
+  // @metahash Call calbacks
+  CallAbortCallbacks() ;
+
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
