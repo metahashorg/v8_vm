@@ -241,6 +241,7 @@ std::string Logger::CreateFreeFileName(const std::string& suffix) {
     }
   }
 
+  OS::StandardOutputAutoLock locker ;
   printf("ERROR: Can't find a free name of a file\n") ;
   return "" ;
 }
@@ -252,6 +253,7 @@ void Logger::InitializeLogFile() {
 
   Error result = vi::CreateDirectory(log_path_) ;
   if (V8_ERROR_FAILED(result)) {
+    OS::StandardOutputAutoLock locker ;
     printf(
         "ERROR: Can't create a directory - \'%s\'\n",
         log_path_.value().c_str()) ;
@@ -260,6 +262,7 @@ void Logger::InitializeLogFile() {
 
   std::string file_name = CreateFreeFileName() ;
   if (file_name.empty()) {
+    OS::StandardOutputAutoLock locker ;
     printf("ERROR: Can't create a log file name\n") ;
     return ;
   }
@@ -272,6 +275,7 @@ void Logger::InitializeLogFile() {
     log_path_.clear() ;
     log_file_path_.clear() ;
     log_file_.reset() ;
+    OS::StandardOutputAutoLock locker ;
     printf(
         "ERROR: Can't open a log file - \'%s\'\n",
         log_file_path_.value().c_str()) ;
@@ -390,10 +394,12 @@ void Logger::PrintMessage(const Message& msg) {
   }
 
   if (stdout_flag_) {
+    OS::StandardOutputAutoLock locker ;
     std::cout << msg_str ;
   }
 
   if (stderr_flag_ && msg.log_level <= LogLevels::Warning) {
+    OS::StandardOutputAutoLock locker ;
     std::cerr << msg_str ;
   }
 }

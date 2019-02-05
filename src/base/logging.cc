@@ -154,6 +154,12 @@ void V8_Fatal(const char* file, int line, const char* format, ...) {
 
   fflush(stdout);
   fflush(stderr);
+
+  // @metahash
+  {
+    v8::base::OS::StandardOutputAutoLock output_locker ;
+  // @metahash end
+
   // Print the formatted message to stdout without cropping the output.
   v8::base::OS::PrintError("\n\n#\n# Fatal error in %s, line %d\n# ", file,
                            line);
@@ -166,6 +172,8 @@ void V8_Fatal(const char* file, int line, const char* format, ...) {
   v8::base::OS::PrintError("\n#\n#\n#\n#FailureMessage Object: %p", &message);
 
   if (v8::base::g_print_stack_trace) v8::base::g_print_stack_trace();
+
+  } // @metahash
 
   fflush(stderr);
   v8::base::OS::Abort();

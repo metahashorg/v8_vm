@@ -155,6 +155,18 @@ class V8_BASE_EXPORT OS {
   static PRINTF_FORMAT(1, 2) void PrintError(const char* format, ...);
   static PRINTF_FORMAT(1, 0) void VPrintError(const char* format, va_list args);
 
+  // @metahash
+  // Class for locking standard outputs to print a message
+  class V8_BASE_EXPORT StandardOutputAutoLock {
+   public:
+    StandardOutputAutoLock() ;
+    StandardOutputAutoLock(FILE* stream) ;
+    ~StandardOutputAutoLock() ;
+   private:
+    FILE* stream_ ;
+  };
+  // @metahash end
+
   // Memory permissions. These should be kept in sync with the ones in
   // v8::PageAllocator.
   enum class MemoryPermission {

@@ -599,6 +599,7 @@ void OS::VPrint(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
 #else
+  StandardOutputAutoLock locker ; // @metahash
   vprintf(format, args);
 #endif
 }
@@ -616,6 +617,7 @@ void OS::VFPrint(FILE* out, const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
 #else
+  StandardOutputAutoLock locker(out) ; // @metahash
   vfprintf(out, format, args);
 #endif
 }
@@ -633,6 +635,7 @@ void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
 #else
+  StandardOutputAutoLock locker ; // @metahash
   vfprintf(stderr, format, args);
 #endif
 }

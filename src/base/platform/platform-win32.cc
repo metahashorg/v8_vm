@@ -556,6 +556,7 @@ static void VPrintHelper(FILE* stream, const char* format, va_list args) {
     OS::VSNPrintF(buffer, sizeof(buffer), format, args);
     OutputDebugStringA(buffer);
   } else {
+    OS::StandardOutputAutoLock locker(stream) ; // @metahash
     vfprintf(stream, format, args);
   }
 }
