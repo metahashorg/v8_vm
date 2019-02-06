@@ -472,40 +472,59 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
       }
 
       // set the flag
+      std::string flag_value_str ; // @metahash
       char* endp = const_cast<char*>("");  // *endp is only read
       switch (flag->type()) {
         case Flag::TYPE_BOOL:
           *flag->bool_variable() = !negated;
+          // @metahash
+          flag_value_str =
+              (*flag->bool_variable()) ? " in \'true\'" : " in \'false\'" ;
           break;
         case Flag::TYPE_MAYBE_BOOL:
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !negated);
+          // @metahash
+          flag_value_str = !negated ? " in \'true\'" : " in \'false\'" ;
           break;
         case Flag::TYPE_INT:
           *flag->int_variable() = static_cast<int>(strtol(value, &endp, 10));
+          // @metahash
+          flag_value_str = " in " + std::to_string(*flag->int_variable()) ;
           break;
         case Flag::TYPE_UINT:
           if (!TryParseUnsigned(flag, arg, value, &endp,
                                 flag->uint_variable())) {
             return_code = j;
           }
+          // @metahash
+          flag_value_str = " in " + std::to_string(*flag->uint_variable()) ;
           break;
         case Flag::TYPE_UINT64:
           if (!TryParseUnsigned(flag, arg, value, &endp,
                                 flag->uint64_variable())) {
             return_code = j;
           }
+          // @metahash
+          flag_value_str = " in " + std::to_string(*flag->uint64_variable()) ;
           break;
         case Flag::TYPE_FLOAT:
           *flag->float_variable() = strtod(value, &endp);
+          // @metahash
+          flag_value_str = " in " + std::to_string(*flag->float_variable()) ;
           break;
         case Flag::TYPE_SIZE_T:
           if (!TryParseUnsigned(flag, arg, value, &endp,
                                 flag->size_t_variable())) {
             return_code = j;
           }
+          // @metahash
+          flag_value_str = " in " + std::to_string(*flag->size_t_variable()) ;
           break;
         case Flag::TYPE_STRING:
           flag->set_string_value(value ? StrDup(value) : nullptr, true);
+          // @metahash
+          flag_value_str = (std::string(" in \'") +
+            (flag->string_value() ? flag->string_value() : "")) + "\'" ;
           break;
         case Flag::TYPE_ARGS: {
           int start_pos = (value == nullptr) ? i : i - 1;
@@ -541,8 +560,12 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
       }
 
       // @metahash
-      V8_LOG_MSG(
-          "V8: FLAG_%s has been set (%s)", flag->name(), flag->comment()) ;
+      if (return_code != i) {
+        V8_LOG_MSG(
+            "V8: FLAG_%s has been set%s (%s)", flag->name(),
+            flag_value_str.c_str(), flag->comment()) ;
+      }
+      // @metahash end
 
       // remove the flag & value from the command
       if (remove_flags) {
