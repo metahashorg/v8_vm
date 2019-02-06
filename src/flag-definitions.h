@@ -70,7 +70,7 @@
   if (!FLAG_##whenflag) FLAG_##thenflag = value;
 
 #else
-#error No mode supplied when including flags.defs
+// @metahas #error No mode supplied when including flags.defs
 #endif
 
 // Dummy defines for modes where it is not relevant.

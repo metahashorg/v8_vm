@@ -52,6 +52,9 @@ using v8::vm::internal::TRIM_ALL ;
 std::string ChangeFileExtension(
     const char* file_name, const char* new_extension) ;
 
+// Returns help string of common command line switches
+std::string GetCommonCommandLineSwitches() ;
+
 // Wrapper for to initialize V8
 class V8Initializer {
  public:

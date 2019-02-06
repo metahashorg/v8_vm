@@ -23,7 +23,16 @@ const std::int32_t kBodyBufferSize = 256 * 1024 ; // because of snapshots
 }  //namespace
 
 void HowToUse() {
-  printf("ERROR: Specify a port of http-server\n") ;
+  std::string exe_name = GetExecutablePath().BaseName().value() ;
+  std::string help = StringPrintf(
+      "usage: %s --%s=<server port> <args>\n\n", exe_name.c_str(),
+      kSwitchPort) ;
+  help += StringPrintf(
+      "  %s  V8 HTTP server port for listening\n", kSwitchPort) ;
+  help += StringPrintf(
+      "  e.g.: %s --%s=7777\n", exe_name.c_str(), kSwitchPort) ;
+  help += StringPrintf("\n%s", GetCommonCommandLineSwitches().c_str()) ;
+  printf("%s\n", help.c_str()) ;
 }
 
 int main(int argc, char* argv[]) {

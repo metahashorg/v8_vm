@@ -61,7 +61,7 @@ ModeType GetModeType(const CommandLine& cmd_line) {
 int DoUnknown() {
   const char usage[] =
       "usage: v8_vm --mode=<mode_type> <args>\n\n"
-      "These are mode types and appropriate arguments:\n\n"
+      "These are mode types and appropriate arguments:\n"
       "  mode=compile     Compile js-file(s)\n"
       "    <args>         js-file path(s) (may be more than one)\n"
       "  e.g.: v8_vm --mode=compile script.js\n\n"
@@ -79,7 +79,8 @@ int DoUnknown() {
       "  e.g.: v8_vm --mode=dump script.shot\n\n"
       "  mode=error-list  Trace a error list\n"
       "  e.g.: v8_vm --mode=error-list" ;
-  printf("%s\n", usage) ;
+  std::string common_switches = GetCommonCommandLineSwitches() ;
+  printf("%s\n\n%s\n", usage, common_switches.c_str()) ;
   return 1 ;
 }
 
@@ -215,10 +216,13 @@ int DoErrorList() {
 int main(int argc, char* argv[]) {
   CommandLine cmd_line(argc, argv) ;
 
-  // Initialize V8
-  V8Initializer v8_initializer(cmd_line, &argc, argv) ;
-
   ModeType mode_type = GetModeType(cmd_line) ;
+  std::unique_ptr<V8Initializer> v8_initializer ;
+  if (mode_type != ModeType::Unknown) {
+    // Initialize V8
+    v8_initializer.reset(new V8Initializer(cmd_line, &argc, argv)) ;
+  }
+
   int result = 0 ;
   if (mode_type == ModeType::Unknown) {
     result = DoUnknown() ;
