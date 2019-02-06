@@ -20,11 +20,14 @@
 V8_BASE_EXPORT V8_NOINLINE void V8_Dcheck(const char* file, int line,
                                           const char* message);
 
-#ifdef DEBUG
+// @metahash
+// #ifdef DEBUG
+// #define FATAL(...) V8_Fatal(__FILE__, __LINE__, __VA_ARGS__)
+// #else
+// #define FATAL(...) V8_Fatal("", 0, __VA_ARGS__)
+// #endif
 #define FATAL(...) V8_Fatal(__FILE__, __LINE__, __VA_ARGS__)
-#else
-#define FATAL(...) V8_Fatal("", 0, __VA_ARGS__)
-#endif
+// @metahash end
 #define UNIMPLEMENTED() FATAL("unimplemented code")
 #define UNREACHABLE() FATAL("unreachable code")
 
@@ -37,6 +40,12 @@ V8_BASE_EXPORT void SetPrintStackTrace(void (*print_stack_trace_)());
 // Override the default function that handles DCHECKs.
 V8_BASE_EXPORT void SetDcheckFunction(void (*dcheck_Function)(const char*, int,
                                                               const char*));
+
+// @metahash
+// Override the default function that handles a fatal error.
+V8_BASE_EXPORT void SetFatalFunction(
+    void (*fatal_function)(
+        const char* file, int line, const char* format, va_list args)) ;
 
 // CHECK dies with a fatal error if condition is not true.  It is *not*
 // controlled by DEBUG, so the check will be executed regardless of

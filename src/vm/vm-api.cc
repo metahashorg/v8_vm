@@ -110,6 +110,10 @@ class Logger {
   // Reopens a log file if it is more than a maximum log file size
   void UpdateLogFile() ;
 
+  // Callback on a fatal error
+  static void OnFatalError(
+      const char* file, int line, const char* format, va_list args) ;
+
   // Callback on the process aborted
   static void OnProcessAborted() ;
 
@@ -157,6 +161,9 @@ void Logger::InitializeLog(
       log_level, log_path, file_prefix, log_file_size, stdout_flag,
       stderr_flag)) ;
 
+  // Set callback on a fatal error
+  v8::base::SetFatalFunction(&OnFatalError) ;
+
   // Set a callback on the process aborted
   OS::AddAbortCallback(&OnProcessAborted) ;
 
@@ -170,6 +177,12 @@ void Logger::InitializeLog(
 }
 
 void Logger::DeinitializeLog() {
+  // Remove callback on a fatal error
+  v8::base::SetFatalFunction(nullptr) ;
+
+  // Remove callback on the process aborted
+  OS::RemoveAbortCallback(&OnProcessAborted) ;
+
   instance_.reset() ;
 }
 
@@ -346,10 +359,11 @@ void Logger::PrintMessage(
 
   std::string msg_suffix ;
   if (log_level > LogLevels::Message) {
-    if (file && error) {
+    bool file_flag = (file && file[0] != '\0') ;
+    if (file_flag && error) {
       msg_suffix = vi::StringPrintf(
           message_file_error, error->name(), error->code(), file, line) ;
-    } else if (file) {
+    } else if (file_flag) {
       msg_suffix = vi::StringPrintf(message_file, file, line) ;
     } else if (error) {
       msg_suffix = vi::StringPrintf(
@@ -485,6 +499,14 @@ void Logger::UpdateLogFile() {
   log_file_.swap(log_file) ;
   log_file_path_ = std::move(log_file_path) ;
   log_file_size_ = 0 ;
+}
+
+void Logger::OnFatalError(
+    const char* file, int line, const char* format, va_list args) {
+  std::string msg = vi::StringPrintV(format, args) ;
+  V8_LOG(
+      LogLevels::Error, file + ::v8::vm::kLocalPathPrefixLength, line,
+      "Fatal error occurred: \'%s\'", msg.c_str()) ;
 }
 
 void Logger::OnProcessAborted() {

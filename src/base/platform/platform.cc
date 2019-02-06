@@ -46,7 +46,8 @@ void OS::RemoveAbortCallback(OS::AbortCallback callback) {
 }
 
 void OS::CallAbortCallbacks() {
-  for (auto it : g_abort_callbacks) {
+  std::set<OS::AbortCallback> abort_callbacks = g_abort_callbacks ;
+  for (auto it : abort_callbacks) {
     (*it)() ;
   }
 }

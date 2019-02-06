@@ -23,6 +23,15 @@ void (*g_print_stack_trace)() = nullptr;
 
 void (*g_dcheck_function)(const char*, int, const char*) = DefaultDcheckHandler;
 
+// @metahash
+void DefaultFatalHandler(
+    const char* file, int line, const char* format, va_list args) ;
+
+void (*g_fatal_function)(
+    const char* file, int line, const char* format, va_list args) =
+    DefaultFatalHandler ;
+// @metahash end
+
 void PrettyPrintChar(std::ostream& os, int ch) {
   switch (ch) {
 #define CHAR_PRINT_CASE(ch) \
@@ -65,6 +74,14 @@ void SetPrintStackTrace(void (*print_stack_trace)()) {
 void SetDcheckFunction(void (*dcheck_function)(const char*, int, const char*)) {
   g_dcheck_function = dcheck_function ? dcheck_function : &DefaultDcheckHandler;
 }
+
+// @metahash
+void SetFatalFunction(
+    void (*fatal_function)(
+        const char* file, int line, const char* format, va_list args)) {
+  g_fatal_function = fatal_function ? fatal_function : &DefaultFatalHandler ;
+}
+// @metahash end
 
 // Define specialization to pretty print characters (escaping non-printable
 // characters) and to print c strings as pointers instead of strings.
@@ -144,13 +161,33 @@ class FailureMessage {
 
 }  // namespace
 
+// @metahash
 void V8_Fatal(const char* file, int line, const char* format, ...) {
   va_list arguments;
   va_start(arguments, format);
+  v8::base::g_fatal_function(file, line, format, arguments) ;
+  va_end(arguments);
+
+  v8::base::OS::Abort() ;
+}
+
+namespace v8 {
+namespace base {
+namespace {
+
+// void V8_Fatal(const char* file, int line, const char* format, ...) {
+//   va_list arguments;
+//   va_start(arguments, format);
+//   // Format the error message into a stack object for later retrieveal by the
+//   // crash processor.
+//   FailureMessage message(format, arguments);
+//   va_end(arguments);
+void DefaultFatalHandler(
+    const char* file, int line, const char* format, va_list arguments) {
   // Format the error message into a stack object for later retrieveal by the
   // crash processor.
-  FailureMessage message(format, arguments);
-  va_end(arguments);
+  FailureMessage message(format, arguments) ;
+// @metahash end
 
   fflush(stdout);
   fflush(stderr);
@@ -165,9 +202,9 @@ void V8_Fatal(const char* file, int line, const char* format, ...) {
                            line);
 
   // Print the error message.
-  va_start(arguments, format);
-  v8::base::OS::VPrintError(format, arguments);
-  va_end(arguments);
+  // va_start(arguments, format); @metahash
+  v8::base::OS::VPrintError(format, arguments) ;
+  // va_end(arguments); @metahash
   // Print the message object's address to force stack allocation.
   v8::base::OS::PrintError("\n#\n#\n#\n#FailureMessage Object: %p", &message);
 
@@ -176,8 +213,12 @@ void V8_Fatal(const char* file, int line, const char* format, ...) {
   } // @metahash
 
   fflush(stderr);
-  v8::base::OS::Abort();
+  // v8::base::OS::Abort(); @metahash
 }
+
+}  // namespace @metahash
+}  // base @metahash
+}  // v8 @metahash
 
 void V8_Dcheck(const char* file, int line, const char* message) {
   v8::base::g_dcheck_function(file, line, message);
