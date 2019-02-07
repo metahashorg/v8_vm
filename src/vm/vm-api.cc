@@ -170,6 +170,8 @@ void Logger::InitializeLog(
   V8_LOG_MSG("Log level: %s", LogLevelToStr(instance_->log_level_)) ;
   if (!instance_->log_path_.empty()) {
     V8_LOG_MSG("Log path: %s", instance_->log_path_.value().c_str()) ;
+    V8_LOG_MSG("Log file prefix: %s", instance_->file_prefix_.c_str()) ;
+    V8_LOG_MSG("Log file maximum size: %d", instance_->log_file_size_) ;
   }
 
   V8_LOG_MSG("Log stdout: %s", instance_->stdout_flag_ ? "true" : "false") ;
@@ -559,7 +561,7 @@ Error CreateDumpBySnapshotFromFile(
 
   fs.close() ;
   V8_ERROR_RETURN_IF_FAILED(result) ;
-  V8_LOG_INF(
+  V8_LOG_MSG(
       "Created a dump by the snapshot-file \'%s\' and saved result into \'%s\'",
       snapshot_path, result_path) ;
   return result ;
@@ -592,6 +594,8 @@ Error RunScriptByFile(
     if (data.raw_size) {
       delete [] data.data ;
     }
+
+    V8_LOG_MSG("Saved a snapshot into \'%s\'", snapshot_out_path) ;
   }
 
   return errOk ;

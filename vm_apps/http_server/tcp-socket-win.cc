@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <mstcpip.h>
 
-#include "src/vm/utils/vm-utils.h"
 #include "vm_apps/http_server/net-errors.h"
 #include "vm_apps/http_server/sockaddr-storage.h"
 #include "vm_apps/http_server/socket-options.h"
@@ -297,7 +296,7 @@ Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
   // TODO: DCHECK(!waiting_read_) ;
 
   // Set a flag of waiting read
-  vvi::TemporarilySetValue<bool> waiting_read(waiting_read_, true) ;
+  TemporarilySetValue<bool> waiting_read(waiting_read_, true) ;
 
   // Remember a buffer length and set a result of reading to 0
   std::int32_t local_buf_len = buf_len ;
@@ -352,7 +351,7 @@ Error TcpSocketWin::Write(
   // TODO: DCHECK(!waiting_write_) ;
 
   // Set a flag of waiting read
-  vvi::TemporarilySetValue<bool> waiting_wtite(waiting_write_, true) ;
+  TemporarilySetValue<bool> waiting_wtite(waiting_write_, true) ;
 
   // Remember a buffer length and set a result of writing to 0
   std::int32_t local_buf_len = buf_len ;

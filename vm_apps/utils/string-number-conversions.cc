@@ -15,7 +15,6 @@
 #include <limits>
 #include <type_traits>
 
-#include "src/vm/utils/scoped-clear-errno.h"
 #include "vm_apps/third_party/dmg_fp/dmg_fp.h"
 #include "vm_apps/third_party/numerics/safe_math.h"
 #include "vm_apps/utils/app-utils.h"
@@ -448,7 +447,7 @@ bool StringToSizeT(const std::wstring& input, std::size_t* output) {
 
 bool StringToDouble(const std::string& input, double* output) {
   // Thread-safe?  It is on at least Mac, Linux, and Windows.
-  vvi::ScopedClearErrno clear_errno ;
+  ScopedClearErrno clear_errno ;
 
   char* endptr = NULL ;
   *output = dmg_fp::strtod(input.c_str(), &endptr) ;

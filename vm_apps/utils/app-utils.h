@@ -13,14 +13,17 @@
 #include "src/base/macros.h"
 #include "src/vm/utils/file-path.h"
 #include "src/vm/utils/json-utils.h"
+#include "src/vm/utils/scoped-clear-errno.h"
 #include "src/vm/utils/string-printf.h"
 #include "src/vm/utils/string-utils.h"
+#include "src/vm/utils/vm-utils.h"
 #include "vm_apps/utils/command-line.h"
 
 // Using directives
-namespace vv = v8::vm ;
-namespace vvi = vv::internal ;
-
+using v8::vm::CreateContextDumpBySnapshotFromFile ;
+using v8::vm::CreateHeapDumpBySnapshotFromFile ;
+using v8::vm::CreateHeapGraphDumpBySnapshotFromFile ;
+using v8::vm::CompileScriptFromFile ;
 using v8::vm::DeinitializeLog ;
 using v8::vm::DeinitializeV8 ;
 using v8::vm::Error ;
@@ -30,6 +33,11 @@ using v8::vm::InitializeLog ;
 using v8::vm::InitializeV8 ;
 using v8::vm::kDefaultLogFileSize ;
 using v8::vm::LogLevels ;
+using v8::vm::RunScript ;
+using v8::vm::RunScriptByCompilationFromFile ;
+using v8::vm::RunScriptByJSScriptFromFile ;
+using v8::vm::RunScriptBySnapshot ;
+using v8::vm::RunScriptBySnapshotFromFile ;
 using v8::vm::internal::EncodeJsonString ;
 using v8::vm::internal::EqualsCaseInsensitiveASCII ;
 using v8::vm::internal::FilePath ;
@@ -42,7 +50,11 @@ using v8::vm::internal::kJsonLeftSquareBracket ;
 using v8::vm::internal::kJsonNewLine ;
 using v8::vm::internal::kJsonRightBracket ;
 using v8::vm::internal::kJsonRightSquareBracket ;
+using v8::vm::internal::ScopedClearErrno ;
+using v8::vm::internal::StringAppendF ;
 using v8::vm::internal::StringPrintf ;
+using v8::vm::internal::TemporarilyChangeValues ;
+using v8::vm::internal::TemporarilySetValue ;
 using v8::vm::internal::TRIM_NONE ;
 using v8::vm::internal::TRIM_LEADING ;
 using v8::vm::internal::TRIM_TRAILING ;

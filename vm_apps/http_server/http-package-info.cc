@@ -6,7 +6,6 @@
 
 #include <cctype>
 
-#include "src/vm/utils/string-printf.h"
 #include "vm_apps/utils/app-utils.h"
 #include "vm_apps/utils/string-number-conversions.h"
 #include "vm_apps/utils/string-tokenizer.h"
@@ -412,10 +411,9 @@ std::string HttpPackageInfo::ToString() const {
   for (HeaderVector::const_iterator it = headers_.begin();
        it != headers_.end(); ++it) {
     if (!it->value.empty()) {
-      vvi::StringAppendF(
-          &output, "%s: %s\r\n", it->key.c_str(), it->value.c_str()) ;
+      StringAppendF(&output, "%s: %s\r\n", it->key.c_str(), it->value.c_str()) ;
     } else {
-      vvi::StringAppendF(&output, "%s:\r\n", it->key.c_str()) ;
+      StringAppendF(&output, "%s:\r\n", it->key.c_str()) ;
     }
   }
 

@@ -37,6 +37,7 @@ void StackGuard::reset_limits(const ExecutionAccess& lock) {
 static void PrintDeserializedCodeInfo(Handle<JSFunction> function) {
   if (function->code() == function->shared()->GetCode() &&
       function->shared()->deserialized()) {
+    base::OS::StandardOutputAutoLock locker ; // @metahash
     PrintF("[Running deserialized script");
     Object* script = function->shared()->script();
     if (script->IsScript()) {

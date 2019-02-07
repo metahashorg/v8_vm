@@ -173,7 +173,7 @@ Error CompileScriptFromFile(const char* script_path, const char* result_path) {
 
   i::WriteBytes(result_path, reinterpret_cast<const std::uint8_t*>(result.data),
                 result.size, true) ;
-  V8_LOG_INF(
+  V8_LOG_MSG(
       "Compiled the file \'%s\' and saved result into \'%s\'\n",
       script_path, result_path) ;
   return errOk ;

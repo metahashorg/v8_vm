@@ -87,7 +87,7 @@ int DoUnknown() {
 int DoCompile(const CommandLine& cmd_line) {
   bool error = false ;
   for (auto it : cmd_line.GetArgs()) {
-    Error result = v8::vm::CompileScriptFromFile(
+    Error result = CompileScriptFromFile(
         it.c_str(),
         ChangeFileExtension(it.c_str(), kCompilationFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
@@ -122,17 +122,17 @@ int DoRun(const CommandLine& cmd_line) {
 
   Error result = errOk ;
   if (snapshot_path.length()) {
-    result = v8::vm::RunScriptBySnapshotFromFile(
+    result = RunScriptBySnapshotFromFile(
         snapshot_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else if (compilation_path.length()) {
-    result = v8::vm::RunScriptByCompilationFromFile(
+    result = RunScriptByCompilationFromFile(
         compilation_path.c_str(),
         cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else if (js_path.length()) {
-    result = v8::vm::RunScriptByJSScriptFromFile(
+    result = RunScriptByJSScriptFromFile(
         js_path.c_str(), cmd_line.GetSwitchValueNative(kSwitchCommand).c_str(),
         out_snapshot_path.length() ? out_snapshot_path.c_str() : nullptr) ;
   } else {
@@ -152,9 +152,8 @@ int DoDump(const CommandLine& cmd_line) {
   Error result = errOk ;
   bool error_flag = false ;
   for (auto it : cmd_line.GetArgs()) {
-    result = v8::vm::CreateContextDumpBySnapshotFromFile(
-        it.c_str(),
-        v8::vm::FormattedJson::True,
+    result = CreateContextDumpBySnapshotFromFile(
+        it.c_str(), FormattedJson::True,
         ChangeFileExtension(it.c_str(), kContextDumpFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
       error_flag = true ;
@@ -164,7 +163,7 @@ int DoDump(const CommandLine& cmd_line) {
           it.c_str()) ;
     }
 
-    result = v8::vm::CreateHeapDumpBySnapshotFromFile(
+    result = CreateHeapDumpBySnapshotFromFile(
         it.c_str(),
         ChangeFileExtension(it.c_str(), kHeapDumpFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
@@ -175,9 +174,8 @@ int DoDump(const CommandLine& cmd_line) {
           it.c_str()) ;
     }
 
-    result = v8::vm::CreateHeapGraphDumpBySnapshotFromFile(
-        it.c_str(),
-        v8::vm::FormattedJson::True,
+    result = CreateHeapGraphDumpBySnapshotFromFile(
+        it.c_str(), FormattedJson::True,
         ChangeFileExtension(it.c_str(), kHeapGraphDumpFileExtension).c_str()) ;
     if (V8_ERROR_FAILED(result)) {
       error_flag = true ;

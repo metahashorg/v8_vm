@@ -4,8 +4,6 @@
 
 #include "vm_apps/http_server/http-request-info.h"
 
-#include "src/vm/utils/string-printf.h"
-
 // Request method names.
 const char HttpRequestInfo::Method::Connect[] = "CONNECT" ;
 const char HttpRequestInfo::Method::Delete[] = "DELETE" ;

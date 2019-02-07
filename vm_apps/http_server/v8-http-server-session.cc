@@ -9,7 +9,6 @@
 #include <deque>
 
 #include "include/v8-vm.h"
-#include "src/vm/utils/vm-utils.h"
 #include "vm_apps/third_party/boringssl/src/include/openssl/sha.h"
 #include "vm_apps/third_party/keccak-tiny/keccak-tiny.h"
 #include "vm_apps/third_party/metagate/src/ethtx/rlp.h"
@@ -247,7 +246,7 @@ Error RequestParser::Parse(
   // Create a new result
   std::unique_ptr<V8HttpServerSession::Request> request(
       new V8HttpServerSession::Request()) ;
-  vvi::TemporarilyChangeValues<std::unique_ptr<V8HttpServerSession::Request>>
+  TemporarilyChangeValues<std::unique_ptr<V8HttpServerSession::Request>>
       request_remover(request_, request) ;
 
   // Set a processing environment
@@ -365,15 +364,15 @@ Error RequestParser::ParseTransaction(const char* val, std::size_t size) {
   }
 
   // Parse transaction.data
-  vvi::TemporarilySetValue<std::deque<std::string>> nesting(
+  TemporarilySetValue<std::deque<std::string>> nesting(
       nesting_, std::deque<std::string>()) ;
-  vvi::TemporarilySetValue<std::set<std::string>> processed(
+  TemporarilySetValue<std::set<std::string>> processed(
       processed_, std::set<std::string>()) ;
-  vvi::TemporarilySetValue<bool> transaction_processing(
+  TemporarilySetValue<bool> transaction_processing(
       transaction_processing_, true) ;
-  vvi::TemporarilySetValue<const char**> processed_fileds(
+  TemporarilySetValue<const char**> processed_fileds(
       processed_fileds_, kTransactionProcessedFields) ;
-  vvi::TemporarilySetValue<std::int32_t> processed_fileds_count(
+  TemporarilySetValue<std::int32_t> processed_fileds_count(
       processed_fileds_count_, arraysize(kTransactionProcessedFields)) ;
       JsonSaxParser parser(callbacks_, JsonSaxParser::JSON_PARSE_RFC) ;
   result = parser.Parse(
@@ -799,7 +798,7 @@ Error V8HttpServerSession::CompileScript() {
 
   // Run script
   v8::StartupData data = { nullptr, 0 } ;
-  Error result = vv::RunScript(
+  Error result = RunScript(
       script.c_str(), request_->address_str.c_str(), &data) ;
   if (data.raw_size) {
     response_state_ = HexEncode(data.data, data.raw_size) ;
@@ -847,7 +846,7 @@ Error V8HttpServerSession::RunCommandScript() {
   v8::StartupData state = { reinterpret_cast<char*>(&request_->state.at(0)),
                             static_cast<int>(request_->state.size()) } ;
   v8::StartupData data = { nullptr, 0 } ;
-  Error result = vv::RunScriptBySnapshot(
+  Error result = RunScriptBySnapshot(
       state, script.c_str(), request_->address_str.c_str(),
       request_->address_str.c_str(), &data) ;
   if (data.raw_size) {

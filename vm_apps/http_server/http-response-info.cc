@@ -6,7 +6,6 @@
 
 #include <cctype>
 
-#include "src/vm/utils/string-printf.h"
 #include "vm_apps/utils/string-number-conversions.h"
 
 // Response specific header names.

@@ -40,6 +40,8 @@ WorkContext* WorkContext::New(
 WorkContext::WorkContext() {}
 
 void WorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
+  V8_LOG_FUNCTION_BODY() ;
+
   if (isolate) {
     isolate_ = isolate ;
     dispose_isolate_ = false ;
@@ -93,6 +95,8 @@ SnapshotWorkContext::SnapshotWorkContext(StartupData* snapshot_out)
 }
 
 void SnapshotWorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
+  V8_LOG_FUNCTION_BODY() ;
+
   DCHECK(snapshot_out_) ;
 
   snapshot_creator_.reset(new SnapshotCreator(
