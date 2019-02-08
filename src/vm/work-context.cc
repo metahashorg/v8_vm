@@ -40,7 +40,8 @@ WorkContext* WorkContext::New(
 WorkContext::WorkContext() {}
 
 void WorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
-  V8_LOG_FUNCTION_BODY() ;
+  V8_LOG_FUNCTION_BODY_WITH_MSG(
+      snapshot ? "With a snapshot" : "Without a snapshot") ;
 
   if (isolate) {
     isolate_ = isolate ;
@@ -95,7 +96,8 @@ SnapshotWorkContext::SnapshotWorkContext(StartupData* snapshot_out)
 }
 
 void SnapshotWorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
-  V8_LOG_FUNCTION_BODY() ;
+  V8_LOG_FUNCTION_BODY_WITH_MSG(
+      snapshot ? "With a snapshot" : "Without a snapshot") ;
 
   DCHECK(snapshot_out_) ;
 

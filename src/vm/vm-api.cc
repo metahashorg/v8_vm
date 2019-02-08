@@ -727,12 +727,28 @@ void PrintLogMessage(
 }
 
 FunctionBodyLog::FunctionBodyLog(
-    const char* function, const char* file, std::int32_t line, bool log_flag)
+    const char* function, const char* file, std::int32_t line, bool log_flag,
+    const char* msg, ...)
   : function_(function), file_(file), line_(line), log_flag_(log_flag),
     beginning_time_(new Time(Time::Now())) {
+  std::string msg_str ;
+  if (msg && msg[0] != '\0') {
+    va_list ap ;
+    va_start(ap, msg) ;
+    msg_str = vi::StringPrintV(msg, ap) ;
+    va_end(ap) ;
+  }
+
   if (log_flag_) {
-    V8_LOG(
-        LogLevels::Verbose, file_, line_, "\'%s\' - the beginning", function_) ;
+    if (msg_str.empty()) {
+      V8_LOG(
+          LogLevels::Verbose, file_, line_, "\'%s\' - the beginning",
+          function_) ;
+    } else {
+      V8_LOG(
+          LogLevels::Verbose, file_, line_, "\'%s\' - the beginning - %s",
+          function_, msg_str.c_str()) ;
+    }
   }
 }
 
