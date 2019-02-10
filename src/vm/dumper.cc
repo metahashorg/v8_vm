@@ -160,6 +160,7 @@ class ValueSerializer {
   void SerializeArray(Local<Array> value, uint64_t id, JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, JsonGap& gap) ;
   void SerializeBoolean(Local<Boolean> value, uint64_t id, JsonGap& gap) ;
+  void SerializeDate(Local<Date> value, uint64_t id, JsonGap& gap) ;
   void SerializeException(TryCatch& try_catch, JsonGap& gap) ;
   void SerializeFunction(Local<Function> value, uint64_t id, JsonGap& gap) ;
   void SerializeKeyValueArray(Local<Array> value, JsonGap& gap) ;
@@ -189,6 +190,19 @@ class ValueSerializer {
 
   DISALLOW_COPY_AND_ASSIGN(ValueSerializer) ;
 };
+
+// Converts double to string
+std::string DoubleToUtf8(double val) {
+  if (std::isnan(val)) {
+    return kJsonValueNaN ;
+  } else if (std::isinf(val)) {
+    return (val == std::numeric_limits<double>::infinity() ?
+                kJsonValueInfinity : kJsonValueNegativeInfinity) ;
+  }
+
+  // TODO: Use "string-number-conversions.h": DoubleToString(...)
+  return std::to_string(val) ;
+}
 
 // Checks a string is a number
 bool IsNumber(const char* str) {
@@ -287,6 +301,25 @@ void ValueSerializer::SerializeBoolean(
   *result_ << kJsonComma[gap] << child_gap ;
   *result_ << kJsonFieldValue[gap]
       << (value->Value() ? kJsonValueTrue : kJsonValueFalse) ;
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeDate(
+    Local<Date> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::Boolean)) ;
+  *result_ << kJsonComma[gap] << child_gap ;
+  *result_ << kJsonFieldValue[gap] << DoubleToUtf8(value->ValueOf()) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldToString[gap]
+      << JSON_STRING(ValueToUtf8(context_, value).c_str()) ;
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
@@ -590,16 +623,7 @@ void ValueSerializer::SerializePrimitiveObject(
     *result_ << (real_value->ValueOf() ? kJsonValueTrue : kJsonValueFalse) ;
   } else if (value_type == ValueType::NumberObject) {
     Local<NumberObject> real_value = Local<NumberObject>::Cast(value) ;
-    double number_value = real_value->ValueOf() ;
-    if (std::isnan(number_value)) {
-      *result_ << kJsonValueNaN ;
-    } else if (std::isinf(number_value)) {
-      *result_ << (number_value == std::numeric_limits<double>::infinity() ?
-                   kJsonValueInfinity : kJsonValueNegativeInfinity) ;
-    } else {
-      // TODO: Use "string-number-conversions.h": DoubleToString(...)
-      *result_ << std::to_string(number_value) ;
-    }
+    *result_ << DoubleToUtf8(real_value->ValueOf()) ;
   } else if (value_type == ValueType::StringObject) {
     Local<StringObject> real_value = Local<StringObject>::Cast(value) ;
     SerializeValue(real_value->ValueOf(), child_gap) ;
@@ -710,6 +734,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
   } else if (value_type == ValueType::Boolean) {
     SerializeBoolean(Local<Boolean>::Cast(value), id, gap) ;
     return ;
+  } else if (value_type == ValueType::Date) {
+    SerializeDate(Local<Date>::Cast(value), id, gap) ;
+    return ;
   } else if (value_type == ValueType::Function) {
     SerializeFunction(Local<Function>::Cast(value), id, gap) ;
     return ;
@@ -742,14 +769,10 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
     return ;
   }
 
-#ifdef DEBUG
-  USE(kJsonValueUnknown) ;
-  *result_ << JSON_STRING(
-      "Don't have a serializer for \'" +
-      std::string(ValueTypeToUtf8(value_type)) + "\'") ;
-#else
+  V8_LOG_ERR(
+      errUnknown, "Don't have a serializer for \'%s\'",
+      ValueTypeToUtf8(value_type)) ;
   *result_ << kJsonValueUnknown ;
-#endif  // DEBUG
 }
 
 void ValueSerializer::SerializeValueArray(Local<Array> value, JsonGap& gap) {

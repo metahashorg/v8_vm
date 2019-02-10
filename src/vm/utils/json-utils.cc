@@ -93,7 +93,9 @@ std::string EncodeJsonString(const std::string& str) {
   for (int index = 0, length = (int)str.length(); index < length; ++index) {
     if (!DoNotEscape(str.at(index))) {
       result.append(str.c_str() + begin, index - begin) ;
-      result += &JsonEscapeTable[str.at(index) * kJsonEscapeTableEntrySize] ;
+      result += &JsonEscapeTable[
+          static_cast<std::uint8_t>(str.at(index)) *
+          kJsonEscapeTableEntrySize] ;
       begin = index + 1 ;
     }
   }

@@ -6,6 +6,7 @@
 #define V8_VM_UTILS_VM_UTILS_H_
 
 #include <cstring>
+#include <string>
 
 #include "include/v8-vm-log.h"
 #include "src/vm/utils/string-printf.h"
@@ -156,9 +157,18 @@ static inline std::string ValueToUtf8(Isolate* isolate, T value) {
     return "" ;
   }
 
-  Local<String> value_as_string = value_as_value->ToString() ;
+  TryCatch try_catch(isolate) ;
+  Local<String> value_as_string ;
+  if (!value_as_value->ToString(isolate->GetCurrentContext()).
+          ToLocal(&value_as_string)) {
+    Error result = errJSUnknown ;
+    V8_ERROR_CREATE_BY_TRY_CATCH(
+        isolate->GetCurrentContext(), result, try_catch) ;
+    return "" ;
+  }
+
   v8::String::Utf8Value str(isolate, value_as_string) ;
-  return *str ? *str : "" ;
+  return *str ? std::string(*str, str.length()) : "" ;
 }
 
 template <class T>
@@ -166,7 +176,7 @@ static inline std::string ValueToUtf8(Local<Context> context, T value) {
   if (context.IsEmpty()) {
     V8_LOG_ERR(errInvalidArgument, "Context is null") ;
     return "" ;
-}
+  }
 
   return ValueToUtf8(context->GetIsolate(), value) ;
 }
