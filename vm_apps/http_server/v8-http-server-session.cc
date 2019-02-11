@@ -661,8 +661,7 @@ Error V8HttpServerSession::ProcessSession(
 Error V8HttpServerSession::WriteErrorResponseBody(
     Request* request, const Error& error, HttpResponseInfo& response) {
   std::ostringstream http_body ;
-  JsonGapArray gaps ;
-  JsonGap root_gap(gaps, json_formatted_, 0) ;
+  JsonGap root_gap(json_formatted_, 0) ;
   JsonGap child_gap(root_gap) ;
   http_body << kJsonLeftBracket[root_gap] ;
 
@@ -864,8 +863,7 @@ Error V8HttpServerSession::RunCommandScript() {
 
 Error V8HttpServerSession::WriteResponseBody() {
   std::ostringstream http_body ;
-  JsonGapArray gaps ;
-  JsonGap root_gap(gaps, json_formatted_, 0) ;
+  JsonGap root_gap(json_formatted_, 0) ;
   JsonGap child_gap(root_gap) ;
   http_body << kJsonLeftBracket[root_gap] ;
 

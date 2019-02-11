@@ -43,16 +43,25 @@ V8_EXPORT std::string EncodeJsonString(const std::string& str) ;
 // Class-wrapper of Json gaps if we use a formatted ouput
 class JsonGap {
  public:
-  JsonGap(JsonGapArray& gaps, FormattedJson formatted, int index)
+  JsonGap(
+      const std::shared_ptr<JsonGapArray>& gaps, FormattedJson formatted,
+      int index)
     : gaps_(gaps), formatted_(formatted), index_(index) {
-    if (gaps.size() == 0) {
-      gaps.push_back("") ;
+    if (!gaps) {
+      gaps_ = std::make_shared<JsonGapArray>() ;
     }
 
-    for (int i = (int)gaps.size(); i <= index; ++i) {
-      gaps.push_back(kJsonGap[*this] + gaps[i - 1]) ;
+    if (gaps_->size() == 0) {
+      gaps_->push_back("") ;
+    }
+
+    for (int i = static_cast<int>(gaps_->size()); i <= index; ++i) {
+      gaps->push_back(kJsonGap[*this] + (*gaps)[i - 1]) ;
     }
   }
+
+  JsonGap(FormattedJson formatted, int index)
+    : JsonGap(nullptr, formatted, index) {}
 
   JsonGap(const JsonGap& parent)
     : JsonGap(parent.gaps_, parent.formatted_, parent.index_ + 1) {}
@@ -60,7 +69,7 @@ class JsonGap {
   int index() const { return index_ ; }
 
   operator const char*() const {
-    return gaps_[index_].c_str() ;
+    return (*gaps_)[index_].c_str() ;
   }
 
   operator int() const {
@@ -68,7 +77,7 @@ class JsonGap {
   }
 
  private:
-  JsonGapArray& gaps_ ;
+  std::shared_ptr<JsonGapArray> gaps_ ;
   FormattedJson formatted_ ;
   int index_ ;
 };

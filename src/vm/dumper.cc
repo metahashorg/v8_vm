@@ -181,7 +181,6 @@ class ValueSerializer {
   std::string ValueToField(Local<Value> value, JsonGap& gap) ;
 
   Local<Context> context_ ;
-  JsonGapArray gaps_ ;
   JsonGap default_gap_ ;
   std::map<i::Object*, uint64_t> processed_values_ ;
   std::ostream* result_ = nullptr ;
@@ -239,7 +238,7 @@ const uint64_t ValueSerializer::kEmptyId = static_cast<uint64_t>(-1) ;
 
 ValueSerializer::ValueSerializer(
     Local<Context> context, FormattedJson default_format)
-  : context_(context), default_gap_(gaps_, default_format, 0) {}
+  : context_(context), default_gap_(default_format, 0) {}
 
 void ValueSerializer::Serialize(
     Local<Value> value, std::ostream& result, JsonGap* gap /*= nullptr*/) {
@@ -1073,8 +1072,7 @@ Error CreateHeapGraphDump(
   HeapProfiler* heap_profile = isolate->GetHeapProfiler() ;
   const HeapSnapshot* heap_shapshort = heap_profile->TakeHeapSnapshot() ;
   if (heap_shapshort) {
-    JsonGapArray gaps ;
-    JsonGap root_gap(gaps, formatted, 0) ;
+    JsonGap root_gap(formatted, 0) ;
     JsonGap child_gap(root_gap) ;
     result << kJsonLeftBracket[root_gap] ;
     result << child_gap << kJsonFieldNodeCount[root_gap]
