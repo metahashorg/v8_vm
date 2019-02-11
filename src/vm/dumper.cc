@@ -157,6 +157,8 @@ class ValueSerializer {
       Local<Value> value, std::ostream& result, JsonGap* gap = nullptr) ;
 
  private:
+  void SerializeArgumentsObject(
+      Local<Object> value, uint64_t id, JsonGap& gap) ;
   void SerializeArray(Local<Array> value, uint64_t id, JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, JsonGap& gap) ;
   void SerializeBoolean(Local<Boolean> value, uint64_t id, JsonGap& gap) ;
@@ -249,6 +251,21 @@ void ValueSerializer::Serialize(
   result_ = &result ;
   SerializeValue(value, *gap) ;
   result_ = nullptr ;
+}
+
+void ValueSerializer::SerializeArgumentsObject(
+    Local<Object> value, uint64_t id, JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  *result_ << child_gap << kJsonFieldId[gap] << id ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldType[gap]
+      << JSON_STRING(ValueTypeToUtf8(ValueType::ArgumentsObject)) ;
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
 void ValueSerializer::SerializeArray(
@@ -723,6 +740,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, JsonGap& gap) {
 
   if (value_type == ValueType::Undefined) {
     *result_ << kJsonValueUndefined ;
+    return ;
+  } else if (value_type == ValueType::ArgumentsObject) {
+    SerializeArgumentsObject(Local<Object>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Array) {
     SerializeArray(Local<Array>::Cast(value), id, gap) ;
