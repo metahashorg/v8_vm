@@ -59,6 +59,8 @@ class Logger {
     int thread_id = OS::GetCurrentThreadId() ;
     LogLevels log_level ;
     std::string message ;
+    std::mutex* flush_mutex = nullptr ;
+    std::condition_variable* flush_cv = nullptr ;
   };
 
  public:
@@ -69,6 +71,9 @@ class Logger {
 
   // Deinitializes the log
   static void DeinitializeLog() ;
+
+  // Flushes all streams of a log
+  static void FlushLog() ;
 
   // Prints a message into the log
   static void PrintLogMessage(
@@ -86,6 +91,9 @@ class Logger {
 
   // Creates a free file name
   std::string CreateFreeFileName(const std::string& suffix = "") ;
+
+  // Flushes all streams of a log
+  void Flush() ;
 
   // Initializes a log file
   void InitializeLogFile() ;
@@ -198,6 +206,12 @@ void Logger::PrintLogMessage(
   instance_->PrintMessage(log_level, error, file, line, msg, ap) ;
 }
 
+void Logger::FlushLog() {
+  if (instance_) {
+    instance_->Flush() ;
+  }
+}
+
 Logger::Logger(
     LogLevels log_level, const char* log_path, const char* file_prefix,
     std::int32_t log_file_size, bool stdout_flag, bool stderr_flag)
@@ -266,6 +280,25 @@ std::string Logger::CreateFreeFileName(const std::string& suffix) {
   OS::StandardOutputAutoLock locker ;
   printf("ERROR: Can't find a free name of a file\n") ;
   return "" ;
+}
+
+void Logger::Flush() {
+  std::mutex flush_mutex ;
+  std::condition_variable flush_cv ;
+  std::unique_lock<std::mutex> flush_locker(flush_mutex) ;
+
+  // Set a message about flushing
+  {
+    Message msg{
+        .log_level = LogLevels::None,
+        .flush_mutex = &flush_mutex,
+        .flush_cv = &flush_cv } ;
+    std::unique_lock<std::mutex> locker(message_lock_) ;
+    messages_.emplace_back(std::move(msg)) ;
+    message_cv_.notify_all() ;
+  }
+
+  flush_cv.wait(flush_locker) ;
 }
 
 void Logger::InitializeLogFile() {
@@ -406,8 +439,26 @@ void Logger::PrintMessage(const Message& msg) {
         time.minute, time.second, time.microsecond, field_delimiter_.c_str(),
         msg.thread_id, field_delimiter_.c_str(), msg_type,
         field_delimiter_.c_str(), msg.message.c_str()) ;
-  } else {
+  } else if (msg.log_level == LogLevels::Message) {
     msg_str = msg.message + "\n" ;
+  } else if (msg.flush_mutex) {
+    std::unique_lock<std::mutex> locker(*msg.flush_mutex) ;
+    if (log_file_) {
+      log_file_->flush() ;
+    }
+
+    if (stdout_flag_) {
+      std::cout.flush() ;
+    }
+
+    if (stderr_flag_) {
+      std::cerr.flush() ;
+    }
+
+    msg.flush_cv->notify_all() ;
+    return ;
+  } else {
+    return ;
   }
 
   if (log_file_) {
@@ -724,6 +775,10 @@ void PrintLogMessage(
   va_start(ap, msg) ;
   Logger::PrintLogMessage(log_level, &error, file, line, msg, ap) ;
   va_end(ap) ;
+}
+
+void FlushLog() {
+  Logger::FlushLog() ;
 }
 
 FunctionBodyLog::FunctionBodyLog(
