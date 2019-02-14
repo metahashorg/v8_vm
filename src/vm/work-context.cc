@@ -71,6 +71,31 @@ void WorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
 }
 
 SnapshotWorkContext::~SnapshotWorkContext() {
+  // TODO: Fix a program crash because of corrupted/released memory
+  //       or check it in new version V8
+  // Reproduction - When js-script has something like that:
+  // ...
+  // var variable = new Object(12345n) ; // BigIntObject
+  // ...
+  //
+  // Couple of stacks for help:
+  //
+  // v8::internal::HeapObject::SizeFromMap (src/objects-inl.h:2291)
+  // v8::internal::MarkCompactCollector::ProcessMarkingWorklistInternal<v8::internal::MarkCompactCollector::MarkingWorklistProcessingMode::kDefault> (src/heap/mark-compact.cc:1657)
+  // v8::internal::MarkCompactCollector::MarkLiveObjects (src/heap/mark-compact.cc:1795)
+  // v8::internal::MarkCompactCollector::CollectGarbage (src/heap/mark-compact.cc:461)
+  // v8::internal::Heap::MarkCompact (src/heap/heap.cc:1897)
+  // v8::internal::Heap::PerformGarbageCollection (src/heap/heap.cc:1746)
+  // v8::internal::Heap::CollectGarbage (src/heap/heap.cc:1403)
+  // v8::internal::Heap::CollectAllAvailableGarbage (src/heap/heap.cc:1251)
+  // v8::SnapshotCreator::CreateBlob (src/api.cc:766)
+  // v8::vm::internal::SnapshotWorkContext::~SnapshotWorkContext (src/vm/work-context.cc:86)
+  //
+  // v8::internal::HeapObject::SizeFromMap (src/objects-inl.h:2291)
+  // v8::internal::ConcurrentMarkingVisitor::ShouldVisit (src/heap/concurrent-marking.cc:93)
+  // v8::internal::ConcurrentMarking::Run (src/heap/concurrent-marking.cc:624)
+  // v8::platform::WorkerThread::Run (src/libplatform/worker-thread.cc:27)
+
   V8_LOG_FUNCTION_BODY() ;
 
   // We need to close context and scopes for obtaining a snapshot
