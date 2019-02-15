@@ -32,7 +32,6 @@ namespace internal {
   V NumberObject, Object, "Number object") \
   V StringObject, Object, "String object") \
   V SymbolObject, Object, "Symbol object") \
-  V NativeError, V8_ENUM_BIT_NO_PARENT, "NativeError") \
   V RegExp, Object, "RegExp") \
   V AsyncFunction, Function, "Async function") \
   V GeneratorFunction, Object, "Generator function") \
@@ -94,6 +93,7 @@ static inline ValueType GetValueType(Value* value) {
 
   if (!value) {
     DCHECK(false) ;
+    V8_LOG_ERR(errInvalidArgument, "Try to get a value type of \'null\'") ;
     return ValueType::Unknown ;
   }
 
@@ -102,6 +102,8 @@ static inline ValueType GetValueType(Value* value) {
       V8_CHECK_VALUE_TYPE, V8_VALUE_ENUM_ITEM_LIST, value, result)
 
   DCHECK_NE(ValueType::Unknown, result) ;
+  V8_LOG_ERR_WITH_FLAG(
+      result == ValueType::Unknown, errFailed, "Can't define a value type") ;
   return result ;
 }
 
@@ -117,6 +119,7 @@ static inline const char* ValueTypeToUtf8(ValueType type) {
       V8_TYPE_TO_STRING, V8_VALUE_ENUM_ITEM_LIST, type)
 
   DCHECK(false) ;
+  V8_LOG_ERR(errInvalidArgument, "Try to convert a unknown value type") ;
   return "Unknown" ;
 }
 

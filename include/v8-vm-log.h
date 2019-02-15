@@ -82,6 +82,8 @@ void V8_EXPORT DeinitializeLog() ;
   V8_LOG_WITH_ERROR( \
       ::v8::vm::LogLevels::Error, error, V8_PROJECT_FILE_NAME, __LINE__, \
       __VA_ARGS__)
+#define V8_LOG_ERR_WITH_FLAG(flag, error, ...) \
+  if (flag) { V8_LOG_ERR(error, __VA_ARGS__) ; }
 #define V8_LOG_WRN(error, ...) \
   V8_LOG_WITH_ERROR( \
       ::v8::vm::LogLevels::Warning, error, V8_PROJECT_FILE_NAME, __LINE__, \
