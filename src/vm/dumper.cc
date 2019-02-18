@@ -34,6 +34,7 @@ const char* kJsonFieldConstructorName[] =
 const char* kJsonFieldDebugName[] = JSON_ARRAY_OF_FIELD(debug_name) ;
 const char* kJsonFieldDisplayName[] = JSON_ARRAY_OF_FIELD(display_name) ;
 const char* kJsonFieldEdges[] = JSON_ARRAY_OF_FIELD(edges) ;
+const char* kJsonFieldFlags[] = JSON_ARRAY_OF_FIELD(flags) ;
 const char* kJsonFieldId[] = JSON_ARRAY_OF_FIELD(id) ;
 const char* kJsonFieldIndex[] = JSON_ARRAY_OF_FIELD(index) ;
 const char* kJsonFieldInferredName[] = JSON_ARRAY_OF_FIELD(inferred_name) ;
@@ -55,6 +56,7 @@ const char* kJsonFieldResourceName[] = JSON_ARRAY_OF_FIELD(resource_name) ;
 const char* kJsonFieldScriptLine[] = JSON_ARRAY_OF_FIELD(script_line) ;
 const char* kJsonFieldScriptColumn[] = JSON_ARRAY_OF_FIELD(script_column) ;
 const char* kJsonFieldSize[] = JSON_ARRAY_OF_FIELD(size) ;
+const char* kJsonFieldSource[] = JSON_ARRAY_OF_FIELD(source) ;
 const char* kJsonFieldToString[] = JSON_ARRAY_OF_FIELD(to_string) ;
 const char* kJsonFieldType[] = JSON_ARRAY_OF_FIELD(type) ;
 const char* kJsonFieldUndefinedType[] =
@@ -177,6 +179,7 @@ class ValueSerializer {
       Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeProcessedValue(
       Local<Value> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeRegExp(Local<RegExp> value, uint64_t id, const JsonGap& gap) ;
   void SerializeSet(Local<Set> value, uint64_t id, const JsonGap& gap) ;
   void SerializeString(Local<String> value, uint64_t id, const JsonGap& gap) ;
   void SerializeSymbol(Local<Symbol> value, uint64_t id, const JsonGap& gap) ;
@@ -322,6 +325,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type & ValueType::PrimitiveObjectTypes) {
     SerializePrimitiveObject(Local<Object>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::RegExp) {
+    SerializeRegExp(Local<RegExp>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Set) {
     SerializeSet(Local<Set>::Cast(value), id, gap) ;
@@ -705,6 +711,58 @@ void ValueSerializer::SerializeProcessedValue(
   }
 
   *result_ << child_gap << kJsonFieldProcessed[gap] << kJsonValueTrue ;
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeRegExp(
+    Local<RegExp> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::RegExp, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize source
+  *result_ << child_gap << kJsonFieldSource[gap]
+      << JSON_STRING(ValueToUtf8(context_, value->GetSource())) ;
+
+  // Serialize flags
+  static const char* flag_str_array[] = {
+    "\"Global\"", "\"IgnoreCase\"", "\"Multiline\"", "\"Sticky\"",
+    "\"Unicode\"", "\"DotAll\"" } ;
+  RegExp::Flags flags = value->GetFlags() ;
+  // Check that we know all flags
+  DCHECK_LE(flags , 1 << 5) ;
+
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldFlags[gap] ;
+  std::string flags_str ;
+  if (!flags) {
+    *result_ << kJsonEmptyArray[gap] ;
+  } else {
+    JsonGap flag_gap(child_gap) ;
+    *result_ << kJsonLeftSquareBracket[gap] ;
+    bool comma = false ;
+    for (int i = 0; i < 6; ++i) {
+      if (!((1 << i) & flags)) {
+        continue ;
+      }
+
+      if (comma) {
+        *result_ << kJsonComma[gap] ;
+      } else {
+        comma = true ;
+      }
+
+      *result_ << flag_gap << flag_str_array[i] ;
+    }
+
+    *result_ << kJsonNewLine[gap] << child_gap << kJsonRightSquareBracket[gap] ;
+  }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 

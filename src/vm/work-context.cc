@@ -75,7 +75,7 @@ SnapshotWorkContext::~SnapshotWorkContext() {
   //       or check it in new version V8
   // Reproduction - When js-script has something like that:
   // ...
-  // var variable = new Object(12345n) ; // BigIntObject
+  // var variable = new Object(12345n) ; // any BigIntObject
   // ...
   //
   // Couple of stacks for help:
@@ -95,6 +95,16 @@ SnapshotWorkContext::~SnapshotWorkContext() {
   // v8::internal::ConcurrentMarkingVisitor::ShouldVisit (src/heap/concurrent-marking.cc:93)
   // v8::internal::ConcurrentMarking::Run (src/heap/concurrent-marking.cc:624)
   // v8::platform::WorkerThread::Run (src/libplatform/worker-thread.cc:27)
+
+  // TODO: Fix a program crash in debug versions because of DCHECK(...)
+  //       or check it in new version V8
+  // Reproduction - When js-script has something like that:
+  // ...
+  // var variable = new RegExp("foo*") ; // any RegExp
+  // ...
+  //
+  // See - File:src/snapshot/partial-serializer.cc Line:83
+  // DCHECK(!startup_serializer_->ReferenceMapContains(obj));
 
   V8_LOG_FUNCTION_BODY() ;
 
