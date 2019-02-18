@@ -35,6 +35,7 @@ const char* kJsonFieldDebugName[] = JSON_ARRAY_OF_FIELD(debug_name) ;
 const char* kJsonFieldDisplayName[] = JSON_ARRAY_OF_FIELD(display_name) ;
 const char* kJsonFieldEdges[] = JSON_ARRAY_OF_FIELD(edges) ;
 const char* kJsonFieldFlags[] = JSON_ARRAY_OF_FIELD(flags) ;
+const char* kJsonFieldFunction[] = JSON_ARRAY_OF_FIELD(__function__) ;
 const char* kJsonFieldId[] = JSON_ARRAY_OF_FIELD(id) ;
 const char* kJsonFieldIndex[] = JSON_ARRAY_OF_FIELD(index) ;
 const char* kJsonFieldInferredName[] = JSON_ARRAY_OF_FIELD(inferred_name) ;
@@ -167,6 +168,8 @@ class ValueSerializer {
   void SerializeArgumentsObject(
       Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeArray(Local<Array> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeAsyncFunction(
+      Local<Function> value, uint64_t id, const JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, const JsonGap& gap) ;
   void SerializeBoolean(Local<Boolean> value, uint64_t id, const JsonGap& gap) ;
   void SerializeDate(Local<Date> value, uint64_t id, const JsonGap& gap) ;
@@ -302,6 +305,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
   } else if (value_type == ValueType::Array) {
     SerializeArray(Local<Array>::Cast(value), id, gap) ;
     return ;
+  } else if (value_type == ValueType::AsyncFunction) {
+    SerializeAsyncFunction(Local<Function>::Cast(value), id, gap) ;
+    return ;
   } else if (value_type == ValueType::BigInt) {
     SerializeBigInt(Local<BigInt>::Cast(value), id, gap) ;
     return ;
@@ -385,6 +391,21 @@ void ValueSerializer::SerializeArray(
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
   SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeAsyncFunction(
+    Local<Function> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::AsyncFunction, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize Function
+  *result_ << child_gap << kJsonFieldFunction[gap] ;
+  SerializeFunction(value, kEmptyId, child_gap) ;
 
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
