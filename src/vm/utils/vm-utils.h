@@ -93,9 +93,9 @@
   (~((~ V8_ENUM_BIT_NUMBER_TO_ENUM_TYPE(enum_name, 0)) << \
       enum_name ## _BitEnumHelper_ ## Count))
 
-#define V8_ENUM_BIT_IS_PARENT(val, item) (!(val & (~item)))
+#define V8_ENUM_BIT_IS_PARENT(val, item) (!(val & (~item)) && val != item)
 
-#define V8_ENUM_BIT_IS_CHILD(val, item) (!((~val) & item))
+#define V8_ENUM_BIT_IS_CHILD(val, item) (!((~val) & item) && val != item)
 
 #define V8_ENUM_BIT_GET_PARENT(enum_name, item_name) \
   static_cast<enum_name>((~ V8_ENUM_BIT_GET_ITEM_BIT(enum_name, item_name)) & \

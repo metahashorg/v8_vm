@@ -177,6 +177,8 @@ class ValueSerializer {
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
   void SerializeGeneratorFunction(
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeGeneratorObject(
+      Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeMap(Local<Map> value, uint64_t id, const JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, const JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, const JsonGap& gap) ;
@@ -324,6 +326,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::GeneratorFunction) {
     SerializeGeneratorFunction(Local<Function>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::GeneratorObject) {
+    SerializeGeneratorObject(Local<Object>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Map) {
     SerializeMap(Local<Map>::Cast(value), id, gap) ;
@@ -553,6 +558,22 @@ void ValueSerializer::SerializeGeneratorFunction(
   // Serialize Function
   *result_ << child_gap << kJsonFieldFunction[gap] ;
   SerializeFunction(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeGeneratorObject(
+    Local<Object> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(
+          id, ValueType::GeneratorObject, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize Object
+  *result_ << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
 
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
