@@ -34,7 +34,7 @@ namespace internal {
   V SymbolObject, Object, "Symbol object") \
   V RegExp, Object, "RegExp") \
   V AsyncFunction, Function, "Async function") \
-  V GeneratorFunction, Object, "Generator function") \
+  V GeneratorFunction, Function, "Generator function") \
   V GeneratorObject, Object, "Generator object (iterator)") \
   V Promise, Object, "Promise") \
   V Map, Object, "Map") \

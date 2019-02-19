@@ -100,12 +100,19 @@ SnapshotWorkContext::~SnapshotWorkContext() {
   //       or check it in new version V8
   // Reproduction - When js-script has something like that:
   // ...
-  // var variable = new RegExp("foo*") ; // any RegExp
+  // var variable ; // any NativeError
+  // try { eval("#") ; }
+  // catch(x) { variable = x ; }
   // ...
   // or
   // ...
   // var AsyncFunction = Object.getPrototypeOf(async function(){}).constructor ;
   // var variable = new AsyncFunction(...) ; // any AsyncFunction
+  // ...
+  // or
+  // ...
+  // var GeneratorFunction = Object.getPrototypeOf(function*(){}).constructor ;
+  // var variable = new GeneratorFunction(...) ; // any GeneratorFunction
   // ...
   //
   // See - File:src/snapshot/partial-serializer.cc Line:83

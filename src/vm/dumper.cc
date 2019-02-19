@@ -175,6 +175,8 @@ class ValueSerializer {
   void SerializeDate(Local<Date> value, uint64_t id, const JsonGap& gap) ;
   void SerializeFunction(
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeGeneratorFunction(
+      Local<Function> value, uint64_t id, const JsonGap& gap) ;
   void SerializeMap(Local<Map> value, uint64_t id, const JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, const JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, const JsonGap& gap) ;
@@ -319,6 +321,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Function) {
     SerializeFunction(Local<Function>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::GeneratorFunction) {
+    SerializeGeneratorFunction(Local<Function>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Map) {
     SerializeMap(Local<Map>::Cast(value), id, gap) ;
@@ -532,6 +537,22 @@ void ValueSerializer::SerializeFunction(
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
   SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeGeneratorFunction(
+    Local<Function> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(
+          id, ValueType::GeneratorFunction, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize Function
+  *result_ << child_gap << kJsonFieldFunction[gap] ;
+  SerializeFunction(value, kEmptyId, child_gap) ;
 
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
@@ -753,7 +774,7 @@ void ValueSerializer::SerializeRegExp(
     "\"Unicode\"", "\"DotAll\"" } ;
   RegExp::Flags flags = value->GetFlags() ;
   // Check that we know all flags
-  DCHECK_LE(flags , 1 << 5) ;
+  DCHECK_LE(flags , 0x3f) ;
 
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldFlags[gap] ;
   std::string flags_str ;
