@@ -77,7 +77,7 @@ void V8_EXPORT DeinitializeLog() ;
   ::v8::vm::PrintLogMessage((level), error, file, line, __VA_ARGS__)
 
 #define V8_LOG_MSG(...) \
-  V8_LOG(::v8::vm::LogLevels::Message, nullptr, 0, __VA_ARGS__)
+  V8_LOG(::v8::vm::LogLevels::Message, nullptr, 0, "$ " __VA_ARGS__)
 #define V8_LOG_ERR(error, ...) \
   V8_LOG_WITH_ERROR( \
       ::v8::vm::LogLevels::Error, error, V8_PROJECT_FILE_NAME, __LINE__, \
