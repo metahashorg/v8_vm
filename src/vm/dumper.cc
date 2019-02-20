@@ -43,6 +43,7 @@ const char* kJsonFieldInferredName[] = JSON_ARRAY_OF_FIELD(inferred_name) ;
 const char* kJsonFieldInternalFieldCount[] =
     JSON_ARRAY_OF_FIELD(internal_field_count) ;
 const char* kJsonFieldInternalFields[] = JSON_ARRAY_OF_FIELD(internal_fields) ;
+const char* kJsonFieldKey[] = JSON_ARRAY_OF_FIELD(key) ;
 const char* kJsonFieldLength[] = JSON_ARRAY_OF_FIELD(length) ;
 const char* kJsonFieldName[] = JSON_ARRAY_OF_FIELD(name) ;
 const char* kJsonFieldNativeError[] = JSON_ARRAY_OF_FIELD(native_error) ;
@@ -71,6 +72,7 @@ const char* kJsonFieldValue[] = JSON_ARRAY_OF_FIELD(value) ;
 const char kJsonValueException[] = R"("[exception]")" ;
 const char kJsonValueFalse[] = "false" ;
 const char kJsonValueInfinity[] = R"("Infinity")" ;
+const char kJsonValueInvalid[] = R"("[invalid]")" ;
 const char kJsonValueNaN[] = R"("NaN")" ;
 const char kJsonValueNegativeInfinity[] = R"("-Infinity")" ;
 const char kJsonValueNull[] = "null" ;
@@ -183,6 +185,7 @@ class ValueSerializer {
   void SerializeGeneratorObject(
       Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeMap(Local<Map> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeMapIterator(Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeNumber(Local<Number> value, uint64_t id, const JsonGap& gap) ;
   void SerializeObject(Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializePrimitiveObject(
@@ -336,6 +339,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Map) {
     SerializeMap(Local<Map>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::MapIterator) {
+    SerializeMapIterator(Local<Object>::Cast(value), id, gap) ;
     return ;
   } else if (value_type & ValueType::NumberTypes) {
     SerializeNumber(Local<Number>::Cast(value), id, gap) ;
@@ -600,6 +606,60 @@ void ValueSerializer::SerializeMap(
   *result_ << child_gap << kJsonFieldValue[gap] ;
   Local<Array> map = value->AsArray() ;
   SerializeKeyValueArray(map, child_gap) ;
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeMapIterator(
+    Local<Object> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::MapIterator, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize value
+  bool is_key_value = false ;
+  *result_ << child_gap << kJsonFieldValue[gap] ;
+  TryCatch try_catch(context_->GetIsolate()) ;
+  Local<Array> iterator_value ;
+  if (!value->PreviewEntries(&is_key_value).ToLocal(&iterator_value)) {
+    SerializeException(try_catch, child_gap) ;
+  } else if (iterator_value.IsEmpty() && iterator_value->Length() == 0) {
+    *result_ << kJsonValueNull ;
+  } else if (!is_key_value || (iterator_value->Length() & 1)) {
+    *result_ << kJsonValueInvalid ;
+  } else {
+    JsonGap value_gap(child_gap) ;
+    *result_ << kJsonLeftBracket[gap] ;
+
+    // Serialize key
+    *result_ << value_gap << kJsonFieldKey[gap] ;
+    v8::Local<v8::Value> key_value ;
+    if (!iterator_value->Get(context_, 0).ToLocal(&key_value)) {
+      SerializeException(try_catch, value_gap) ;
+    } else {
+      SerializeValue(key_value, value_gap) ;
+    }
+
+    *result_ << kJsonComma[gap] ;
+
+    // Serialize value
+    *result_ << value_gap << kJsonFieldValue[gap] ;
+    v8::Local<v8::Value> value_value ;
+    if (!iterator_value->Get(context_, 1).ToLocal(&value_value)) {
+      SerializeException(try_catch, value_gap) ;
+    } else {
+      SerializeValue(value_value, value_gap) ;
+    }
+
+    *result_ << kJsonNewLine[gap] << child_gap << kJsonRightBracket[gap] ;
+  }
+
 
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
