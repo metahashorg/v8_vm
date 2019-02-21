@@ -1134,12 +1134,12 @@ void ValueSerializer::SerializeKeyValueArray(
       comma = true ;
     }
 
-    *result_ << item_gap << kJsonLeftSquareBracket[gap] ;
+    *result_ << item_gap << kJsonLeftBracket[gap] ;
 
     TryCatch try_catch(context_->GetIsolate()) ;
 
     // Serialize key
-    *result_ << key_value_gap ;
+    *result_ << key_value_gap << kJsonFieldKey[gap] ;
     v8::Local<v8::Value> key_value ;
     if (!value->Get(context_, i).ToLocal(&key_value)) {
       SerializeException(try_catch, key_value_gap) ;
@@ -1150,7 +1150,7 @@ void ValueSerializer::SerializeKeyValueArray(
     *result_ << kJsonComma[gap] ;
 
     // Serialize value
-    *result_ << key_value_gap ;
+    *result_ << key_value_gap << kJsonFieldValue[gap] ;
     v8::Local<v8::Value> value_value ;
     if (!value->Get(context_, i + 1).ToLocal(&value_value)) {
       SerializeException(try_catch, key_value_gap) ;
@@ -1158,7 +1158,7 @@ void ValueSerializer::SerializeKeyValueArray(
       SerializeValue(value_value, key_value_gap) ;
     }
 
-    *result_ << kJsonNewLine[gap] << item_gap << kJsonRightSquareBracket[gap] ;
+    *result_ << kJsonNewLine[gap] << item_gap << kJsonRightBracket[gap] ;
   }
 
   *result_ << kJsonNewLine[gap] << gap << kJsonRightSquareBracket[gap] ;
