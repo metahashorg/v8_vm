@@ -48,14 +48,11 @@ void V8Handle::Initialize(const char* app_path, int* argc, char** argv) {
   platform_ = platform::NewDefaultPlatform() ;
   V8::InitializePlatform(platform_.get()) ;
   V8::Initialize() ;
-  create_params_.array_buffer_allocator =
-      ArrayBuffer::Allocator::NewDefaultAllocator() ;
 }
 
 void V8Handle::Deinitialize() {
   V8::Dispose() ;
   V8::ShutdownPlatform() ;
-  delete create_params_.array_buffer_allocator ;
   platform_ = nullptr ;
 }
 

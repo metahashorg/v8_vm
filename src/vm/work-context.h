@@ -58,6 +58,7 @@ class WorkContext {
   Type type_ = Type::Simple ;
   std::unique_ptr<Data> snapshot_data_ ;
   std::unique_ptr<StartupData> snapshot_ ;
+  std::unique_ptr<ArrayBuffer::Allocator> array_buffer_allocator_ ;
   Isolate* isolate_ = nullptr ;
   std::unique_ptr<Isolate::Scope> iscope_ ;
   std::unique_ptr<InitializedHandleScope> scope_ ;
@@ -66,28 +67,6 @@ class WorkContext {
   bool dispose_isolate_ = true ;
 
   DISALLOW_COPY_AND_ASSIGN(WorkContext) ;
-};
-
-class SnapshotWorkContext : public WorkContext {
- public:
-  // Destructor
-  ~SnapshotWorkContext() override ;
-
- protected:
-  // Constructor
-  SnapshotWorkContext(StartupData* snapshot_out) ;
-
-  // Initializes SnapshotWorkContext
-  void Initialize(Isolate* isolate, StartupData* snapshot) override ;
-
-  StartupData* snapshot_out_ = nullptr ;
-  std::unique_ptr<SnapshotCreator> snapshot_creator_ ;
-
-  SnapshotWorkContext() = delete ;
-
-  DISALLOW_COPY_AND_ASSIGN(SnapshotWorkContext) ;
-
-  friend class WorkContext ;
 };
 
 // Converts a v8::Value (e.g. v8::String) into a utf8-string

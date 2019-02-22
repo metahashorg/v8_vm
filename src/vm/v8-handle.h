@@ -20,15 +20,12 @@ class V8Handle {
   void Initialize(const char* app_path, int* argc, char** argv) ;
   void Deinitialize() ;
 
-  const Isolate::CreateParams& create_params() const { return create_params_ ; }
-
   static base::LazyInstance<V8Handle>::type instance_ ;
 
  private:
   V8Handle() ;
 
   std::unique_ptr<Platform> platform_ ;
-  Isolate::CreateParams create_params_ ;
 
   DISALLOW_COPY_AND_ASSIGN(V8Handle) ;
 
