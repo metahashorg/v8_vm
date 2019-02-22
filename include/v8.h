@@ -8657,6 +8657,12 @@ class V8_EXPORT SnapshotCreator {
   SnapshotCreator(Isolate* isolate,
                   const intptr_t* external_references = nullptr,
                   StartupData* existing_blob = nullptr);
+  // @metahash
+  SnapshotCreator(Isolate* isolate,
+                  ArrayBuffer::Allocator* array_buffer_allocator,
+                  const intptr_t* external_references = nullptr,
+                  StartupData* existing_blob = nullptr) ;
+  // @metahash end
 
   /**
    * Create and enter an isolate, and set it up for serialization.
@@ -8668,6 +8674,11 @@ class V8_EXPORT SnapshotCreator {
    */
   SnapshotCreator(const intptr_t* external_references = nullptr,
                   StartupData* existing_blob = nullptr);
+  // @metahash
+  SnapshotCreator(ArrayBuffer::Allocator* array_buffer_allocator,
+                  const intptr_t* external_references = nullptr,
+                  StartupData* existing_blob = nullptr) ;
+  // @metahash end
 
   ~SnapshotCreator();
 

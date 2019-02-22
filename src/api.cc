@@ -584,13 +584,27 @@ struct SnapshotCreatorData {
 
 }  // namespace
 
+// @metahash
+// SnapshotCreator::SnapshotCreator(Isolate* isolate,
+//                                  const intptr_t* external_references,
+//                                  StartupData* existing_snapshot) {
 SnapshotCreator::SnapshotCreator(Isolate* isolate,
                                  const intptr_t* external_references,
+                                 StartupData* existing_snapshot)
+    : SnapshotCreator(isolate, nullptr, external_references,
+                      existing_snapshot) {}
+SnapshotCreator::SnapshotCreator(Isolate* isolate,
+                                 ArrayBuffer::Allocator* array_buffer_allocator,
+                                 const intptr_t* external_references,
                                  StartupData* existing_snapshot) {
+// @metahash end
   SnapshotCreatorData* data = new SnapshotCreatorData(isolate);
   data->isolate_ = isolate;
   i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  internal_isolate->set_array_buffer_allocator(&data->allocator_);
+  // @metahash
+  // internal_isolate->set_array_buffer_allocator(&data->allocator_);
+  internal_isolate->set_array_buffer_allocator(
+      array_buffer_allocator ? array_buffer_allocator : &data->allocator_) ;
   internal_isolate->set_api_external_references(external_references);
   internal_isolate->enable_serializer();
   isolate->Enter();
@@ -606,10 +620,22 @@ SnapshotCreator::SnapshotCreator(Isolate* isolate,
   data_ = data;
 }
 
+// @metahash
+// SnapshotCreator::SnapshotCreator(const intptr_t* external_references,
+//                                  StartupData* existing_snapshot)
+//     : SnapshotCreator(reinterpret_cast<Isolate*>(new i::Isolate()),
+//                       external_references, existing_snapshot) {}
 SnapshotCreator::SnapshotCreator(const intptr_t* external_references,
                                  StartupData* existing_snapshot)
     : SnapshotCreator(reinterpret_cast<Isolate*>(new i::Isolate()),
-                      external_references, existing_snapshot) {}
+                      nullptr, external_references, existing_snapshot) {}
+SnapshotCreator::SnapshotCreator(ArrayBuffer::Allocator* array_buffer_allocator,
+                                 const intptr_t* external_references,
+                                 StartupData* existing_snapshot)
+    : SnapshotCreator(reinterpret_cast<Isolate*>(new i::Isolate()),
+                      array_buffer_allocator, external_references,
+                      existing_snapshot) {}
+// @metahash end
 
 SnapshotCreator::~SnapshotCreator() {
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
