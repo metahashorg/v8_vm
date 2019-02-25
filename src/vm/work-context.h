@@ -55,6 +55,12 @@ class WorkContext {
   // Initializes WorkContext
   virtual void Initialize(Isolate* isolate, StartupData* snapshot) ;
 
+  // Serialize/deserialize internal fields
+  static StartupData SerializeInternalFieldCallback(
+      Local<Object> holder, int index, void* data) ;
+  static void DeserializeInternalFieldCallback(
+      Local<Object> holder, int index, StartupData payload, void* data) ;
+
   Type type_ = Type::Simple ;
   std::unique_ptr<Data> snapshot_data_ ;
   std::unique_ptr<StartupData> snapshot_ ;

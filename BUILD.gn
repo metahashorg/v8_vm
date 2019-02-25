@@ -2469,6 +2469,7 @@ v8_source_set("v8_base") {
     "src/vm/utils/string-printf.h", # @metahash
     "src/vm/utils/string-utils.cc", # @metahash
     "src/vm/utils/string-utils.h", # @metahash
+    "src/vm/utils/sys-byteorder.h", # @metahash
     "src/vm/utils/vm-utils.h", # @metahash
     "src/vm/v8-handle.cc", # @metahash
     "src/vm/v8-handle.h", # @metahash
@@ -3506,6 +3507,7 @@ v8_executable("v8_http_server") {
 
   sources = [
     "src/vm/utils/scoped-clear-errno.h",
+    "src/vm/utils/sys-byteorder.h",
     "third_party/icu/source/common/unicode/utf16.h",
     "third_party/icu/source/common/unicode/utf8.h",
     "vm_apps/http_server/address-family.cc",
@@ -3541,7 +3543,6 @@ v8_executable("v8_http_server") {
     "vm_apps/http_server/socket.h",
     "vm_apps/http_server/stream-socket.h",
     "vm_apps/http_server/sys-addrinfo.h",
-    "vm_apps/http_server/sys-byteorder.h",
     "vm_apps/http_server/tcp-client-socket.cc",
     "vm_apps/http_server/tcp-client-socket.h",
     "vm_apps/http_server/tcp-server-session.cc",

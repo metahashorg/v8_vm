@@ -14,6 +14,10 @@
 #include "src/base/build_config.h"
 #include "src/base/compiler-specific.h"
 
+namespace v8 {
+namespace vm {
+namespace internal {
+
 // Returns a value with all bytes in |x| swapped, i.e. reverses the endianness.
 inline std::uint16_t ByteSwap(std::uint16_t x) {
 #if defined(V8_COMPILER_MSVC)
@@ -125,5 +129,9 @@ inline std::uint64_t HostToNet64(std::uint64_t x) {
   return x ;
 #endif
 }
+
+}  // namespace internal
+}  // namespace vm
+}  // namespace v8
 
 #endif  // V8_VM_APPS_HTTP_SERVER_SYS_BYTEORDER_H_

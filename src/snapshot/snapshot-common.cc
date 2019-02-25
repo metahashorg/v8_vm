@@ -209,6 +209,7 @@ void ProfileDeserialization(
     const SnapshotData* startup_snapshot, const SnapshotData* builtin_snapshot,
     const std::vector<SnapshotData*>& context_snapshots) {
   if (FLAG_profile_deserialization) {
+    base::OS::StandardOutputAutoLock locker ;
     int startup_total = 0;
     PrintF("Deserialization will reserve:\n");
     for (const auto& reservation : startup_snapshot->Reservations()) {

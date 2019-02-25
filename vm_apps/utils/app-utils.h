@@ -16,6 +16,7 @@
 #include "src/vm/utils/scoped-clear-errno.h"
 #include "src/vm/utils/string-printf.h"
 #include "src/vm/utils/string-utils.h"
+#include "src/vm/utils/sys-byteorder.h"
 #include "src/vm/utils/vm-utils.h"
 #include "vm_apps/utils/command-line.h"
 
@@ -42,6 +43,7 @@ using v8::vm::internal::EncodeJsonString ;
 using v8::vm::internal::EqualsCaseInsensitiveASCII ;
 using v8::vm::internal::FilePath ;
 using v8::vm::internal::GetExecutablePath ;
+using v8::vm::internal::HostToNet16 ;
 using v8::vm::internal::JsonGap ;
 using v8::vm::internal::JsonGapArray ;
 using v8::vm::internal::kJsonComma ;
@@ -50,6 +52,7 @@ using v8::vm::internal::kJsonLeftSquareBracket ;
 using v8::vm::internal::kJsonNewLine ;
 using v8::vm::internal::kJsonRightBracket ;
 using v8::vm::internal::kJsonRightSquareBracket ;
+using v8::vm::internal::NetToHost16 ;
 using v8::vm::internal::ScopedClearErrno ;
 using v8::vm::internal::StringAppendF ;
 using v8::vm::internal::StringPrintf ;

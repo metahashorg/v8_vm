@@ -22,6 +22,9 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   void* AllocateUninitialized(size_t length) override ;
   void Free(void* data, size_t length) override ;
 
+  // Return size of memory block
+  size_t GetBlockSize(void* data) ;
+
  private:
   std::map<void*, std::size_t> allocation_map_ ;
 };
@@ -71,6 +74,17 @@ void ArrayBufferAllocator::Free(void* data, size_t length) {
       "Freed for ArrayBuffer - pointer:0x%p length:%" PRIuS, data, length) ;
   allocation_map_.erase(data) ;
   free(data) ;
+}
+
+size_t ArrayBufferAllocator::GetBlockSize(void* data) {
+  DCHECK(allocation_map_.find(data) != allocation_map_.end()) ;
+  auto block_info = allocation_map_.find(data) ;
+  if (allocation_map_.find(data) == allocation_map_.end()) {
+    V8_LOG_ERR(errUnknown, "Unknown memory address: %p", data) ;
+    return 0 ;
+  }
+
+  return block_info->second ;
 }
 
 class SnapshotWorkContext : public WorkContext {
@@ -179,7 +193,9 @@ void SnapshotWorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
 
   WorkContext::Initialize(snapshot_creator_->GetIsolate(), nullptr) ;
 
-  snapshot_creator_->SetDefaultContext(context_) ;
+  snapshot_creator_->SetDefaultContext(
+      context_,
+      SerializeInternalFieldsCallback(&SerializeInternalFieldCallback, this)) ;
 }
 
 }  // namespace
@@ -243,8 +259,74 @@ void WorkContext::Initialize(Isolate* isolate, StartupData* snapshot) {
 
   iscope_.reset(new Isolate::Scope(isolate_)) ;
   scope_.reset(new InitializedHandleScope(isolate_)) ;
-  context_ = Context::New(isolate_) ;
+  context_ = Context::New(
+      isolate_, nullptr, MaybeLocal<ObjectTemplate>(), MaybeLocal<Value>(),
+      DeserializeInternalFieldsCallback(
+          &DeserializeInternalFieldCallback, this)) ;
   cscope_.reset(new Context::Scope(context_)) ;
+}
+
+StartupData WorkContext::SerializeInternalFieldCallback(
+    Local<Object> holder, int index, void* data) {
+  WorkContext* context = reinterpret_cast<WorkContext*>(data) ;
+  if (!context) {
+    V8_LOG_ERR(errUnknown, "Context is omitted") ;
+    return {nullptr, 0} ;
+  }
+
+  void* field = holder->GetAlignedPointerFromInternalField(index) ;
+  StartupData result = {nullptr, 0} ;
+  if (field) {
+    ArrayBufferAllocator* allocator = reinterpret_cast<ArrayBufferAllocator*>(
+        context->array_buffer_allocator_.get()) ;
+    if (!allocator) {
+      V8_LOG_ERR(errObjNotInit, "Allocator isn't initialized") ;
+      return {nullptr, 0} ;
+    }
+
+    size_t field_size = allocator->GetBlockSize(field) ;
+    if (field_size) {
+      char* buffer = new char[field_size] ;
+      result.data = buffer ;
+      memcpy(buffer, field, field_size) ;
+      result.raw_size = static_cast<int>(field_size) ;
+    }
+  }
+
+  V8_LOG_INF(
+      "Serialized internal filed: context:%p index:%d pointer:%p size:%d",
+      data, index, field, result.raw_size) ;
+  return result ;
+}
+
+void WorkContext::DeserializeInternalFieldCallback(
+    Local<Object> holder, int index, StartupData payload, void* data) {
+  WorkContext* context = reinterpret_cast<WorkContext*>(data) ;
+  if (!context) {
+    V8_LOG_ERR(errUnknown, "Context is omitted") ;
+    return ;
+  }
+
+  V8_LOG_INF(
+      "Deserialized internal filed: context:%p index:%d size:%" PRIuS,
+      data, index, payload.raw_size) ;
+
+  if (payload.raw_size == 0) {
+    holder->SetAlignedPointerInInternalField(index, nullptr) ;
+    return ;
+  }
+
+  ArrayBufferAllocator* allocator = reinterpret_cast<ArrayBufferAllocator*>(
+      context->array_buffer_allocator_.get()) ;
+  if (!allocator) {
+    V8_LOG_ERR(errObjNotInit, "Allocator isn't initialized") ;
+    holder->SetAlignedPointerInInternalField(index, nullptr) ;
+    return ;
+  }
+
+  void* field = allocator->AllocateUninitialized(payload.raw_size) ;
+  memcpy(field, payload.data, payload.raw_size) ;
+  holder->SetAlignedPointerInInternalField(index, field) ;
 }
 
 }  // namespace internal

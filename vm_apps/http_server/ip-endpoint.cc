@@ -20,7 +20,7 @@
 #include <tuple>
 
 #include "vm_apps/http_server/ip-address.h"
-#include "vm_apps/http_server/sys-byteorder.h"
+#include "vm_apps/utils/app-utils.h"
 
 #if defined(V8_OS_WIN)
 #include "vm_apps/http_server/winsock-utils.h"
