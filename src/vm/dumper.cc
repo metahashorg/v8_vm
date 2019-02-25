@@ -29,8 +29,13 @@ namespace {
 typedef std::set<SnapshotObjectId> ProcessedNodeArray ;
 
 // Json field name list
+const char* kJsonFieldAllocationData[] = JSON_ARRAY_OF_FIELD(allocation_data) ;
+const char* kJsonFieldAllocationLength[] =
+    JSON_ARRAY_OF_FIELD(allocation_length) ;
+const char* kJsonFieldAllocationMode[] = JSON_ARRAY_OF_FIELD(allocation_mode) ;
 const char* kJsonFieldConstructorName[] =
     JSON_ARRAY_OF_FIELD(constructor_name) ;
+const char* kJsonFieldData[] = JSON_ARRAY_OF_FIELD(data) ;
 const char* kJsonFieldDebugName[] = JSON_ARRAY_OF_FIELD(debug_name) ;
 const char* kJsonFieldDisplayName[] = JSON_ARRAY_OF_FIELD(display_name) ;
 const char* kJsonFieldEdges[] = JSON_ARRAY_OF_FIELD(edges) ;
@@ -43,6 +48,8 @@ const char* kJsonFieldInferredName[] = JSON_ARRAY_OF_FIELD(inferred_name) ;
 const char* kJsonFieldInternalFieldCount[] =
     JSON_ARRAY_OF_FIELD(internal_field_count) ;
 const char* kJsonFieldInternalFields[] = JSON_ARRAY_OF_FIELD(internal_fields) ;
+const char* kJsonFieldIsExternal[] = JSON_ARRAY_OF_FIELD(is_external) ;
+const char* kJsonFieldIsNeuterable[] = JSON_ARRAY_OF_FIELD(is_neuterable) ;
 const char* kJsonFieldKey[] = JSON_ARRAY_OF_FIELD(key) ;
 const char* kJsonFieldLength[] = JSON_ARRAY_OF_FIELD(length) ;
 const char* kJsonFieldName[] = JSON_ARRAY_OF_FIELD(name) ;
@@ -173,6 +180,8 @@ class ValueSerializer {
   void SerializeArgumentsObject(
       Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeArray(Local<Array> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeArrayBuffer(
+      Local<ArrayBuffer> value, uint64_t id, const JsonGap& gap) ;
   void SerializeAsyncFunction(
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, const JsonGap& gap) ;
@@ -274,6 +283,21 @@ bool IsNumber(const char* str) {
   return *str == '\0' ;
 }
 
+std::string HexEncode(const void* bytes, size_t size) {
+  static const char kHexChars[] = "0123456789abcdef" ;
+
+  // Each input byte creates two output hex characters.
+  std::string ret(size * 2, '\0') ;
+
+  for (size_t i = 0; i < size; ++i) {
+    char b = reinterpret_cast<const char*>(bytes)[i] ;
+    ret[(i * 2)] = kHexChars[(b >> 4) & 0xf] ;
+    ret[(i * 2) + 1] = kHexChars[b & 0xf] ;
+  }
+
+  return ret ;
+}
+
 const uint64_t ValueSerializer::kEmptyId = static_cast<uint64_t>(-1) ;
 
 ValueSerializer::ValueSerializer(
@@ -318,6 +342,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Array) {
     SerializeArray(Local<Array>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::ArrayBuffer) {
+    SerializeArrayBuffer(Local<ArrayBuffer>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::AsyncFunction) {
     SerializeAsyncFunction(Local<Function>::Cast(value), id, gap) ;
@@ -416,6 +443,45 @@ void ValueSerializer::SerializeArray(
   // Serialize a array content
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldValue[gap] ;
   SerializeValueArray(value, child_gap) ;
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeArrayBuffer(
+    Local<ArrayBuffer> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::ArrayBuffer, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize value
+  ArrayBuffer::Contents contents = value->GetContents() ;
+  *result_ << child_gap << kJsonFieldAllocationMode[gap]
+      << (contents.AllocationMode() ==
+              ArrayBuffer::Allocator::AllocationMode::kNormal ?
+          "\"Normal\"" : "\"Reservation\"") ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldData[gap]
+      << JSON_STRING(HexEncode(contents.Data(), contents.ByteLength())) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
+      << contents.ByteLength() ;
+  if (contents.Data() != contents.AllocationBase() ||
+      contents.ByteLength() != contents.AllocationLength()) {
+    *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationData[gap]
+        << JSON_STRING(HexEncode(
+               contents.AllocationBase(), contents.AllocationLength())) ;
+    *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationLength[gap]
+        << contents.AllocationLength() ;
+  }
+
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsExternal[gap]
+      << (value->IsExternal() ? kJsonValueTrue : kJsonValueFalse) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsNeuterable[gap]
+      << (value->IsNeuterable() ? kJsonValueTrue : kJsonValueFalse) ;
 
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
@@ -779,6 +845,7 @@ void ValueSerializer::SerializeObject(
         comma = true ;
       }
 
+      *result_ << array_gap ;
       v8::Local<v8::Value> child_value = value->GetInternalField(i) ;
       SerializeValue(child_value, array_gap) ;
     }
