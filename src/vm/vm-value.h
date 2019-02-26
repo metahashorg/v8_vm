@@ -43,20 +43,21 @@ namespace internal {
   V SetIterator, Object, "Set Iterator") \
   V WeakMap, Object, "WeakMap") \
   V WeakSet, Object, "WeakSet") \
-  V ArrayBuffer, Object, "ArrayBuffer") \
-  V ArrayBufferView, Object, "ArrayBufferView") \
-  V Uint8Array, ArrayBufferView, "Uint8Array") \
-  V Uint8ClampedArray, ArrayBufferView, "Uint8ClampedArray") \
-  V Int8Array, ArrayBufferView, "Int8Array") \
-  V Uint16Array, ArrayBufferView, "Uint16Array") \
-  V Int16Array, ArrayBufferView, "Int16Array") \
-  V Uint32Array, ArrayBufferView, "Uint32Array") \
-  V Int32Array, ArrayBufferView, "Int32Array") \
-  V Float32Array, ArrayBufferView, "Float32Array") \
-  V Float64Array, ArrayBufferView, "Float64Array") \
-  V BigInt64Array, ArrayBufferView, "BigInt64Array") \
-  V BigUint64Array, ArrayBufferView, "BigUint64Array") \
-  V DataView, ArrayBufferView, "DataView") \
+  V ArrayBuffer, Object, "ArrayBuffer (ES6 draft 15.13.5)") \
+  V ArrayBufferView, Object, "ArrayBufferView (ES6 draft 15.13)") \
+  V TypedArray, ArrayBufferView, "ArrayBufferView (ES6 draft 15.13.6)") \
+  V Uint8Array, TypedArray, "Uint8Array (ES6 draft 15.13.6)") \
+  V Uint8ClampedArray, TypedArray, "Uint8ClampedArray (ES6 draft 15.13.6)") \
+  V Int8Array, TypedArray, "Int8Array (ES6 draft 15.13.6)") \
+  V Uint16Array, TypedArray, "Uint16Array (ES6 draft 15.13.6)") \
+  V Int16Array, TypedArray, "Int16Array (ES6 draft 15.13.6)") \
+  V Uint32Array, TypedArray, "Uint32Array (ES6 draft 15.13.6)") \
+  V Int32Array, TypedArray, "Int32Array (ES6 draft 15.13.6)") \
+  V Float32Array, TypedArray, "Float32Array (ES6 draft 15.13.6)") \
+  V Float64Array, TypedArray, "Float64Array (ES6 draft 15.13.6)") \
+  V BigInt64Array, TypedArray, "BigInt64Array") \
+  V BigUint64Array, TypedArray, "BigUint64Array") \
+  V DataView, ArrayBufferView, "DataView (ES6 draft 15.13.7)") \
   V SharedArrayBuffer, Object, \
       "SharedArrayBuffer (This is an experimental feature)") \
   V Proxy, Object, "JavaScript Proxy") \
