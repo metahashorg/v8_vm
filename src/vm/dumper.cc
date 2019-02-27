@@ -218,8 +218,8 @@ class ValueSerializer {
   void SerializeSymbol(Local<Symbol> value, uint64_t id, const JsonGap& gap) ;
   void SerializeTypedArray(
       Local<TypedArray> value, uint64_t id, const JsonGap& gap) ;
-  void SerializeUint8Array(
-      Local<Uint8Array> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeTypedArrayObject(
+      Local<TypedArray> value, uint64_t id, const JsonGap& gap) ;
   void SerializeWeakMap(Local<Object> value, uint64_t id, const JsonGap& gap) ;
   void SerializeWeakSet(Local<Object> value, uint64_t id, const JsonGap& gap) ;
 
@@ -417,8 +417,8 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
   } else if (value_type == ValueType::TypedArray) {
     SerializeTypedArray(Local<TypedArray>::Cast(value), id, gap) ;
     return ;
-  } else if (value_type == ValueType::Uint8Array) {
-    SerializeUint8Array(Local<Uint8Array>::Cast(value), id, gap) ;
+  } else if (value_type & ValueType::TypedArrayTypes) {
+    SerializeTypedArrayObject(Local<TypedArray>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::WeakMap) {
     SerializeWeakMap(Local<Object>::Cast(value), id, gap) ;
@@ -1149,11 +1149,12 @@ void ValueSerializer::SerializeTypedArray(
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
-void ValueSerializer::SerializeUint8Array(
-    Local<Uint8Array> value, uint64_t id, const JsonGap& gap) {
+void ValueSerializer::SerializeTypedArrayObject(
+    Local<TypedArray> value, uint64_t id, const JsonGap& gap) {
+  ValueType value_type = GetValueType(value) ;
   JsonGap child_gap(gap) ;
   *result_ << kJsonLeftBracket[gap] ;
-  if (SerializeCommonFileds(id, ValueType::Uint8Array, *value, child_gap)) {
+  if (SerializeCommonFileds(id, value_type, *value, child_gap)) {
     *result_ << kJsonComma[gap] ;
   }
 
@@ -1164,8 +1165,7 @@ void ValueSerializer::SerializeUint8Array(
     *result_ << kJsonEmptyArray[gap] ;
   } else {
     JsonGap item_gap(child_gap) ;
-    const uint8_t* value_array =
-        reinterpret_cast<uint8_t*>(buffer->GetContents().Data()) ;
+    void* value_array = buffer->GetContents().Data() ;
     *result_ << kJsonLeftSquareBracket[gap] ;
     bool comma = false ;
     for (size_t i = 0, size = value->Length(); i < size; ++i) {
@@ -1175,8 +1175,54 @@ void ValueSerializer::SerializeUint8Array(
         comma = true ;
       }
 
-      // TODO: Use "string-number-conversions.h": Uint8ToString(...)
-      *result_ << item_gap << static_cast<size_t>(value_array[i]) ;
+      // TODO: Use "string-number-conversions.h": Uint8ToString(...) ...
+      switch (value_type) {
+        case ValueType::Uint8Array:
+        case ValueType::Uint8ClampedArray:
+          *result_ << item_gap
+              << static_cast<uint64_t>(static_cast<uint8_t*>(value_array)[i]) ;
+          break ;
+        case ValueType::Int8Array:
+          *result_ << item_gap
+              << static_cast<int64_t>(static_cast<int8_t*>(value_array)[i]) ;
+          break ;
+        case ValueType::Uint16Array:
+          *result_ << item_gap
+              << static_cast<uint64_t>(static_cast<uint16_t*>(value_array)[i]) ;
+          break ;
+        case ValueType::Int16Array:
+          *result_ << item_gap
+              << static_cast<int64_t>(static_cast<int16_t*>(value_array)[i]) ;
+          break ;
+        case ValueType::Uint32Array:
+          *result_ << item_gap
+              << static_cast<uint64_t>(static_cast<uint32_t*>(value_array)[i]) ;
+          break ;
+        case ValueType::Int32Array:
+          *result_ << item_gap
+              << static_cast<int64_t>(static_cast<int32_t*>(value_array)[i]) ;
+            break ;
+        case ValueType::Float32Array:
+          *result_ << item_gap
+              << DoubleToUtf8(static_cast<float*>(value_array)[i]) ;
+          break ;
+        case ValueType::Float64Array:
+          *result_ << item_gap
+              << DoubleToUtf8(static_cast<double*>(value_array)[i]) ;
+          break ;
+        case ValueType::BigInt64Array:
+          *result_ << item_gap << static_cast<int64_t*>(value_array)[i] ;
+          break ;
+        case ValueType::BigUint64Array:
+          *result_ << item_gap << static_cast<int64_t*>(value_array)[i] ;
+            break ;
+        default:
+          V8_LOG_ERR(
+              errUnknown,
+              "Invalid TypedArray type - %s", ValueTypeToUtf8(value_type)) ;
+          *result_ << item_gap << static_cast<uint64_t>(0xdddddddd) ;
+          break ;
+      }
     }
 
     *result_ << kJsonNewLine[gap] << child_gap << kJsonRightSquareBracket[gap] ;

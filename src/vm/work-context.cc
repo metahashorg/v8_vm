@@ -6,7 +6,9 @@
 
 #include <map>
 
+#include "src/api.h"
 #include "src/base/format-macros.h"
+#include "src/handles-inl.h"
 #include "src/vm/v8-handle.h"
 
 namespace v8 {
@@ -293,9 +295,11 @@ StartupData WorkContext::SerializeInternalFieldCallback(
     }
   }
 
-  V8_LOG_INF(
-      "Serialized internal filed: context:%p index:%d pointer:%p size:%d",
-      data, index, field, result.raw_size) ;
+  V8_LOG_VBS(
+      "Serialized internal filed: context:%p holder:%p index:%d "
+      "pointer:%p size:%d",
+      data, Utils::OpenHandle(holder.operator ->()).operator ->(), index,
+      field, result.raw_size) ;
   return result ;
 }
 
@@ -307,9 +311,10 @@ void WorkContext::DeserializeInternalFieldCallback(
     return ;
   }
 
-  V8_LOG_INF(
-      "Deserialized internal filed: context:%p index:%d size:%" PRIuS,
-      data, index, payload.raw_size) ;
+  V8_LOG_VBS(
+      "Deserialized internal filed: context:%p holder:%p index:%d size:%d",
+      data, Utils::OpenHandle(holder.operator ->()).operator ->(),
+      index, payload.raw_size) ;
 
   if (payload.raw_size == 0) {
     holder->SetAlignedPointerInInternalField(index, nullptr) ;

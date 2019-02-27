@@ -82,6 +82,19 @@ enum class ValueType : std::uint64_t {
                          V8_ENUM_BIT_GET_ITEM_BIT(ValueType, NumberObject) |
                          V8_ENUM_BIT_GET_ITEM_BIT(ValueType, StringObject) |
                          V8_ENUM_BIT_GET_ITEM_BIT(ValueType, SymbolObject),
+
+  // Typed array types
+  TypedArrayTypes = V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Uint8Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Uint8ClampedArray) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Int8Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Uint16Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Int16Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Uint32Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Int32Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Float32Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, Float64Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, BigInt64Array) |
+                    V8_ENUM_BIT_GET_ITEM_BIT(ValueType, BigUint64Array),
 };
 
 V8_ENUM_BIT_OPERATORS_DECLARATION(ValueType)
