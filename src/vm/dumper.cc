@@ -193,6 +193,8 @@ class ValueSerializer {
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
   void SerializeBigInt(Local<BigInt> value, uint64_t id, const JsonGap& gap) ;
   void SerializeBoolean(Local<Boolean> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeDataView(
+      Local<DataView> value, uint64_t id, const JsonGap& gap) ;
   void SerializeDate(Local<Date> value, uint64_t id, const JsonGap& gap) ;
   void SerializeFunction(
       Local<Function> value, uint64_t id, const JsonGap& gap) ;
@@ -368,6 +370,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Boolean) {
     SerializeBoolean(Local<Boolean>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::DataView) {
+    SerializeDataView(Local<DataView>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Date) {
     SerializeDate(Local<Date>::Cast(value), id, gap) ;
@@ -578,6 +583,21 @@ void ValueSerializer::SerializeBoolean(
 
   *result_ << child_gap << kJsonFieldValue[gap]
       << (value->Value() ? kJsonValueTrue : kJsonValueFalse) ;
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeDataView(
+    Local<DataView> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::DataView, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize ArrayBufferView
+  *result_ << child_gap << kJsonFieldArrayBufferView[gap] ;
+  SerializeArrayBufferView(value, kEmptyId, child_gap) ;
+
   *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
 }
 
@@ -1165,7 +1185,8 @@ void ValueSerializer::SerializeTypedArrayObject(
     *result_ << kJsonEmptyArray[gap] ;
   } else {
     JsonGap item_gap(child_gap) ;
-    void* value_array = buffer->GetContents().Data() ;
+    void* value_array =
+        static_cast<char*>(buffer->GetContents().Data()) + value->ByteOffset() ;
     *result_ << kJsonLeftSquareBracket[gap] ;
     bool comma = false ;
     for (size_t i = 0, size = value->Length(); i < size; ++i) {
