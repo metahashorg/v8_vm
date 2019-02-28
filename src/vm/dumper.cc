@@ -44,6 +44,7 @@ const char* kJsonFieldDisplayName[] = JSON_ARRAY_OF_FIELD(display_name) ;
 const char* kJsonFieldEdges[] = JSON_ARRAY_OF_FIELD(edges) ;
 const char* kJsonFieldFlags[] = JSON_ARRAY_OF_FIELD(flags) ;
 const char* kJsonFieldFunction[] = JSON_ARRAY_OF_FIELD(__function__) ;
+const char* kJsonFieldHandler[] = JSON_ARRAY_OF_FIELD(handler) ;
 const char* kJsonFieldHasHandler[] = JSON_ARRAY_OF_FIELD(has_handler) ;
 const char* kJsonFieldId[] = JSON_ARRAY_OF_FIELD(id) ;
 const char* kJsonFieldIndex[] = JSON_ARRAY_OF_FIELD(index) ;
@@ -53,6 +54,7 @@ const char* kJsonFieldInternalFieldCount[] =
 const char* kJsonFieldInternalFields[] = JSON_ARRAY_OF_FIELD(internal_fields) ;
 const char* kJsonFieldIsExternal[] = JSON_ARRAY_OF_FIELD(is_external) ;
 const char* kJsonFieldIsNeuterable[] = JSON_ARRAY_OF_FIELD(is_neuterable) ;
+const char* kJsonFieldIsRevoked[] = JSON_ARRAY_OF_FIELD(is_revoked) ;
 const char* kJsonFieldKey[] = JSON_ARRAY_OF_FIELD(key) ;
 const char* kJsonFieldLength[] = JSON_ARRAY_OF_FIELD(length) ;
 const char* kJsonFieldName[] = JSON_ARRAY_OF_FIELD(name) ;
@@ -73,6 +75,7 @@ const char* kJsonFieldScriptColumn[] = JSON_ARRAY_OF_FIELD(script_column) ;
 const char* kJsonFieldSize[] = JSON_ARRAY_OF_FIELD(size) ;
 const char* kJsonFieldSource[] = JSON_ARRAY_OF_FIELD(source) ;
 const char* kJsonFieldState[] = JSON_ARRAY_OF_FIELD(state) ;
+const char* kJsonFieldTarget[] = JSON_ARRAY_OF_FIELD(target) ;
 const char* kJsonFieldToString[] = JSON_ARRAY_OF_FIELD(to_string) ;
 const char* kJsonFieldType[] = JSON_ARRAY_OF_FIELD(type) ;
 const char* kJsonFieldTypedArray[] = JSON_ARRAY_OF_FIELD(__typed_array__) ;
@@ -212,6 +215,7 @@ class ValueSerializer {
   void SerializeProcessedValue(
       Local<Value> value, uint64_t id, const JsonGap& gap) ;
   void SerializePromise(Local<Promise> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeProxy(Local<Proxy> value, uint64_t id, const JsonGap& gap) ;
   void SerializeRegExp(Local<RegExp> value, uint64_t id, const JsonGap& gap) ;
   void SerializeSharedArrayBuffer(
       Local<SharedArrayBuffer> value, uint64_t id, const JsonGap& gap) ;
@@ -405,6 +409,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::Promise) {
     SerializePromise(Local<Promise>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::Proxy) {
+    SerializeProxy(Local<Proxy>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::RegExp) {
     SerializeRegExp(Local<RegExp>::Cast(value), id, gap) ;
@@ -1011,6 +1018,29 @@ void ValueSerializer::SerializePromise(
     *result_ << kJsonComma[gap] << child_gap << kJsonFieldResult[gap] ;
     SerializeValue(value->Result(), child_gap) ;
   }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeProxy(
+    Local<Proxy> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(id, ValueType::Proxy, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize value
+  *result_ << child_gap << kJsonFieldTarget[gap] ;
+  SerializeValue(value->GetTarget(), child_gap) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldHandler[gap] ;
+  SerializeValue(value->GetHandler(), child_gap) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsRevoked[gap]
+       << (value->IsRevoked() ? kJsonValueTrue : kJsonValueFalse) ;
 
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
