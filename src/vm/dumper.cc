@@ -213,6 +213,8 @@ class ValueSerializer {
       Local<Value> value, uint64_t id, const JsonGap& gap) ;
   void SerializePromise(Local<Promise> value, uint64_t id, const JsonGap& gap) ;
   void SerializeRegExp(Local<RegExp> value, uint64_t id, const JsonGap& gap) ;
+  void SerializeSharedArrayBuffer(
+      Local<SharedArrayBuffer> value, uint64_t id, const JsonGap& gap) ;
   void SerializeSet(Local<Set> value, uint64_t id, const JsonGap& gap) ;
   void SerializeSetIterator(
       Local<Object> value, uint64_t id, const JsonGap& gap) ;
@@ -406,6 +408,9 @@ void ValueSerializer::SerializeValue(Local<Value> value, const JsonGap& gap) {
     return ;
   } else if (value_type == ValueType::RegExp) {
     SerializeRegExp(Local<RegExp>::Cast(value), id, gap) ;
+    return ;
+  } else if (value_type == ValueType::SharedArrayBuffer) {
+    SerializeSharedArrayBuffer(Local<SharedArrayBuffer>::Cast(value), id, gap) ;
     return ;
   } else if (value_type == ValueType::Set) {
     SerializeSet(Local<Set>::Cast(value), id, gap) ;
@@ -1058,6 +1063,44 @@ void ValueSerializer::SerializeRegExp(
 
     *result_ << kJsonNewLine[gap] << child_gap << kJsonRightSquareBracket[gap] ;
   }
+
+  // Serialize Object
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
+  SerializeObject(value, kEmptyId, child_gap) ;
+
+  *result_ << kJsonNewLine[gap] << gap << kJsonRightBracket[gap] ;
+}
+
+void ValueSerializer::SerializeSharedArrayBuffer(
+    Local<SharedArrayBuffer> value, uint64_t id, const JsonGap& gap) {
+  JsonGap child_gap(gap) ;
+  *result_ << kJsonLeftBracket[gap] ;
+  if (SerializeCommonFileds(
+          id, ValueType::SharedArrayBuffer, *value, child_gap)) {
+    *result_ << kJsonComma[gap] ;
+  }
+
+  // Serialize value
+  SharedArrayBuffer::Contents contents = value->GetContents() ;
+  *result_ << child_gap << kJsonFieldAllocationMode[gap]
+      << (contents.AllocationMode() ==
+              ArrayBuffer::Allocator::AllocationMode::kNormal ?
+          "\"Normal\"" : "\"Reservation\"") ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldData[gap]
+      << JSON_STRING(HexEncode(contents.Data(), contents.ByteLength())) ;
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
+      << contents.ByteLength() ;
+  if (contents.Data() != contents.AllocationBase() ||
+      contents.ByteLength() != contents.AllocationLength()) {
+    *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationData[gap]
+        << JSON_STRING(HexEncode(
+               contents.AllocationBase(), contents.AllocationLength())) ;
+    *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationLength[gap]
+        << contents.AllocationLength() ;
+  }
+
+  *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsExternal[gap]
+      << (value->IsExternal() ? kJsonValueTrue : kJsonValueFalse) ;
 
   // Serialize Object
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldObject[gap] ;
