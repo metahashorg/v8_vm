@@ -354,11 +354,11 @@ std::wstring Int32ToString16(std::int32_t value) {
   return IntToStringT<std::wstring, int>::IntToString(value) ;
 }
 
-std::string UintToString(std::uint32_t value) {
+std::string Uint32ToString(std::uint32_t value) {
   return IntToStringT<std::string, unsigned int>::IntToString(value) ;
 }
 
-std::wstring UintToString16(std::uint32_t value) {
+std::wstring Uint32ToString16(std::uint32_t value) {
   return IntToStringT<std::wstring, unsigned int>::IntToString(value) ;
 }
 

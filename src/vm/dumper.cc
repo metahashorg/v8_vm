@@ -13,6 +13,7 @@
 #include "src/api.h"
 #include "src/handles-inl.h"
 #include "src/vm/utils/json-utils.h"
+#include "src/vm/utils/string-number-conversions.h"
 #include "src/vm/utils/vm-utils.h"
 #include "src/vm/vm-value.h"
 
@@ -267,8 +268,7 @@ std::string DoubleToUtf8(double val) {
                 kJsonValueInfinity : kJsonValueNegativeInfinity) ;
   }
 
-  // TODO: Use "string-number-conversions.h": DoubleToString(...)
-  return std::to_string(val) ;
+  return DoubleToString(val) ;
 }
 
 // Checks a string is a number
@@ -300,21 +300,6 @@ bool IsNumber(const char* str) {
   }
 
   return *str == '\0' ;
-}
-
-std::string HexEncode(const void* bytes, size_t size) {
-  static const char kHexChars[] = "0123456789abcdef" ;
-
-  // Each input byte creates two output hex characters.
-  std::string ret(size * 2, '\0') ;
-
-  for (size_t i = 0; i < size; ++i) {
-    char b = reinterpret_cast<const char*>(bytes)[i] ;
-    ret[(i * 2)] = kHexChars[(b >> 4) & 0xf] ;
-    ret[(i * 2) + 1] = kHexChars[b & 0xf] ;
-  }
-
-  return ret ;
 }
 
 const uint64_t ValueSerializer::kEmptyId = static_cast<uint64_t>(-1) ;
@@ -475,7 +460,8 @@ void ValueSerializer::SerializeArray(
     *result_ << kJsonComma[gap] ;
   }
 
-  *result_ << child_gap << kJsonFieldLength[gap] << value->Length() ;
+  *result_ << child_gap << kJsonFieldLength[gap]
+      << Uint32ToString(value->Length()) ;
 
   // Serialize a array content
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldValue[gap] ;
@@ -505,14 +491,14 @@ void ValueSerializer::SerializeArrayBuffer(
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldData[gap]
       << JSON_STRING(HexEncode(contents.Data(), contents.ByteLength())) ;
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
-      << contents.ByteLength() ;
+      << SizeTToString(contents.ByteLength()) ;
   if (contents.Data() != contents.AllocationBase() ||
       contents.ByteLength() != contents.AllocationLength()) {
     *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationData[gap]
         << JSON_STRING(HexEncode(
                contents.AllocationBase(), contents.AllocationLength())) ;
     *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationLength[gap]
-        << contents.AllocationLength() ;
+        << SizeTToString(contents.AllocationLength()) ;
   }
 
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsExternal[gap]
@@ -538,9 +524,9 @@ void ValueSerializer::SerializeArrayBufferView(
 
   // Serialize value
   *result_ << child_gap << kJsonFieldOffset[gap]
-      << value->ByteOffset() ;
+      << SizeTToString(value->ByteOffset()) ;
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
-      << value->ByteLength() ;
+      << SizeTToString(value->ByteLength()) ;
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldBuffer[gap] ;
   SerializeValue(value->Buffer(), child_gap) ;
 
@@ -747,7 +733,7 @@ void ValueSerializer::SerializeMap(
     *result_ << kJsonComma[gap] ;
   }
 
-  *result_ << child_gap << kJsonFieldSize[gap] << value->Size() ;
+  *result_ << child_gap << kJsonFieldSize[gap] << SizeTToString(value->Size()) ;
   *result_ << kJsonComma[gap] ;
 
   // Serialize content
@@ -849,8 +835,13 @@ void ValueSerializer::SerializeObject(
   // Count of ignored properties
   ValueType real_type = GetValueType(value) ;
   uint32_t ignored_properties_count = 0 ;
-  if (id == kEmptyId && real_type == ValueType::Array) {
-    ignored_properties_count = Local<Array>::Cast(value)->Length() ;
+  if (id == kEmptyId) {
+    if (real_type == ValueType::Array) {
+      ignored_properties_count = Local<Array>::Cast(value)->Length() ;
+    } else if (real_type & ValueType::TypedArrayTypes) {
+      ignored_properties_count =
+          static_cast<uint32_t>(Local<TypedArray>::Cast(value)->Length()) ;
+    }
   }
 
   // Enumerate own properties
@@ -861,7 +852,7 @@ void ValueSerializer::SerializeObject(
       (property_names->Length() - ignored_properties_count) > 0) {
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldPropertyCount[gap]
-        << (property_names->Length() - ignored_properties_count) ;
+        << Uint32ToString(property_names->Length() - ignored_properties_count) ;
     *result_ << kJsonComma[gap] << child_gap ;
     *result_ << kJsonFieldProperties[gap] << kJsonLeftBracket[gap] ;
     bool comma = false ;
@@ -874,7 +865,7 @@ void ValueSerializer::SerializeObject(
       }
 
       // Check that we don't ignore it
-      if (id == kEmptyId && real_type == ValueType::Array) {
+      if (id == kEmptyId) {
         ValueType key_type = GetValueType(key) ;
         if (key_type == ValueType::Int32 || key_type == ValueType::Uint32) {
           uint32_t key_value = (uint32_t)Local<Number>::Cast(key)->Value() ;
@@ -909,7 +900,7 @@ void ValueSerializer::SerializeObject(
   if (value->InternalFieldCount()) {
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldInternalFieldCount[gap]
-        << value->InternalFieldCount() ;
+        << Int32ToString(value->InternalFieldCount()) ;
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldInternalFields[gap]
         << kJsonLeftSquareBracket[gap] ;
@@ -1005,13 +996,13 @@ void ValueSerializer::SerializePromise(
       << (value->HasHandler() ? kJsonValueTrue : kJsonValueFalse) ;
 
   // Serialize state
-  static std::map<Promise::PromiseState, const char*> promise_state_map = {
+  static std::map<Promise::PromiseState, const char*> kPromiseStateMap = {
     { Promise::kPending, R"("Pending")" },
     { Promise::kFulfilled, R"("Fulfilled")" },
     { Promise::kRejected, R"("Rejected")" },
   } ;
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldState[gap]
-      << promise_state_map[value->State()] ;
+      << kPromiseStateMap[value->State()] ;
 
   // Serialize result if the Promise isn't pending
   if (value->State() != Promise::kPending) {
@@ -1062,7 +1053,7 @@ void ValueSerializer::SerializeRegExp(
       << JSON_STRING(ValueToUtf8(context_, value->GetSource())) ;
 
   // Serialize flags
-  static const char* flag_str_array[] = {
+  static const char* kFlagStrArray[] = {
     "\"Global\"", "\"IgnoreCase\"", "\"Multiline\"", "\"Sticky\"",
     "\"Unicode\"", "\"DotAll\"" } ;
   RegExp::Flags flags = value->GetFlags() ;
@@ -1088,7 +1079,7 @@ void ValueSerializer::SerializeRegExp(
         comma = true ;
       }
 
-      *result_ << flag_gap << flag_str_array[i] ;
+      *result_ << flag_gap << kFlagStrArray[i] ;
     }
 
     *result_ << kJsonNewLine[gap] << child_gap << kJsonRightSquareBracket[gap] ;
@@ -1119,14 +1110,14 @@ void ValueSerializer::SerializeSharedArrayBuffer(
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldData[gap]
       << JSON_STRING(HexEncode(contents.Data(), contents.ByteLength())) ;
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldLength[gap]
-      << contents.ByteLength() ;
+      << SizeTToString(contents.ByteLength()) ;
   if (contents.Data() != contents.AllocationBase() ||
       contents.ByteLength() != contents.AllocationLength()) {
     *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationData[gap]
         << JSON_STRING(HexEncode(
                contents.AllocationBase(), contents.AllocationLength())) ;
     *result_ << kJsonComma[gap] << child_gap << kJsonFieldAllocationLength[gap]
-        << contents.AllocationLength() ;
+        << SizeTToString(contents.AllocationLength()) ;
   }
 
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldIsExternal[gap]
@@ -1147,7 +1138,7 @@ void ValueSerializer::SerializeSet(
     *result_ << kJsonComma[gap] ;
   }
 
-  *result_ << child_gap << kJsonFieldSize[gap] << value->Size() ;
+  *result_ << child_gap << kJsonFieldSize[gap] << SizeTToString(value->Size()) ;
   *result_ << kJsonComma[gap] ;
 
   // Serialize content
@@ -1233,7 +1224,8 @@ void ValueSerializer::SerializeTypedArray(
   }
 
   // Serialize value
-  *result_ << child_gap << kJsonFieldLength[gap] << value->Length() ;
+  *result_ << child_gap << kJsonFieldLength[gap]
+      << SizeTToString(value->Length()) ;
 
   // Serialize ArrayBufferView
   *result_ << kJsonComma[gap] << child_gap << kJsonFieldArrayBufferView[gap] ;
@@ -1269,32 +1261,31 @@ void ValueSerializer::SerializeTypedArrayObject(
         comma = true ;
       }
 
-      // TODO: Use "string-number-conversions.h": Uint8ToString(...) ...
       switch (value_type) {
         case ValueType::Uint8Array:
         case ValueType::Uint8ClampedArray:
           *result_ << item_gap
-              << static_cast<uint64_t>(static_cast<uint8_t*>(value_array)[i]) ;
+              << Uint32ToString(static_cast<uint8_t*>(value_array)[i]) ;
           break ;
         case ValueType::Int8Array:
           *result_ << item_gap
-              << static_cast<int64_t>(static_cast<int8_t*>(value_array)[i]) ;
+              << Int32ToString(static_cast<int8_t*>(value_array)[i]) ;
           break ;
         case ValueType::Uint16Array:
           *result_ << item_gap
-              << static_cast<uint64_t>(static_cast<uint16_t*>(value_array)[i]) ;
+              << Uint32ToString(static_cast<uint16_t*>(value_array)[i]) ;
           break ;
         case ValueType::Int16Array:
           *result_ << item_gap
-              << static_cast<int64_t>(static_cast<int16_t*>(value_array)[i]) ;
+              << Int32ToString(static_cast<int16_t*>(value_array)[i]) ;
           break ;
         case ValueType::Uint32Array:
           *result_ << item_gap
-              << static_cast<uint64_t>(static_cast<uint32_t*>(value_array)[i]) ;
+              << Uint32ToString(static_cast<uint32_t*>(value_array)[i]) ;
           break ;
         case ValueType::Int32Array:
           *result_ << item_gap
-              << static_cast<int64_t>(static_cast<int32_t*>(value_array)[i]) ;
+              << Int32ToString(static_cast<int32_t*>(value_array)[i]) ;
             break ;
         case ValueType::Float32Array:
           *result_ << item_gap
@@ -1305,10 +1296,12 @@ void ValueSerializer::SerializeTypedArrayObject(
               << DoubleToUtf8(static_cast<double*>(value_array)[i]) ;
           break ;
         case ValueType::BigInt64Array:
-          *result_ << item_gap << static_cast<int64_t*>(value_array)[i] ;
+          *result_ << item_gap
+              << Int64ToString(static_cast<int64_t*>(value_array)[i]) ;
           break ;
         case ValueType::BigUint64Array:
-          *result_ << item_gap << static_cast<int64_t*>(value_array)[i] ;
+          *result_ << item_gap
+              << Uint64ToString(static_cast<uint64_t*>(value_array)[i]) ;
             break ;
         default:
           V8_LOG_ERR(
@@ -1346,7 +1339,8 @@ void ValueSerializer::SerializeWeakMap(
     *result_ << child_gap << kJsonFieldValue[gap] ;
     SerializeException(try_catch, child_gap) ;
   } else {
-    *result_ << child_gap << kJsonFieldSize[gap] << (map->Length() / 2) ;
+    *result_ << child_gap << kJsonFieldSize[gap]
+        << Uint32ToString(map->Length() / 2) ;
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldValue[gap] ;
     SerializeKeyValueArray(map, child_gap) ;
@@ -1377,7 +1371,8 @@ void ValueSerializer::SerializeWeakSet(
     *result_ << child_gap << kJsonFieldValue[gap] ;
     SerializeException(try_catch, child_gap) ;
   } else {
-    *result_ << child_gap << kJsonFieldSize[gap] << set->Length() ;
+    *result_ << child_gap << kJsonFieldSize[gap]
+        << Uint32ToString(set->Length()) ;
     *result_ << kJsonComma[gap] ;
     *result_ << child_gap << kJsonFieldValue[gap] ;
     SerializeValueArray(set, child_gap) ;
@@ -1394,7 +1389,8 @@ bool ValueSerializer::SerializeCommonFileds(
     uint64_t id, ValueType type, Value* value, const JsonGap& gap) {
   // Add id
   if (id != kEmptyId) {
-    *result_ << gap << kJsonFieldId[gap] << id << kJsonComma[gap] ;
+    *result_ << gap << kJsonFieldId[gap] << Uint64ToString(id)
+        << kJsonComma[gap] ;
   }
 
   // Add type
