@@ -9,8 +9,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "base/numerics/safe_conversions_impl.h"
+#include "third_party/numerics/safe_conversions_impl.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 // Fast saturation to a destination type.
@@ -45,5 +46,6 @@ struct SaturateFastAsmOp {
 };
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_CONVERSIONS_ARM_IMPL_H_

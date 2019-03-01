@@ -7,7 +7,6 @@
 #include <cctype>
 
 #include "vm_apps/utils/app-utils.h"
-#include "vm_apps/utils/string-number-conversions.h"
 #include "vm_apps/utils/string-tokenizer.h"
 
 #define HTTP_LWS " \t"

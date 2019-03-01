@@ -11,7 +11,7 @@
 #include <ostream>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/safe_conversions_impl.h"
+#include "third_party/numerics/safe_conversions_impl.h"
 
 #if !defined(__native_client__) && (defined(__ARMEL__) || defined(__arch64__))
 #include "vm_apps/third_party/numerics/safe_conversions_arm_impl.h"
@@ -20,6 +20,7 @@
 #define BASE_HAS_OPTIMIZED_SAFE_CONVERSIONS (0)
 #endif
 
+namespace chromium {  // @metahash
 namespace internal {
 
 #if !BASE_HAS_OPTIMIZED_SAFE_CONVERSIONS
@@ -337,5 +338,7 @@ using internal::IsValueNegative;
 
 // Explicitly make a shorter size_t alias for convenience.
 using SizeT = StrictNumeric<size_t>;
+
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_CONVERSIONS_H_

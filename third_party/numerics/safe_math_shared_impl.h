@@ -15,7 +15,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/safe_conversions.h"
+#include "third_party/numerics/safe_conversions.h"
 
 // Where available use builtin math overflow support on Clang and GCC.
 #if !defined(__native_client__) &&                         \
@@ -23,12 +23,13 @@
       ((__clang_major__ > 3) ||                            \
        (__clang_major__ == 3 && __clang_minor__ >= 4))) || \
      (defined(__GNUC__) && __GNUC__ >= 5))
-#include "vm_apps/third_party/numerics/safe_math_clang_gcc_impl.h"
+#include "third_party/numerics/safe_math_clang_gcc_impl.h"
 #define BASE_HAS_OPTIMIZED_SAFE_MATH (1)
 #else
 #define BASE_HAS_OPTIMIZED_SAFE_MATH (0)
 #endif
 
+namespace chromium {  // @metahash
 namespace internal {
 
 // These are the non-functioning boilerplate implementations of the optimized
@@ -231,5 +232,6 @@ struct ResultType {
   BASE_NUMERIC_ARITHMETIC_VARIADIC(CLASS, CL_ABBR, OP_NAME)
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_MATH_SHARED_IMPL_H_

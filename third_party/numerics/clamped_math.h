@@ -10,8 +10,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/clamped_math_impl.h"
+#include "third_party/numerics/clamped_math_impl.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 template <typename T>
@@ -255,5 +256,7 @@ using internal::ClampRsh;
 using internal::ClampAnd;
 using internal::ClampOr;
 using internal::ClampXor;
+
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_CLAMPED_MATH_H_

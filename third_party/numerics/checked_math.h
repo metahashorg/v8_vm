@@ -10,8 +10,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/checked_math_impl.h"
+#include "third_party/numerics/checked_math_impl.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 template <typename T>
@@ -386,5 +387,7 @@ using internal::CheckRsh;
 using internal::CheckAnd;
 using internal::CheckOr;
 using internal::CheckXor;
+
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_CHECKED_MATH_H_

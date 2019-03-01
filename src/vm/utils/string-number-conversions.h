@@ -15,26 +15,32 @@
 #include <string>
 #include <vector>
 
+#include "include/v8.h"
+
+namespace v8 {
+namespace vm {
+namespace internal {
+
 // Number -> string conversions ------------------------------------------------
 
-std::string Int32ToString(std::int32_t value) ;
-std::wstring Int32ToString16(std::int32_t value) ;
+V8_EXPORT std::string Int32ToString(std::int32_t value) ;
+V8_EXPORT std::wstring Int32ToString16(std::int32_t value) ;
 
-std::string Uint32ToString(std::uint32_t value) ;
-std::wstring Uint32ToString16(std::uint32_t value) ;
+V8_EXPORT std::string Uint32ToString(std::uint32_t value) ;
+V8_EXPORT std::wstring Uint32ToString16(std::uint32_t value) ;
 
-std::string Int64ToString(std::int64_t value) ;
-std::wstring Int64ToString16(std::int64_t value) ;
+V8_EXPORT std::string Int64ToString(std::int64_t value) ;
+V8_EXPORT std::wstring Int64ToString16(std::int64_t value) ;
 
-std::string Uint64ToString(std::uint64_t value) ;
-std::wstring Uint64ToString16(std::uint64_t value) ;
+V8_EXPORT std::string Uint64ToString(std::uint64_t value) ;
+V8_EXPORT std::wstring Uint64ToString16(std::uint64_t value) ;
 
-std::string SizeTToString(std::size_t value) ;
-std::wstring SizeTToString16(std::size_t value) ;
+V8_EXPORT std::string SizeTToString(std::size_t value) ;
+V8_EXPORT std::wstring SizeTToString16(std::size_t value) ;
 
 // DoubleToString converts the double to a string format that ignores the
 // locale. If you want to use locale specific formatting, use ICU.
-std::string DoubleToString(double value) ;
+V8_EXPORT std::string DoubleToString(double value) ;
 
 // String -> number conversions ------------------------------------------------
 
@@ -54,26 +60,28 @@ std::string DoubleToString(double value) ;
 //  - Empty string.  |*output| will be set to 0.
 // WARNING: Will write to |output| even when returning false.
 //          Read the comments above carefully.
-bool StringToInt16(const std::string& input, std::int16_t* output) ;
-bool StringToInt16(const std::wstring& input, std::int16_t* output) ;
+V8_EXPORT bool StringToInt16(const std::string& input, std::int16_t* output) ;
+V8_EXPORT bool StringToInt16(const std::wstring& input, std::int16_t* output) ;
 
-bool StringToUint16(const std::string& input, std::uint16_t* output) ;
-bool StringToUint16(const std::wstring& input, std::uint16_t* output) ;
+V8_EXPORT bool StringToUint16(const std::string& input, std::uint16_t* output) ;
+V8_EXPORT bool StringToUint16(
+    const std::wstring& input, std::uint16_t* output) ;
 
-bool StringToInt32(const std::string& input, std::int32_t* output) ;
-bool StringToInt32(const std::wstring& input, std::int32_t* output) ;
+V8_EXPORT bool StringToInt32(const std::string& input, std::int32_t* output) ;
+V8_EXPORT bool StringToInt32(const std::wstring& input, std::int32_t* output) ;
 
-bool StringToUint32(const std::string& input, std::uint32_t* output) ;
-bool StringToUint32(const std::wstring& input, std::uint32_t* output) ;
+V8_EXPORT bool StringToUint32(const std::string& input, std::uint32_t* output) ;
+V8_EXPORT bool StringToUint32(
+    const std::wstring& input, std::uint32_t* output) ;
 
-bool StringToInt64(const std::string& input, int64_t* output) ;
-bool StringToInt64(const std::wstring& input, int64_t* output) ;
+V8_EXPORT bool StringToInt64(const std::string& input, int64_t* output) ;
+V8_EXPORT bool StringToInt64(const std::wstring& input, int64_t* output) ;
 
-bool StringToUint64(const std::string& input, uint64_t* output) ;
-bool StringToUint64(const std::wstring& input, uint64_t* output) ;
+V8_EXPORT bool StringToUint64(const std::string& input, uint64_t* output) ;
+V8_EXPORT bool StringToUint64(const std::wstring& input, uint64_t* output) ;
 
-bool StringToSizeT(const std::string& input, size_t* output) ;
-bool StringToSizeT(const std::wstring& input, size_t* output) ;
+V8_EXPORT bool StringToSizeT(const std::string& input, size_t* output) ;
+V8_EXPORT bool StringToSizeT(const std::wstring& input, size_t* output) ;
 
 // For floating-point conversions, only conversions of input strings in decimal
 // form are defined to work.  Behavior with strings representing floating-point
@@ -83,7 +91,7 @@ bool StringToSizeT(const std::wstring& input, size_t* output) ;
 // If your input is locale specific, use ICU to read the number.
 // WARNING: Will write to |output| even when returning false.
 //          Read the comments here and above StringToInt() carefully.
-bool StringToDouble(const std::string& input, double* output) ;
+V8_EXPORT bool StringToDouble(const std::string& input, double* output) ;
 
 // Hex encoding ----------------------------------------------------------------
 
@@ -93,35 +101,43 @@ bool StringToDouble(const std::string& input, double* output) ;
 // you suspect that the data you want to format might be large, the absolute
 // max size for |size| should be is
 //   std::numeric_limits<size_t>::max() / 2
-std::string HexEncode(const void* bytes, std::size_t size) ;
+V8_EXPORT std::string HexEncode(const void* bytes, std::size_t size) ;
 
 // Best effort conversion, see StringToInt above for restrictions.
 // Will only successful parse hex values that will fit into |output|, i.e.
 // -0x80000000 < |input| < 0x7FFFFFFF.
-bool HexStringToInt32(const std::string& input, std::int32_t* output) ;
+V8_EXPORT bool HexStringToInt32(
+    const std::string& input, std::int32_t* output) ;
 
 // Best effort conversion, see StringToInt above for restrictions.
 // Will only successful parse hex values that will fit into |output|, i.e.
 // 0x00000000 < |input| < 0xFFFFFFFF.
 // The string is not required to start with 0x.
-bool HexStringToUInt32(const std::string& input, std::uint32_t* output) ;
+V8_EXPORT bool HexStringToUInt32(
+    const std::string& input, std::uint32_t* output) ;
 
 // Best effort conversion, see StringToInt above for restrictions.
 // Will only successful parse hex values that will fit into |output|, i.e.
 // -0x8000000000000000 < |input| < 0x7FFFFFFFFFFFFFFF.
-bool HexStringToInt64(const std::string& input, std::int64_t* output) ;
+V8_EXPORT bool HexStringToInt64(
+    const std::string& input, std::int64_t* output) ;
 
 // Best effort conversion, see StringToInt above for restrictions.
 // Will only successful parse hex values that will fit into |output|, i.e.
 // 0x0000000000000000 < |input| < 0xFFFFFFFFFFFFFFFF.
 // The string is not required to start with 0x.
-bool HexStringToUInt64(const std::string& input, std::uint64_t* output) ;
+V8_EXPORT bool HexStringToUInt64(
+    const std::string& input, std::uint64_t* output) ;
 
 // Similar to the previous functions, except that output is a vector of bytes.
 // |*output| will contain as many bytes as were successfully parsed prior to the
 // error.  There is no overflow, but input.size() must be evenly divisible by 2.
 // Leading 0x or +/- are not allowed.
-bool HexStringToBytes(
+V8_EXPORT bool HexStringToBytes(
     const std::string& input, std::vector<std::uint8_t>* output) ;
+
+}  // namespace internal
+}  // namespace vm
+}  // namespace v8
 
 #endif  // V8_VM_APPS_UTILS_STRING_NUMBER_CONVERSIONS_H_

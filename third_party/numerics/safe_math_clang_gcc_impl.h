@@ -9,7 +9,7 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/safe_conversions.h"
+#include "third_party/numerics/safe_conversions.h"
 
 #if !defined(__native_client__) && (defined(__ARMEL__) || defined(__arch64__))
 #include "vm_apps/third_party/numerics/safe_math_arm_impl.h"
@@ -18,6 +18,7 @@
 #define BASE_HAS_ASSEMBLER_SAFE_MATH (0)
 #endif
 
+namespace chromium {  // @metahash
 namespace internal {
 
 // These are the non-functioning boilerplate implementations of the optimized
@@ -151,5 +152,6 @@ struct ClampedNegFastOp {
 };
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_MATH_CLANG_GCC_IMPL_H_

@@ -15,7 +15,6 @@
 #include "vm_apps/third_party/metagate/src/ethtx/utils2.h"
 #include "vm_apps/utils/app-utils.h"
 #include "vm_apps/utils/json-sax-parser.h"
-#include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
 

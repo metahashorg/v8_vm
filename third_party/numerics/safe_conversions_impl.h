@@ -18,6 +18,7 @@
 #define BASE_NUMERICS_UNLIKELY(x) (x)
 #endif
 
+namespace chromium {  // @metahash
 namespace internal {
 
 // The std library doesn't provide a binary max_exponent for integers, however
@@ -844,5 +845,6 @@ constexpr Dst CommonMaxOrMin(bool is_min) {
 }
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_CONVERSIONS_IMPL_H_

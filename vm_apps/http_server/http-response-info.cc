@@ -6,8 +6,6 @@
 
 #include <cctype>
 
-#include "vm_apps/utils/string-number-conversions.h"
-
 // Response specific header names.
 const char HttpResponseInfo::Header::AcceptRanges[] = "Accept-Ranges" ;
 const char HttpResponseInfo::Header::Age[] = "Age" ;

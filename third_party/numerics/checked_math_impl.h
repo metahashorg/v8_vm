@@ -14,9 +14,10 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/safe_conversions.h"
-#include "vm_apps/third_party/numerics/safe_math_shared_impl.h"
+#include "third_party/numerics/safe_conversions.h"
+#include "third_party/numerics/safe_math_shared_impl.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 template <typename T>
@@ -561,5 +562,6 @@ class CheckedNumericState<T, NUMERIC_FLOATING> {
 };
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_CHECKED_MATH_IMPL_H_

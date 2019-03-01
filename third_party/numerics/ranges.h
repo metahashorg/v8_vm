@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace chromium {  // @metahash
+
 template <typename T>
 T ClampToRange(T value, T min, T max) {
   return std::min(std::max(value, min), max);
@@ -18,5 +20,7 @@ constexpr bool IsApproximatelyEqual(T lhs, T rhs, T tolerance) {
   static_assert(std::is_arithmetic<T>::value, "Argument must be arithmetic");
   return std::abs(rhs - lhs) <= tolerance;
 }
+
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_RANGES_H_

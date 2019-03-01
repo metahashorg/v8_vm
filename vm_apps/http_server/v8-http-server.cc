@@ -9,7 +9,6 @@
 #include "vm_apps/http_server/v8-http-server-session.h"
 #include "vm_apps/utils/app-utils.h"
 #include "vm_apps/utils/command-line.h"
-#include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
 

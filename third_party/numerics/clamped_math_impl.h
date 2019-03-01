@@ -14,10 +14,11 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/numerics/checked_math.h"
-#include "vm_apps/third_party/numerics/safe_conversions.h"
-#include "vm_apps/third_party/numerics/safe_math_shared_impl.h"
+#include "third_party/numerics/checked_math.h"
+#include "third_party/numerics/safe_conversions.h"
+#include "third_party/numerics/safe_math_shared_impl.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 template <typename T,
@@ -335,5 +336,6 @@ BASE_FLOAT_ARITHMETIC_OPS(Div, /)
 #undef BASE_FLOAT_ARITHMETIC_OPS
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_CLAMPED_MATH_IMPL_H_

@@ -5,8 +5,8 @@
 #ifndef BASE_NUMERICS_SAFE_MATH_H_
 #define BASE_NUMERICS_SAFE_MATH_H_
 
-#include "vm_apps/third_party/numerics/checked_math.h"
-#include "vm_apps/third_party/numerics/clamped_math.h"
-#include "vm_apps/third_party/numerics/safe_conversions.h"
+#include "third_party/numerics/checked_math.h"
+#include "third_party/numerics/clamped_math.h"
+#include "third_party/numerics/safe_conversions.h"
 
 #endif  // BASE_NUMERICS_SAFE_MATH_H_

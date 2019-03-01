@@ -14,6 +14,7 @@
 #include "src/vm/utils/file-path.h"
 #include "src/vm/utils/json-utils.h"
 #include "src/vm/utils/scoped-clear-errno.h"
+#include "src/vm/utils/string-number-conversions.h"
 #include "src/vm/utils/string-printf.h"
 #include "src/vm/utils/string-utils.h"
 #include "src/vm/utils/sys-byteorder.h"
@@ -43,6 +44,9 @@ using v8::vm::internal::EncodeJsonString ;
 using v8::vm::internal::EqualsCaseInsensitiveASCII ;
 using v8::vm::internal::FilePath ;
 using v8::vm::internal::GetExecutablePath ;
+using v8::vm::internal::HexEncode ;
+using v8::vm::internal::HexStringToBytes ;
+using v8::vm::internal::HexStringToInt32 ;
 using v8::vm::internal::HostToNet16 ;
 using v8::vm::internal::JsonGap ;
 using v8::vm::internal::JsonGapArray ;
@@ -56,6 +60,10 @@ using v8::vm::internal::NetToHost16 ;
 using v8::vm::internal::ScopedClearErrno ;
 using v8::vm::internal::StringAppendF ;
 using v8::vm::internal::StringPrintf ;
+using v8::vm::internal::StringToDouble ;
+using v8::vm::internal::StringToInt32 ;
+using v8::vm::internal::StringToInt64 ;
+using v8::vm::internal::StringToUint16 ;
 using v8::vm::internal::TemporarilyChangeValues ;
 using v8::vm::internal::TemporarilySetValue ;
 using v8::vm::internal::TRIM_NONE ;

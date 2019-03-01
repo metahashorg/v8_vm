@@ -14,7 +14,6 @@
 #include "src/base/v8-fallthrough.h"
 #include "third_party/icu/source/common/unicode/utf16.h"
 #include "third_party/icu/source/common/unicode/utf8.h"
-#include "vm_apps/utils/string-number-conversions.h"
 
 #define ReportErrorM(error, ...) \
     ReportError(error, __VA_ARGS__) ; \

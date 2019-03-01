@@ -6,7 +6,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "vm_apps/utils/string-number-conversions.h"
+#include "src/vm/utils/string-number-conversions.h"
 
 #include <wctype.h>
 
@@ -15,9 +15,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "vm_apps/third_party/dmg_fp/dmg_fp.h"
-#include "vm_apps/third_party/numerics/safe_math.h"
-#include "vm_apps/utils/app-utils.h"
+#include "src/vm/utils/scoped-clear-errno.h"
+#include "third_party/numerics/safe_math.h"
+#include "third_party/dmg_fp/dmg_fp.h"
 
 namespace {
 
@@ -37,7 +37,7 @@ struct IntToStringT {
     // The ValueOrDie call below can never fail, because UnsignedAbs is valid
     // for all valid inputs.
     typename std::make_unsigned<INT>::type res =
-        CheckedNumeric<INT>(value).UnsignedAbs().ValueOrDie() ;
+        chromium::CheckedNumeric<INT>(value).UnsignedAbs().ValueOrDie() ;
 
     CHR* end = outbuf + kOutputBufSize ;
     CHR* i = end ;
@@ -48,7 +48,7 @@ struct IntToStringT {
       res /= 10 ;
     } while (res != 0) ;
 
-    if (IsValueNegative(value)) {
+    if (chromium::IsValueNegative(value)) {
       --i ;
       // TODO: DCHECK(i != outbuf) ;
       *i = static_cast<CHR>('-') ;
@@ -342,6 +342,10 @@ bool String16ToIntImpl(const std::wstring& input, VALUE* output) {
 
 }  // namespace
 
+namespace v8 {
+namespace vm {
+namespace internal {
+
 std::string Int32ToString(std::int32_t value) {
   return IntToStringT<std::string, int>::IntToString(value) ;
 }
@@ -513,3 +517,7 @@ bool HexStringToUInt64(const std::string& input, uint64_t* output) {
 bool HexStringToBytes(const std::string& input, std::vector<uint8_t>* output) {
   return HexStringToBytesT(input, output) ;
 }
+
+}  // namespace internal
+}  // namespace vm
+}  // namespace v8

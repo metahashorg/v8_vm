@@ -9,8 +9,9 @@
 #include <limits>
 #include <type_traits>
 
-#include "base/numerics/safe_conversions.h"
+#include "third_party/numerics/safe_conversions.h"
 
+namespace chromium {  // @metahash
 namespace internal {
 
 template <typename T, typename U>
@@ -116,5 +117,6 @@ struct ClampedMulFastAsmOp {
 };
 
 }  // namespace internal
+}  // @metahash chromium
 
 #endif  // BASE_NUMERICS_SAFE_MATH_ARM_IMPL_H_

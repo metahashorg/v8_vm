@@ -9,7 +9,6 @@
 #include <locale>
 
 #include "src/base/macros.h"
-#include "vm_apps/utils/string-number-conversions.h"
 
 namespace {
 
@@ -89,7 +88,8 @@ std::string GetCommonCommandLineSwitches() {
   // V8 switches
   result += "  V8 switches:\n" ;
   #define FLAG_FULL(ftype, ctype, nam, def, cmt) \
-      result += StringPrintf("    %-43s %s (type:%s default:%s)\n", #nam, cmt, #ctype, #def) ;
+      result += StringPrintf( \
+          "    %-43s %s (type:%s default:%s)\n", #nam, cmt, #ctype, #def) ;
   #include "src/flag-definitions.h"
   #undef FLAG_FULL
 
