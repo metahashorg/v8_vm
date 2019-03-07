@@ -3619,6 +3619,7 @@ v8_executable("v8_http_server") {
     ":v8",
     "//build/win:default_exe_manifest",
     "//vm_apps/third_party/boringssl:boringssl",
+    "//vm_apps/third_party/url:url",
   ]
 }
 

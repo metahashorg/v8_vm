@@ -33,10 +33,16 @@ namespace internal {
 inline char ToLowerASCII(char c) {
   return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c ;
 }
+inline wchar_t ToLowerASCII(wchar_t c) {
+  return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c ;
+}
 
 // ASCII-specific toupper.  The standard library's toupper is locale sensitive,
 // so we don't want to use it here.
 inline char ToUpperASCII(char c) {
+  return (c >= 'a' && c <= 'z') ? (c + ('A' - 'a')) : c ;
+}
+inline wchar_t ToUpperASCII(wchar_t c) {
   return (c >= 'a' && c <= 'z') ? (c + ('A' - 'a')) : c ;
 }
 
@@ -98,6 +104,8 @@ V8_EXPORT TrimPositions TrimWhitespaceASCII(
 // previously-lower-cased ASCII string (typically a constant).
 V8_EXPORT bool LowerCaseEqualsASCII(
     const std::string& str, const std::string& lowercase_ascii) ;
+V8_EXPORT bool LowerCaseEqualsASCII(
+    const std::wstring& str, const std::string& lowercase_ascii) ;
 
 // Indicates case sensitivity of comparisons. Only ASCII case insensitivity
 // is supported. Full Unicode case-insensitive conversions would need to go in
@@ -118,6 +126,35 @@ V8_EXPORT bool StartsWith(
 V8_EXPORT bool EndsWith(
     const std::string& str, const std::string& search_for,
     CompareCase case_sensitivity);
+
+// Determines the type of ASCII character, independent of locale (the C
+// library versions will change based on locale).
+template <typename Char>
+inline bool IsAsciiWhitespace(Char c) {
+  return c == ' ' || c == '\r' || c == '\n' || c == '\t' ;
+}
+template <typename Char>
+inline bool IsAsciiAlpha(Char c) {
+  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ;
+}
+template <typename Char>
+inline bool IsAsciiUpper(Char c) {
+  return c >= 'A' && c <= 'Z' ;
+}
+template <typename Char>
+inline bool IsAsciiLower(Char c) {
+  return c >= 'a' && c <= 'z' ;
+}
+template <typename Char>
+inline bool IsAsciiDigit(Char c) {
+  return c >= '0' && c <= '9' ;
+}
+template <typename Char>
+inline bool IsHexDigit(Char c) {
+  return (c >= '0' && c <= '9') ||
+         (c >= 'A' && c <= 'F') ||
+         (c >= 'a' && c <= 'f') ;
+}
 
 }  // namespace internal
 }  // namespace vm

@@ -120,7 +120,7 @@ void V8_EXPORT DeinitializeLog() ;
 #define V8_LOG_IS_FUNCTION_LINE_REACHED_ON() ::v8::vm::g_function_line_reached
 
 // Flag on/off is about a log of 'function line has been reached'
-std::atomic<bool> g_function_line_reached(true) ;
+static std::atomic<bool> g_function_line_reached(true) ;
 
 // Prints a message into a log
 void V8_EXPORT PrintLogMessage(

@@ -49,7 +49,7 @@ class HttpRequestInfo : public HttpPackageInfo {
     static const char UserAgent[] ;
   };
 
-  HttpRequestInfo() ;
+  HttpRequestInfo(const IPEndPoint* ip_endpoint = nullptr) ;
   ~HttpRequestInfo() override ;
 
   // Clears the object

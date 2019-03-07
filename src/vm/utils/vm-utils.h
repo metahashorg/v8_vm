@@ -161,9 +161,7 @@ static inline std::string ValueToUtf8(Isolate* isolate, T value) {
   Local<String> value_as_string ;
   if (!value_as_value->ToString(isolate->GetCurrentContext()).
           ToLocal(&value_as_string)) {
-    Error result = errJSUnknown ;
-    V8_ERROR_CREATE_BY_TRY_CATCH(
-        isolate->GetCurrentContext(), result, try_catch) ;
+    V8_LOG_ERR(errJSUnknown, "Can't convert v8::Value to Utf8") ;
     return "" ;
   }
 

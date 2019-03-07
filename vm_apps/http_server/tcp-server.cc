@@ -100,7 +100,11 @@ void TcpServer::OnSessionClosed(TcpServerSession* session) {
   sessions_cv_.notify_all() ;
 }
 
-void TcpServer::OnSessionError(TcpServerSession* session, Error error) {}
+void TcpServer::OnSessionError(TcpServerSession* session, Error error) {
+  V8_LOG_ERR(
+      error, "Session with \'%s\' failed",
+      session->GetPeerAddress().ToString().c_str()) ;
+}
 
 void TcpServer::Run() {
   while(!stop_flag_) {

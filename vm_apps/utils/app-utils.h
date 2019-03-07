@@ -48,6 +48,8 @@ using v8::vm::internal::HexEncode ;
 using v8::vm::internal::HexStringToBytes ;
 using v8::vm::internal::HexStringToInt32 ;
 using v8::vm::internal::HostToNet16 ;
+using v8::vm::internal::IsAsciiAlpha ;
+using v8::vm::internal::IsAsciiLower ;
 using v8::vm::internal::JsonGap ;
 using v8::vm::internal::JsonGapArray ;
 using v8::vm::internal::kJsonComma ;
@@ -70,6 +72,7 @@ using v8::vm::internal::TRIM_NONE ;
 using v8::vm::internal::TRIM_LEADING ;
 using v8::vm::internal::TRIM_TRAILING ;
 using v8::vm::internal::TRIM_ALL ;
+using v8::vm::internal::Uint32ToString ;
 
 // Changes a file extension
 std::string ChangeFileExtension(

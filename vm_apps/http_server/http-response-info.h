@@ -27,8 +27,9 @@ class HttpResponseInfo : public HttpPackageInfo {
     static const char WWWAuthenticate[] ;
   };
 
-  HttpResponseInfo() ;
-  HttpResponseInfo(std::int32_t status_code) ;
+  HttpResponseInfo(const IPEndPoint* ip_endpoint = nullptr) ;
+  HttpResponseInfo(
+      std::int32_t status_code, const IPEndPoint* ip_endpoint = nullptr) ;
   ~HttpResponseInfo() override ;
 
   // Clears the object

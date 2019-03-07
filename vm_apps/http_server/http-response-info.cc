@@ -19,9 +19,12 @@ const char HttpResponseInfo::Header::SetCookie[] = "Set-Cookie" ;
 const char HttpResponseInfo::Header::Vary[] = "Vary" ;
 const char HttpResponseInfo::Header::WWWAuthenticate[] = "WWW-Authenticate" ;
 
-HttpResponseInfo::HttpResponseInfo() {}
+HttpResponseInfo::HttpResponseInfo(const IPEndPoint* ip_endpoint)
+  : HttpResponseInfo(HTTP_OK, ip_endpoint) {}
 
-HttpResponseInfo::HttpResponseInfo(std::int32_t status_code) {
+HttpResponseInfo::HttpResponseInfo(
+    std::int32_t status_code, const IPEndPoint* ip_endpoint)
+  : HttpPackageInfo(ip_endpoint) {
   SetStatusCode(status_code) ;
 }
 

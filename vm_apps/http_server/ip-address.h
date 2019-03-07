@@ -171,14 +171,12 @@ class IPAddress {
   // Returns the canonical string representation of an IP address.
   // For example: "192.168.0.1" or "::1". Returns the empty string when
   // |ip_address_| is invalid.
-  // TODO:
-  // std::string ToString() const ;
+  std::string ToString() const ;
 
   // Parses an IP address literal (either IPv4 or IPv6) to its numeric value.
   // Returns true on success and fills |ip_address_| with the numeric value.
-  // TODO:
-  // V8_WARN_UNUSED_RESULT
-  // bool AssignFromIPLiteral(const std::string& ip_literal) ;
+  V8_WARN_UNUSED_RESULT
+  bool AssignFromIPLiteral(const std::string& ip_literal) ;
 
   // Returns the underlying bytes.
   const IPAddressBytes& bytes() const { return ip_address_ ; }
@@ -218,9 +216,8 @@ using IPAddressList = std::vector<IPAddress> ;
 
 // Returns the canonical string representation of an IP address along with its
 // port. For example: "192.168.0.1:99" or "[::1]:80".
-// TODO:
-// std::string IPAddressToStringWithPort(
-//     const IPAddress& address, std::uint16_t port) ;
+std::string IPAddressToStringWithPort(
+    const IPAddress& address, std::uint16_t port) ;
 
 // Returns the address as a sequence of bytes in network-byte-order.
 std::string IPAddressToPackedString(const IPAddress& address) ;

@@ -181,6 +181,11 @@ bool LowerCaseEqualsASCII(
   return DoLowerCaseEqualsASCII<std::string>(str, lowercase_ascii) ;
 }
 
+bool LowerCaseEqualsASCII(
+    const std::wstring& str, const std::string& lowercase_ascii) {
+  return DoLowerCaseEqualsASCII<std::wstring>(str, lowercase_ascii);
+}
+
 template<typename Str>
 bool StartsWithT(
     const Str& str, const Str& search_for, CompareCase case_sensitivity) {

@@ -11,6 +11,7 @@
 
 #include "src/base/macros.h"
 #include "vm_apps/http_server/http-version.h"
+#include "vm_apps/http_server/ip-endpoint.h"
 #include "vm_apps/utils/app-utils.h"
 
 class HttpPackageInfo {
@@ -57,7 +58,7 @@ class HttpPackageInfo {
     static const char LastModified[] ;
   };
 
-  HttpPackageInfo() ;
+  HttpPackageInfo(const IPEndPoint* ip_endpoint = nullptr) ;
   virtual ~HttpPackageInfo() ;
 
   // Clears the object
@@ -71,6 +72,11 @@ class HttpPackageInfo {
 
   // Sets http-version
   void SetHttpVersion(const HttpVersion& http_version) ;
+
+  // Sets ip-endpoint of the package creator
+  void SetIPEndPoint(const IPEndPoint& ip_endpoint) {
+    ip_endpoint_ = ip_endpoint ;
+  }
 
   // Gets the first header that matches |key|.  If found, returns true and
   // writes the value to |out|.
@@ -118,6 +124,8 @@ class HttpPackageInfo {
 
   HttpVersion http_version() const { return http_version_ ; }
 
+  IPEndPoint ip_endpoint() const { return ip_endpoint_ ; }
+
   Error raw_headers(const char*& headers, std::int32_t& size) const {
     headers = raw_headers_ ;
     size = raw_headers_size_ ;
@@ -140,6 +148,7 @@ class HttpPackageInfo {
   void SetBodyInternal(const char* body, std::int32_t body_size, bool owned) ;
 
   HttpVersion http_version_ = HttpVersion(1, 1) ;
+  IPEndPoint ip_endpoint_ ;
 
   HeaderVector headers_ ;
 

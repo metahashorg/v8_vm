@@ -38,7 +38,8 @@ const char HttpRequestInfo::Header::Referer[] = "Referer" ;
 const char HttpRequestInfo::Header::TE[] = "TE" ;
 const char HttpRequestInfo::Header::UserAgent[] = "User-Agent" ;
 
-HttpRequestInfo::HttpRequestInfo() {}
+HttpRequestInfo::HttpRequestInfo(const IPEndPoint* ip_endpoint)
+  : HttpPackageInfo(ip_endpoint) {}
 
 HttpRequestInfo::~HttpRequestInfo() {}
 

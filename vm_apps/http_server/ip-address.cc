@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <climits>
 
+#include "vm_apps/third_party/url/gurl.h"
+#include "vm_apps/third_party/url/url_canon_ip.h"
+#include "vm_apps/utils/app-utils.h"
+
 namespace {
 
 // The prefix for IPv6 mapped IPv4 addresses.
@@ -101,32 +105,32 @@ bool IsReservedIPv6(const IPAddressBytes& ip_address) {
   return true ;
 }
 
-// TODO:
-// bool ParseIPLiteralToBytes(const base::StringPiece& ip_literal,
-//                            IPAddressBytes* bytes) {
-//   // |ip_literal| could be either an IPv4 or an IPv6 literal. If it contains
-//   // a colon however, it must be an IPv6 address.
-//   if (ip_literal.find(':') != base::StringPiece::npos) {
-//     // GURL expects IPv6 hostnames to be surrounded with brackets.
-//     std::string host_brackets = "[" ;
-//     ip_literal.AppendToString(&host_brackets) ;
-//     host_brackets.push_back(']') ;
-//     url::Component host_comp(0, host_brackets.size()) ;
-//
-//     // Try parsing the hostname as an IPv6 literal.
-//     bytes->Resize(16) ;  // 128 bits.
-//     return url::IPv6AddressToNumber(host_brackets.data(), host_comp,
-//                                     bytes->data()) ;
-//   }
-//
-//   // Otherwise the string is an IPv4 address.
-//   bytes->Resize(4) ;  // 32 bits.
-//   url::Component host_comp(0, ip_literal.size()) ;
-//   int num_components ;
-//   url::CanonHostInfo::Family family = url::IPv4AddressToNumber(
-//       ip_literal.data(), host_comp, bytes->data(), &num_components) ;
-//   return family == url::CanonHostInfo::IPV4 ;
-// }
+bool ParseIPLiteralToBytes(const std::string& ip_literal,
+                           IPAddressBytes* bytes) {
+  // |ip_literal| could be either an IPv4 or an IPv6 literal. If it contains
+  // a colon however, it must be an IPv6 address.
+  if (ip_literal.find(':') != std::string::npos) {
+    // GURL expects IPv6 hostnames to be surrounded with brackets.
+    std::string host_brackets = "[" ;
+    // ip_literal.AppendToString(&host_brackets) ;
+    host_brackets += ip_literal ;
+    host_brackets.push_back(']') ;
+    url::Component host_comp(0, static_cast<int>(host_brackets.length())) ;
+
+    // Try parsing the hostname as an IPv6 literal.
+    bytes->Resize(16) ;  // 128 bits.
+    return url::IPv6AddressToNumber(host_brackets.data(), host_comp,
+                                    bytes->data()) ;
+  }
+
+  // Otherwise the string is an IPv4 address.
+  bytes->Resize(4) ;  // 32 bits.
+  url::Component host_comp(0, static_cast<int>(ip_literal.length())) ;
+  int num_components ;
+  url::CanonHostInfo::Family family = url::IPv4AddressToNumber(
+      ip_literal.data(), host_comp, bytes->data(), &num_components) ;
+  return family == url::CanonHostInfo::IPV4 ;
+}
 
 }  // namespace
 
@@ -247,18 +251,17 @@ bool IPAddress::IsIPv4MappedIPv6() const {
   return IsIPv6() && IPAddressStartsWith(*this, kIPv4MappedPrefix) ;
 }
 
-// TODO:
-// bool IPAddress::AssignFromIPLiteral(const base::StringPiece& ip_literal) {
-//   IPAddressBytes number ;
-//
-//   // TODO(rch): change the contract so ip_address_ is cleared on failure,
-//   // to avoid needing this temporary at all.
-//   if (!ParseIPLiteralToBytes(ip_literal, &number))
-//     return false ;
-//
-//   ip_address_ = number ;
-//   return true ;
-// }
+bool IPAddress::AssignFromIPLiteral(const std::string& ip_literal) {
+  IPAddressBytes number ;
+
+  // TODO(rch): change the contract so ip_address_ is cleared on failure,
+  // to avoid needing this temporary at all.
+  if (!ParseIPLiteralToBytes(ip_literal, &number))
+    return false ;
+
+  ip_address_ = number ;
+  return true ;
+}
 
 std::vector<std::uint8_t> IPAddress::CopyBytesToVector() const {
   return std::vector<std::uint8_t>(ip_address_.begin(), ip_address_.end()) ;
@@ -313,34 +316,32 @@ bool IPAddress::operator<(const IPAddress& that) const {
   return ip_address_ < that.ip_address_ ;
 }
 
-// TODO:
-// std::string IPAddress::ToString() const {
-//   std::string str ;
-//   url::StdStringCanonOutput output(&str) ;
-//
-//   if (IsIPv4()) {
-//     url::AppendIPv4Address(ip_address_.data(), &output) ;
-//   } else if (IsIPv6()) {
-//     url::AppendIPv6Address(ip_address_.data(), &output) ;
-//   }
-//
-//   output.Complete() ;
-//   return str ;
-// }
+std::string IPAddress::ToString() const {
+  std::string str ;
+  url::StdStringCanonOutput output(&str) ;
 
-// TODO:
-// std::string IPAddressToStringWithPort(
-//     const IPAddress& address, std::uint16_t port) {
-//   std::string address_str = address.ToString() ;
-//   if (address_str.empty())
-//     return address_str ;
-//
-//   if (address.IsIPv6()) {
-//     // Need to bracket IPv6 addresses since they contain colons.
-//     return StringPrintf("[%s]:%d", address_str.c_str(), port) ;
-//   }
-//   return StringPrintf("%s:%d", address_str.c_str(), port) ;
-// }
+  if (IsIPv4()) {
+    url::AppendIPv4Address(ip_address_.data(), &output) ;
+  } else if (IsIPv6()) {
+    url::AppendIPv6Address(ip_address_.data(), &output) ;
+  }
+
+  output.Complete() ;
+  return str ;
+}
+
+std::string IPAddressToStringWithPort(
+    const IPAddress& address, std::uint16_t port) {
+  std::string address_str = address.ToString() ;
+  if (address_str.empty())
+    return address_str ;
+
+  if (address.IsIPv6()) {
+    // Need to bracket IPv6 addresses since they contain colons.
+    return StringPrintf("[%s]:%d", address_str.c_str(), port) ;
+  }
+  return StringPrintf("%s:%d", address_str.c_str(), port) ;
+}
 
 std::string IPAddressToPackedString(const IPAddress& address) {
   return std::string(reinterpret_cast<const char*>(address.bytes().data()),

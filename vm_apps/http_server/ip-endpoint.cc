@@ -164,15 +164,13 @@ bool IPEndPoint::FromSockAddr(const struct sockaddr* sock_addr,
   return true ;
 }
 
-// TODO:
-// std::string IPEndPoint::ToString() const {
-//   return IPAddressToStringWithPort(address_, port_) ;
-// }
+std::string IPEndPoint::ToString() const {
+  return IPAddressToStringWithPort(address_, port_) ;
+}
 
-// TODO:
-// std::string IPEndPoint::ToStringWithoutPort() const {
-//   return address_.ToString() ;
-// }
+std::string IPEndPoint::ToStringWithoutPort() const {
+  return address_.ToString() ;
+}
 
 bool IPEndPoint::operator<(const IPEndPoint& other) const {
   // Sort IPv4 before IPv6.

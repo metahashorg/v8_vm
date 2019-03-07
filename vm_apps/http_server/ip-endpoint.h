@@ -56,13 +56,11 @@ class IPEndPoint {
 
   // Returns value as a string (e.g. "127.0.0.1:80"). Returns the empty string
   // when |address_| is invalid (the port will be ignored).
-  // TODO:
-  // std::string ToString() const ;
+  std::string ToString() const ;
 
   // As above, but without port. Returns the empty string when address_ is
   // invalid.
-  // TODO:
-  // std::string ToStringWithoutPort() const ;
+  std::string ToStringWithoutPort() const ;
 
   bool operator <(const IPEndPoint& that) const ;
   bool operator ==(const IPEndPoint& that) const ;

@@ -197,7 +197,8 @@ HttpPackageInfo::HeaderKeyValuePair::HeaderKeyValuePair(
     : key(key.data(), key.size()), value(value.data(), value.size()) {
 }
 
-HttpPackageInfo::HttpPackageInfo() {}
+HttpPackageInfo::HttpPackageInfo(const IPEndPoint* ip_endpoint)
+  : ip_endpoint_(ip_endpoint ? *ip_endpoint : IPEndPoint()) {}
 
 HttpPackageInfo::~HttpPackageInfo() {
   Clear() ;

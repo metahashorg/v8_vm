@@ -4,6 +4,8 @@
 
 #include "vm_apps/http_server/tcp-server-session.h"
 
+#include "include/v8-vm-log.h"
+
 namespace {
 
 std::int32_t kDefaultReadAndWriteAttemptCount = 10 ;
@@ -59,6 +61,38 @@ void TcpServerSession::SetClosedCallback(const ClosedCallback& callback) {
 
 void TcpServerSession::SetErrorCallback(const ErrorCallback& callback) {
   error_callback_ = callback ;
+}
+
+IPEndPoint TcpServerSession::GetPeerAddress() const {
+  if (!socket_) {
+    V8_LOG_ERR(errObjNotInit, "Can't get the peer address") ;
+    return IPEndPoint() ;
+  }
+
+  IPEndPoint result ;
+  Error error = socket_->GetPeerAddress(&result) ;
+  if (V8_ERROR_FAILED(error)) {
+    V8_LOG_ERR(error, "Can't get the peer address") ;
+    return IPEndPoint() ;
+  }
+
+  return result ;
+}
+
+IPEndPoint TcpServerSession::GetLocalAddress() const {
+  if (!socket_) {
+    V8_LOG_ERR(errObjNotInit, "Can't get the local address") ;
+    return IPEndPoint() ;
+  }
+
+  IPEndPoint result ;
+  Error error = socket_->GetLocalAddress(&result) ;
+  if (V8_ERROR_FAILED(error)) {
+    V8_LOG_ERR(error, "Can't get the local address") ;
+    return IPEndPoint() ;
+  }
+
+  return result ;
 }
 
 TcpServerSession::TcpServerSession(std::unique_ptr<StreamSocket>& socket)
@@ -161,6 +195,8 @@ Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
 }
 
 void TcpServerSession::Run() {
+  V8_LOG_INF("TCP-session - IP:\'%s\'", GetPeerAddress().ToString().c_str()) ;
+
   Error result = Do() ;
   if (error_callback_ && V8_ERROR_FAILED(result)) {
     error_callback_(this, result) ;

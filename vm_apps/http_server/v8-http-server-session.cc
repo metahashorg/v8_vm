@@ -735,7 +735,9 @@ Error V8HttpServerSession::Do() {
 
   // TODO: Add IP-address to origin - "http-request from 127.0.0.1:8080"
   RequestParser parser ;
-  result = parser.Parse("http-request", body, body_size, request_) ;
+  std::string origin = StringPrintf(
+      "http-request (%s)", http_request_.ip_endpoint().ToString().c_str()) ;
+  result = parser.Parse(origin.c_str(), body, body_size, request_) ;
   if (V8_ERROR_FAILED(result)) {
     http_response_.SetStatusCode(HTTP_BAD_REQUEST) ;
     V8_LOG_RETURN WriteErrorResponseBody(

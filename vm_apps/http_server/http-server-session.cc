@@ -81,6 +81,7 @@ Error HttpServerSession::GetBody(
 Error HttpServerSession::ReadRequestHeader() {
   // Read http-headers
   Error result = errOk ;
+  IPEndPoint local_address(GetLocalAddress()) ;
   std::vector<char> headers_buffer(kHeaderBufferSize) ;
   std::uint8_t http_header_end_flag = 0 ;
   for (; V8_ERROR_SUCCESS(result);) {
@@ -127,7 +128,8 @@ Error HttpServerSession::ReadRequestHeader() {
 
     if (raw_headers_.size() > kHeaderMaxSize) {
       result = errNetEntityTooLarge ;
-      response_.reset(new HttpResponseInfo(HTTP_REQUEST_ENTITY_TOO_LARGE)) ;
+      response_.reset(new HttpResponseInfo(
+          HTTP_REQUEST_ENTITY_TOO_LARGE, &local_address)) ;
       if (error_handler_) {
         error_handler_(result, *response_) ;
       }
@@ -139,12 +141,13 @@ Error HttpServerSession::ReadRequestHeader() {
   V8_ERROR_RETURN_IF_FAILED(result) ;
 
   // Parse http-headers
-  request_.reset(new HttpRequestInfo()) ;
+  IPEndPoint peer_address(GetPeerAddress()) ;
+  request_.reset(new HttpRequestInfo(&peer_address)) ;
   result = request_->Parse(
       &raw_headers_.at(0), static_cast<std::int32_t>(raw_headers_.size())) ;
   if (V8_ERROR_FAILED(result)) {
     request_.reset() ;
-    response_.reset(new HttpResponseInfo(HTTP_BAD_REQUEST)) ;
+    response_.reset(new HttpResponseInfo(HTTP_BAD_REQUEST, &local_address)) ;
     if (error_handler_) {
       error_handler_(result, *response_) ;
     }
@@ -153,7 +156,7 @@ Error HttpServerSession::ReadRequestHeader() {
         errNetInvalidPackage, result, V8_ERROR_MSG_FUNCTION_FAILED()) ;
   }
 
-  response_.reset(new HttpResponseInfo()) ;
+  response_.reset(new HttpResponseInfo(&local_address)) ;
   request_->SetBody(std::bind(
       &HttpServerSession::GetBody, std::ref(*this), std::placeholders::_1,
       std::placeholders::_2, std::placeholders::_3)) ;
@@ -208,16 +211,19 @@ Error HttpServerSession::Do() {
   }
 
   V8_LOG_INF(
-      "Host: \'%s\' Uri:\'%s\'", request_->host().c_str(),
-      request_->uri().c_str()) ;
+      "HTTP-session - IP:\'%s\' Method:\'%s\' Host: \'%s\' Uri:\'%s\'",
+      GetPeerAddress().ToString().c_str(), request_->method().c_str(),
+      request_->host().c_str(), request_->uri().c_str()) ;
 
   // Call a handler if it exists
+  IPEndPoint local_address(GetLocalAddress()) ;
   if (session_handler_) {
     result = session_handler_(*request_, *response_) ;
     if (V8_ERROR_FAILED(result)) {
       V8_ERROR_ADD_MSG(result, "session_handler_(...) is failed") ;
       // Refresh a response because of a handler call
-      response_.reset(new HttpResponseInfo(HTTP_INTERNAL_SERVER_ERROR)) ;
+      response_.reset(new HttpResponseInfo(
+          HTTP_INTERNAL_SERVER_ERROR, &local_address)) ;
       SetResponseDefaultHeaders() ;
       if (error_handler_) {
         error_handler_(result, *response_) ;

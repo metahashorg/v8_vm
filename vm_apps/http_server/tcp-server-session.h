@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "src/base/macros.h"
+#include "vm_apps/http_server/ip-endpoint.h"
 #include "vm_apps/http_server/stream-socket.h"
 #include "vm_apps/utils/app-utils.h"
 
@@ -42,6 +43,12 @@ class TcpServerSession {
 
   // Sets callback for a session error
   void SetErrorCallback(const ErrorCallback& callback) ;
+
+  // Returns the peer address
+  IPEndPoint GetPeerAddress() const ;
+
+  // Returns the local address
+  IPEndPoint GetLocalAddress() const ;
 
  protected:
   TcpServerSession(std::unique_ptr<StreamSocket>& socket) ;

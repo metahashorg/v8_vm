@@ -30,9 +30,8 @@ class ServerSocket {
 
   // Binds the socket with address and port, and starts listening. It expects
   // a valid IPv4 or IPv6 address. Otherwise, it returns errNetAddressInvalid.
-  // TODO:
-  // virtual Error ListenWithAddressAndPort(
-  //     const std::string& address_string, std::uint16_t port, int backlog) ;
+  virtual Error ListenWithAddressAndPort(
+      const std::string& address_string, std::uint16_t port, int backlog) ;
 
   // Gets current address the socket is bound to.
   virtual Error GetLocalAddress(IPEndPoint* address) const = 0 ;

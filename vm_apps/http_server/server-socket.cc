@@ -17,13 +17,14 @@ ServerSocket::ServerSocket() {
 ServerSocket::~ServerSocket() {
 }
 
-// TODO:
-// int ServerSocket::ListenWithAddressAndPort(
-//     const std::string& address_string, std::uint16_t port, int backlog) {
-//   IPAddress ip_address ;
-//   if (!ip_address.AssignFromIPLiteral(address_string)) {
-//     return errNetAddressInvalid ;
-//   }
-//
-//   return Listen(IPEndPoint(ip_address, port), backlog) ;
-// }
+Error ServerSocket::ListenWithAddressAndPort(
+    const std::string& address_string, std::uint16_t port, int backlog) {
+  IPAddress ip_address ;
+  if (!ip_address.AssignFromIPLiteral(address_string)) {
+    return V8_ERROR_CREATE_WITH_MSG_SP(
+        errNetAddressInvalid, "The net address is invalid - '%s'",
+        address_string.c_str()) ;
+  }
+
+  return Listen(IPEndPoint(ip_address, port), backlog) ;
+}
