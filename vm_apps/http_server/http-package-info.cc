@@ -149,7 +149,7 @@ bool HeadersIterator::GetNext() {
     }
 
     TrimLWS(&name_begin_, &name_end_) ;
-    // TODO: DCHECK(name_begin_ < name_end_) ;
+    DCHECK(name_begin_ < name_end_) ;
     if (!HttpPackageInfo::IsToken(std::string(name_begin_, name_end_))) {
       continue ;  // skip malformed header
     }
@@ -290,7 +290,7 @@ void HttpPackageInfo::SetHttpVersion(const HttpVersion& http_version) {
   }
 
   if (http_version != http_version_) {
-    // TODO: DCHECK(http_version == http_version_) ;
+    DCHECK(http_version == http_version_) ;
     V8_LOG_WRN(
         wrnInvalidArgument, "Try to set a corrupted HTTP version (HTTP/%d.%d)",
         http_version.major_value(), http_version.minor_value()) ;
@@ -318,9 +318,8 @@ void HttpPackageInfo::RemoveHeader(const std::string& key) {
 
 Error HttpPackageInfo::SetHeader(
     const std::string& key, const std::string& value) {
-  // TODO:
-  // DCHECK(IsValidHeaderName(key)) ;
-  // DCHECK(IsValidHeaderValue(value)) ;
+  DCHECK(IsValidHeaderName(key)) ;
+  DCHECK(IsValidHeaderValue(value)) ;
 
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
     return V8_ERROR_CREATE_WITH_MSG_SP(
@@ -341,9 +340,8 @@ Error HttpPackageInfo::SetHeader(
 
 Error HttpPackageInfo::SetHeaderIfMissing(
     const std::string& key, const std::string& value) {
-  // TODO:
-  // DCHECK(IsValidHeaderName(key)) ;
-  // DCHECK(IsValidHeaderValue(value)) ;
+  DCHECK(IsValidHeaderName(key)) ;
+  DCHECK(IsValidHeaderValue(value)) ;
 
   if (!IsValidHeaderName(key) || !IsValidHeaderValue(value)) {
     return V8_ERROR_CREATE_WITH_MSG_SP(
@@ -362,7 +360,7 @@ Error HttpPackageInfo::SetHeaderIfMissing(
 }
 
 Error HttpPackageInfo::GetBody(const char*& body, std::int32_t& body_size) {
-  // TODO: DCHECK(body_error_ != wrnObjNotInit || body_getter_) ;
+  DCHECK(body_error_ != wrnObjNotInit || body_getter_) ;
 
   if (body_error_ == wrnObjNotInit && body_getter_) {
     const char* local_body = nullptr ;

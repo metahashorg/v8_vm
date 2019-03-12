@@ -15,7 +15,7 @@ TcpClientSocket::TcpClientSocket(
     addresses_(AddressList(peer_address)),
     current_address_index_(0),
     total_received_bytes_(0) {
-  // TODO: DCHECK(socket_);
+  DCHECK(socket_) ;
 
   socket_->SetDefaultOptionsForClient() ;
 }
@@ -55,7 +55,7 @@ Error TcpClientSocket::GetPeerAddress(IPEndPoint* address) const {
 }
 
 Error TcpClientSocket::GetLocalAddress(IPEndPoint* address) const {
-  // TODO: DCHECK(address) ;
+  DCHECK(address) ;
 
   if (!socket_->IsValid()) {
     if (bind_address_) {

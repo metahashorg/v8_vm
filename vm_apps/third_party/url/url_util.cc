@@ -461,8 +461,7 @@ bool DoReplaceComponents(const char* spec,
 }
 
 void DoAddScheme(const char* new_scheme, std::vector<std::string>* schemes) {
-  // TODO:
-  // DCHECK(schemes);
+  DCHECK(schemes) ;
   // If this assert triggers, it means you've called Add*Scheme after
   // LockSchemeRegistries has been called (see the header file for
   // LockSchemeRegistries for more).
@@ -470,24 +469,20 @@ void DoAddScheme(const char* new_scheme, std::vector<std::string>* schemes) {
   // This normally means you're trying to set up a new scheme too late in your
   // application's init process. Locate where your app does this initialization
   // and calls LockSchemeRegistries, and add your new scheme there.
-  // TODO:
-  // DCHECK(!scheme_registries_locked)
-  //     << "Trying to add a scheme after the lists have been locked.";
+  DCHECK(!scheme_registries_locked) ;
 
   size_t scheme_len = strlen(new_scheme);
   if (scheme_len == 0)
     return;
 
-  // TODO:
-  // DCHECK_EQ(base::ToLowerASCII(new_scheme), new_scheme);
+  DCHECK_EQ(base::ToLowerASCII(new_scheme), new_scheme) ;
   schemes->push_back(std::string(new_scheme));
 }
 
 void DoAddSchemeWithType(const char* new_scheme,
                          SchemeType type,
                          std::vector<SchemeWithType>* schemes) {
-  // TODO:
-  // DCHECK(schemes);
+  DCHECK(schemes) ;
   // If this assert triggers, it means you've called Add*Scheme after
   // LockSchemeRegistries has been called (see the header file for
   // LockSchemeRegistries for more).
@@ -495,16 +490,13 @@ void DoAddSchemeWithType(const char* new_scheme,
   // This normally means you're trying to set up a new scheme too late in your
   // application's init process. Locate where your app does this initialization
   // and calls LockSchemeRegistries, and add your new scheme there.
-  // TODO:
-  // DCHECK(!scheme_registries_locked)
-  //     << "Trying to add a scheme after the lists have been locked.";
+  DCHECK(!scheme_registries_locked) ;
 
   size_t scheme_len = strlen(new_scheme);
   if (scheme_len == 0)
     return;
 
-  // TODO:
-  // DCHECK_EQ(base::ToLowerASCII(new_scheme), new_scheme);
+  DCHECK_EQ(base::ToLowerASCII(new_scheme), new_scheme) ;
   // Duplicate the scheme into a new buffer and add it to the list of standard
   // schemes. This pointer will be leaked on shutdown.
   char* dup_scheme = new char[scheme_len + 1];

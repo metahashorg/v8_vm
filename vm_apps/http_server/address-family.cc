@@ -30,6 +30,6 @@ int ConvertAddressFamily(AddressFamily address_family) {
     case ADDRESS_FAMILY_IPV6:
       return AF_INET6 ;
   }
-  // TODO: NOTREACHED() ;
+  UNREACHABLE() ;
   return AF_UNSPEC ;
 }

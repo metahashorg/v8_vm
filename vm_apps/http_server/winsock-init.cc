@@ -21,7 +21,7 @@ class WinsockInitSingleton {
     WSAData wsa_data ;
     bool did_init = (WSAStartup(winsock_ver, &wsa_data) == 0) ;
     if (did_init) {
-      // TODO: DCHECK(wsa_data.wVersion == winsock_ver) ;
+      DCHECK(wsa_data.wVersion == winsock_ver) ;
 
       // The first time WSAGetLastError is called, the delay load helper will
       // resolve the address with GetProcAddress and fixup the import.  If a

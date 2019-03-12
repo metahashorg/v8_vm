@@ -41,7 +41,7 @@ AddressList AddressList::CreateFromIPAddressList(
 
 // static
 AddressList AddressList::CreateFromAddrinfo(const struct addrinfo* head) {
-  // TODO: DCHECK(head);
+  DCHECK(head) ;
   AddressList list ;
   if (head->ai_canonname) {
     list.set_canonical_name(std::string(head->ai_canonname)) ;

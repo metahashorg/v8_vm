@@ -10,6 +10,7 @@
 
 // @metahash #include "src/base/lazy-instance.h"
 // @metahash #include "base/logging.h"
+#include "include/v8-vm-log.h"
 #include "third_party/icu/source/common/unicode/ucnv.h"
 #include "third_party/icu/source/common/unicode/ucnv_cb.h"
 #include "third_party/icu/source/common/unicode/uidna.h"
@@ -38,8 +39,7 @@ void appendURLEscapedChar(const void* context,
     const static char prefix[prefix_len + 1] = "%26%23";  // "&#" percent-escaped
     ucnv_cbFromUWriteBytes(from_args, prefix, prefix_len, 0, err);
 
-    // TODO:
-    // DCHECK(code_point < 0x110000);
+    DCHECK(code_point < 0x110000) ;
     char number[8];  // Max Unicode code point is 7 digits.
     _itoa_s(code_point, number, 10);
     int number_len = static_cast<int>(strlen(number));
@@ -102,8 +102,8 @@ struct UIDNAWrapper {
     // registrars, search engines) converge toward a consensus.
     value = uidna_openUTS46(UIDNA_CHECK_BIDI, &err);
     if (U_FAILURE(err)) {
-      // TODO:
-      // CHECK(false) << "failed to open UTS46 data with error: " << err;
+      V8_LOG_ERR(errFailed, "Failed to open UTS46 data with error: %d", err) ;
+      CHECK(false) ;
       value = NULL;
     }
   }
@@ -178,8 +178,7 @@ void ICUCharsetConverter::ConvertFromUTF16(const wchar_t* input,
 // version with StringByteSink. That way, we can avoid C wrappers and additional
 // string conversion.
 bool IDNToASCII(const wchar_t* src, int src_len, CanonOutputW* output) {
-  // TODO:
-  // DCHECK(output->length() == 0);  // Output buffer is assumed empty.
+  DCHECK(output->length() == 0) ;  // Output buffer is assumed empty.
 
   /* TODO: char16
   UIDNA* uidna = g_uidna.Get().value;

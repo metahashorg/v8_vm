@@ -74,8 +74,7 @@ TcpSocketWin::~TcpSocketWin() {
 }
 
 Error TcpSocketWin::Open(AddressFamily family) {
-  // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_) ;
-  // TODO: DCHECK_EQ(socket_, INVALID_SOCKET) ;
+  DCHECK_EQ(socket_, INVALID_SOCKET) ;
 
   socket_ = CreatePlatformSocket(
       ConvertAddressFamily(family), SOCK_STREAM, IPPROTO_TCP) ;
@@ -100,7 +99,7 @@ Error TcpSocketWin::Open(AddressFamily family) {
 
 Error TcpSocketWin::AdoptConnectedSocket(
     SocketDescriptor socket, const IPEndPoint& peer_address) {
-  // TODO: DCHECK_EQ(socket_, INVALID_SOCKET);
+  DCHECK_EQ(socket_, INVALID_SOCKET) ;
 
   socket_ = socket ;
 
@@ -118,8 +117,7 @@ Error TcpSocketWin::AdoptConnectedSocket(
 }
 
 Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
-  // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_) ;
-  // TODO: DCHECK_EQ(socket_, INVALID_SOCKET) ;
+  DCHECK_EQ(socket_, INVALID_SOCKET) ;
 
   socket_ = socket ;
 
@@ -139,8 +137,7 @@ Error TcpSocketWin::AdoptUnconnectedSocket(SocketDescriptor socket) {
 }
 
 Error TcpSocketWin::Bind(const IPEndPoint& address) {
-  // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
-  // TODO: DCHECK_NE(socket_, INVALID_SOCKET);
+  DCHECK_NE(socket_, INVALID_SOCKET) ;
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
@@ -160,9 +157,9 @@ Error TcpSocketWin::Bind(const IPEndPoint& address) {
 }
 
 Error TcpSocketWin::Listen(int backlog) {
-  // TODO: DCHECK_GT(backlog, 0) ;
-  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
-  // TODO: DCHECK_EQ(accept_event_, WSA_INVALID_EVENT) ;
+  DCHECK_GT(backlog, 0) ;
+  DCHECK_NE(socket_, INVALID_SOCKET) ;
+  DCHECK_EQ(accept_event_, WSA_INVALID_EVENT) ;
 
   accept_event_ = WSACreateEvent() ;
   int os_error = WSAGetLastError() ;
@@ -186,10 +183,10 @@ Error TcpSocketWin::Listen(int backlog) {
 Error TcpSocketWin::Accept(
     std::unique_ptr<TcpSocketWin>* socket, IPEndPoint* address,
     Timeout timeout) {
-  // TODO: DCHECK(socket) ;
-  // TODO: DCHECK(address) ;
-  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
-  // TODO: DCHECK_NE(accept_event_, WSA_INVALID_EVENT) ;
+  DCHECK(socket) ;
+  DCHECK(address) ;
+  DCHECK_NE(socket_, INVALID_SOCKET) ;
+  DCHECK_NE(accept_event_, WSA_INVALID_EVENT) ;
 
   WSAResetEvent(accept_event_) ;
   WSAEventSelect(socket_, accept_event_, FD_ACCEPT) ;
@@ -220,7 +217,6 @@ Error TcpSocketWin::Accept(
 
   IPEndPoint ip_end_point ;
   if (!ip_end_point.FromSockAddr(storage.addr, storage.addr_len)) {
-    // TODO: NOTREACHED();
     if (closesocket(new_socket) < 0) {
       os_error = WSAGetLastError() ;
       V8_LOG_ERR(
@@ -292,8 +288,8 @@ bool TcpSocketWin::IsConnectedAndIdle() const {
 }
 
 Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
-  // TODO: DCHECK(!waiting_read_) ;
+  DCHECK_NE(socket_, INVALID_SOCKET) ;
+  DCHECK(!waiting_read_) ;
 
   // Set a flag of waiting read
   TemporarilySetValue<bool> waiting_read(waiting_read_, true) ;
@@ -347,8 +343,7 @@ Error TcpSocketWin::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
 
 Error TcpSocketWin::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO: DCHECK_NE(socket_, INVALID_SOCKET) ;
-  // TODO: DCHECK(!waiting_write_) ;
+  DCHECK_NE(socket_, INVALID_SOCKET) ;
 
   // Set a flag of waiting read
   TemporarilySetValue<bool> waiting_wtite(waiting_write_, true) ;
@@ -405,7 +400,7 @@ Error TcpSocketWin::Write(
 }
 
 Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
-  // TODO: DCHECK(address) ;
+  DCHECK(address) ;
 
   SockaddrStorage storage ;
   if (getsockname(socket_, storage.addr, &storage.addr_len)) {
@@ -423,7 +418,7 @@ Error TcpSocketWin::GetLocalAddress(IPEndPoint* address) const {
 }
 
 Error TcpSocketWin::GetPeerAddress(IPEndPoint* address) const {
-  // TODO: DCHECK(address) ;
+  DCHECK(address) ;
   if (!IsConnected()) {
     return V8_ERROR_CREATE_WITH_MSG(
         errNetSocketNotConnected, V8_ERROR_MSG_FUNCTION_FAILED()) ;
@@ -489,8 +484,6 @@ bool TcpSocketWin::SetNoDelay(bool no_delay) {
 }
 
 void TcpSocketWin::Close() {
-  // TODO: DCHECK_CALLED_ON_VALID_THREAD(thread_checker_) ;
-
   if (socket_ != INVALID_SOCKET) {
     // Note: don't use CancelIo to cancel pending IO because it doesn't work
     // when there is a Winsock layered service provider.

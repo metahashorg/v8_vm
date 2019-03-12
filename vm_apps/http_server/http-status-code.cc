@@ -8,6 +8,9 @@
 
 #include "vm_apps/http_server/http-status-code.h"
 
+#include "include/v8-vm-log.h"
+#include "src/base/logging.h"
+
 const char* GetHttpReasonPhrase(HttpStatusCode code, bool with_code) {
   switch (code) {
 
@@ -16,9 +19,9 @@ const char* GetHttpReasonPhrase(HttpStatusCode code, bool with_code) {
 #include "vm_apps/http_server/http-status-code-list.h"
 #undef HTTP_STATUS
 
-    // TODO:
-    // default:
-    //   NOTREACHED() << "unknown HTTP status code " << code ;
+    default:
+      V8_LOG_ERR(errUnknown, "Unknown HTTP status code - %d", code) ;
+      UNREACHABLE() ;
   }
 
   return "" ;

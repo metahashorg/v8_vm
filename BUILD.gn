@@ -3617,6 +3617,7 @@ v8_executable("v8_http_server") {
 
   deps = [
     ":v8",
+    ":v8_libbase",
     "//build/win:default_exe_manifest",
     "//vm_apps/third_party/boringssl:boringssl",
     "//vm_apps/third_party/url:url",
@@ -3642,6 +3643,7 @@ v8_executable("v8_vm") {
 
   deps = [
     ":v8",
+    ":v8_libbase",
     "//build/win:default_exe_manifest",
   ]
 }

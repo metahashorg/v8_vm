@@ -69,6 +69,7 @@ component("url") {
     # @metahash "//base",
     # @metahash "//base/third_party/dynamic_annotations",
     "//:v8",
+    "//:v8_libbase",
   ]
 
   if (is_win) {

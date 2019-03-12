@@ -56,7 +56,7 @@ bool IPAddressPrefixCheck(const IPAddressBytes& ip_address,
 // iana-ipv4-special-registry.xhtml
 bool IsReservedIPv4(const IPAddressBytes& ip_address) {
   // Different IP versions have different range reservations.
-  // TODO: DCHECK_EQ(IPAddress::kIPv4AddressSize, ip_address.size()) ;
+  DCHECK_EQ(IPAddress::kIPv4AddressSize, ip_address.size()) ;
   struct {
     const std::uint8_t address[4] ;
     size_t prefix_length_in_bits ;
@@ -84,7 +84,7 @@ bool IsReservedIPv4(const IPAddressBytes& ip_address) {
 // www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml
 bool IsReservedIPv6(const IPAddressBytes& ip_address) {
   // Different IP versions have different range reservations.
-  // TODO: DCHECK_EQ(IPAddress::kIPv6AddressSize, ip_address.size()) ;
+  DCHECK_EQ(IPAddress::kIPv6AddressSize, ip_address.size()) ;
   struct {
     const std::uint8_t address_prefix[2] ;
     size_t prefix_length_in_bits ;
@@ -145,7 +145,7 @@ IPAddressBytes::IPAddressBytes(IPAddressBytes const& other) = default ;
 
 void IPAddressBytes::Assign(const std::uint8_t* data, size_t data_len) {
   size_ = data_len ;
-  // TODO: CHECK_GE(16u, data_len) ;
+  CHECK_GE(16u, data_len) ;
   std::copy_n(data, data_len, bytes_.data()) ;
 }
 
@@ -282,7 +282,7 @@ IPAddress IPAddress::IPv6Localhost() {
 
 // static
 IPAddress IPAddress::AllZeros(size_t num_zero_bytes) {
-  // TODO: CHECK_LE(num_zero_bytes, 16u) ;
+  CHECK_LE(num_zero_bytes, 16u) ;
   IPAddress result ;
   for (size_t i = 0; i < num_zero_bytes; ++i)
     result.ip_address_.push_back(0u) ;
@@ -443,7 +443,7 @@ std::string IPAddressToPackedString(const IPAddress& address) {
 // }
 
 unsigned CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
-  // TODO: DCHECK_EQ(a1.size(), a2.size()) ;
+  DCHECK_EQ(a1.size(), a2.size()) ;
   for (size_t i = 0; i < a1.size(); ++i) {
     unsigned diff = a1.bytes()[i] ^ a2.bytes()[i] ;
     if (!diff)
@@ -453,7 +453,7 @@ unsigned CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
         return static_cast<unsigned>(i * CHAR_BIT + j) ;
       diff <<= 1 ;
     }
-    // TODO: NOTREACHED() ;
+    UNREACHABLE() ;
   }
   return static_cast<unsigned>(a1.size() * CHAR_BIT) ;
 }

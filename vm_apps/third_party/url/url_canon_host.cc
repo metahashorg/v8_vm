@@ -322,7 +322,7 @@ bool DoHostSubstring(const CHAR* spec,
 
   const bool success =
       DoSimpleHost(&spec[host.begin], host.len, output, &has_non_ascii);
-  // TODO: DCHECK(!has_non_ascii);
+  DCHECK(!has_non_ascii) ;
   return success;
 }
 

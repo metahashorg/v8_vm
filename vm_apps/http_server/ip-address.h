@@ -66,7 +66,7 @@ class IPAddressBytes {
 
   // Appends |val| to the end and increments the size.
   void push_back(std::uint8_t val) {
-    // TODO: DCHECK_GT(16, size_) ;
+    DCHECK_GT(16, size_) ;
     bytes_[size_++] = val ;
   }
 
@@ -76,7 +76,7 @@ class IPAddressBytes {
     return bytes_[pos] ;
   }
   const std::uint8_t& operator[](size_t pos) const {
-    // TODO: DCHECK_LT(pos, size_) ;
+    DCHECK_LT(pos, size_) ;
     return bytes_[pos] ;
   }
 

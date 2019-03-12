@@ -9,10 +9,10 @@
 #include <algorithm>
 #include <ostream>
 
-// @metahash #include "base/logging.h"
 // @metahash #include "base/strings/string_piece.h"
-// @metahash #include "base/strings/string_util.h"
 // @metahash #include "base/trace_event/memory_usage_estimator.h"
+#include "include/v8-vm-log.h"
+#include "src/base/logging.h"
 #include "vm_apps/third_party/url/url_canon_stdstring.h"
 #include "vm_apps/third_party/url/url_util.h"
 
@@ -76,7 +76,7 @@ GURL::GURL(const GURL& other)
   if (other.inner_url_)
     inner_url_.reset(new GURL(*other.inner_url_));
   // Valid filesystem urls should always have an inner_url_.
-  // TODO: DCHECK(!is_valid_ || !SchemeIsFileSystem() || inner_url_);
+  DCHECK(!is_valid_ || !SchemeIsFileSystem() || inner_url_) ;
 }
 
 GURL::GURL(GURL&& other) noexcept
@@ -129,7 +129,7 @@ void GURL::InitCanonical(STR input_spec,
                               *parsed_.inner_parsed(), true));
   }
   // Valid URLs always have non-empty specs.
-  // TODO: DCHECK(!is_valid_ || !spec_.empty());
+  DCHECK(!is_valid_ || !spec_.empty()) ;
 }
 
 void GURL::InitializeFromCanonicalSpec() {
@@ -144,7 +144,7 @@ void GURL::InitializeFromCanonicalSpec() {
   // what we would have produced. Skip checking for invalid URLs have no meaning
   // and we can't always canonicalize then reproducibly.
   if (is_valid_) {
-    // TODO: DCHECK(!spec_.empty());
+    DCHECK(!spec_.empty()) ;
     url::Component scheme;
     // We can't do this check on the inner_url of a filesystem URL, as
     // canonical_spec actually points to the start of the outer URL, so we'd
@@ -158,19 +158,17 @@ void GURL::InitializeFromCanonicalSpec() {
       // removed from a "foo:hello #ref" URL (see http://crbug.com/291747).
       GURL test_url(spec_, RETAIN_TRAILING_PATH_WHITEPACE);
 
-      // TODO:
-      // DCHECK(test_url.is_valid_ == is_valid_);
-      // DCHECK(test_url.spec_ == spec_);
+      DCHECK(test_url.is_valid_ == is_valid_) ;
+      DCHECK(test_url.spec_ == spec_) ;
 
-      // TODO:
-      // DCHECK(test_url.parsed_.scheme == parsed_.scheme);
-      // DCHECK(test_url.parsed_.username == parsed_.username);
-      // DCHECK(test_url.parsed_.password == parsed_.password);
-      // DCHECK(test_url.parsed_.host == parsed_.host);
-      // DCHECK(test_url.parsed_.port == parsed_.port);
-      // DCHECK(test_url.parsed_.path == parsed_.path);
-      // DCHECK(test_url.parsed_.query == parsed_.query);
-      // DCHECK(test_url.parsed_.ref == parsed_.ref);
+      DCHECK(test_url.parsed_.scheme == parsed_.scheme) ;
+      DCHECK(test_url.parsed_.username == parsed_.username) ;
+      DCHECK(test_url.parsed_.password == parsed_.password) ;
+      DCHECK(test_url.parsed_.host == parsed_.host) ;
+      DCHECK(test_url.parsed_.port == parsed_.port) ;
+      DCHECK(test_url.parsed_.path == parsed_.path) ;
+      DCHECK(test_url.parsed_.query == parsed_.query) ;
+      DCHECK(test_url.parsed_.ref == parsed_.ref) ;
     }
   }
 #endif
@@ -209,7 +207,8 @@ const std::string& GURL::spec() const {
   if (is_valid_ || spec_.empty())
     return spec_;
 
-  // TODO: DCHECK(false) << "Trying to get the spec of an invalid URL!";
+  V8_LOG_ERR(errFailed, "Trying to get the spec of an invalid URL!") ;
+  DCHECK(false) ;
   return EmptyStringForGURL();
 }
 
@@ -398,9 +397,8 @@ bool GURL::IsAboutBlank() const {
 }
 
 bool GURL::SchemeIs(std::string lower_ascii_scheme) const {
-  // TODO:
-  // DCHECK(base::IsStringASCII(lower_ascii_scheme));
-  // DCHECK(base::ToLowerASCII(lower_ascii_scheme) == lower_ascii_scheme);
+  DCHECK(base::IsStringASCII(lower_ascii_scheme)) ;
+  DCHECK(base::ToLowerASCII(lower_ascii_scheme) == lower_ascii_scheme) ;
 
   if (parsed_.scheme.len <= 0)
     return lower_ascii_scheme.empty();
@@ -440,9 +438,7 @@ std::string GURL::ExtractFileName() const {
 }
 
 std::string GURL::PathForRequest() const {
-  // TODO:
-  // DCHECK(parsed_.path.len > 0)
-  //     << "Canonical path for requests should be non-empty";
+  DCHECK(parsed_.path.len > 0) ;
   if (parsed_.ref.len >= 0) {
     // Clip off the reference when it exists. The reference starts after the
     // #-sign, so we have to subtract one to also remove it.
@@ -557,7 +553,7 @@ bool operator!=(const GURL& x, const GURL& y) {
 }
 
 bool operator==(const GURL& x, const std::string& spec) {
-  // TODO: DCHECK_EQ(GURL(spec).possibly_invalid_spec(), spec);
+  DCHECK_EQ(GURL(spec).possibly_invalid_spec(), spec) ;
   return x.possibly_invalid_spec() == spec;
 }
 

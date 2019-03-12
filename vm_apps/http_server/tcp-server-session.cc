@@ -98,16 +98,15 @@ IPEndPoint TcpServerSession::GetLocalAddress() const {
 TcpServerSession::TcpServerSession(std::unique_ptr<StreamSocket>& socket)
   : stop_flag_(false),
     read_and_write_attempt_count_(kDefaultReadAndWriteAttemptCount) {
-  // TODO: DCHECK(socket.get()) ;
+  DCHECK(socket.get()) ;
   socket_.swap(socket) ;
 }
 
 Error TcpServerSession::Read(
     char* buf, std::int32_t& buf_len, bool complete_buf) {
-  // TODO:
-  // DCHECK(socket_) ;
-  // DCHECK_NE(nullptr, buf) ;
-  // DCHECK_LT(0, buf_len) ;
+  DCHECK(socket_) ;
+  DCHECK_NE(nullptr, buf) ;
+  DCHECK_LT(0, buf_len) ;
 
   // Remember a buffer length and set a result of reading to 0
   std::int32_t local_buf_len = buf_len ;
@@ -153,10 +152,9 @@ Error TcpServerSession::Read(
 }
 
 Error TcpServerSession::Write(const char* buf, std::int32_t& buf_len) {
-  // TODO:
-  // DCHECK(socket_) ;
-  // DCHECK_NE(nullptr, buf) ;
-  // DCHECK_LT(0, buf_len) ;
+  DCHECK(socket_) ;
+  DCHECK_NE(nullptr, buf) ;
+  DCHECK_LT(0, buf_len) ;
 
   // Remember a buffer length and set a result of writing to 0
   std::int32_t local_buf_len = buf_len ;

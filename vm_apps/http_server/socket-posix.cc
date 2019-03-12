@@ -70,11 +70,10 @@ SocketPosix::~SocketPosix() {
 }
 
 Error SocketPosix::Open(int address_family) {
-  // TODO:
-  // DCHECK_EQ(kInvalidSocket, socket_fd_);
-  // DCHECK(address_family == AF_INET ||
-  //        address_family == AF_INET6 ||
-  //        address_family == AF_UNIX);
+  DCHECK_EQ(kInvalidSocket, socket_fd_) ;
+  DCHECK(address_family == AF_INET ||
+         address_family == AF_INET6 ||
+         address_family == AF_UNIX) ;
 
   socket_fd_ = CreatePlatformSocket(
       address_family, SOCK_STREAM,
@@ -106,7 +105,7 @@ Error SocketPosix::AdoptConnectedSocket(
 }
 
 Error SocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
-  // TODO: DCHECK_EQ(kInvalidSocket, socket_fd_);
+  DCHECK_EQ(kInvalidSocket, socket_fd_) ;
 
   socket_fd_ = socket ;
 
@@ -122,7 +121,7 @@ Error SocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
 }
 
 Error SocketPosix::Bind(const SockaddrStorage& address) {
-  // TODO: DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  DCHECK_NE(kInvalidSocket, socket_fd_) ;
 
   int rv = bind(socket_fd_, address.addr, address.addr_len) ;
   if (rv < 0) {
@@ -135,9 +134,8 @@ Error SocketPosix::Bind(const SockaddrStorage& address) {
 }
 
 Error SocketPosix::Listen(int backlog) {
-  // TODO:
-  // DCHECK_NE(kInvalidSocket, socket_fd_);
-  // DCHECK_LT(0, backlog);
+  DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  DCHECK_LT(0, backlog) ;
 
   int rv = listen(socket_fd_, backlog) ;
   if (rv < 0) {
@@ -151,10 +149,9 @@ Error SocketPosix::Listen(int backlog) {
 
 Error SocketPosix::Accept(
     std::unique_ptr<SocketPosix>* socket, Timeout timeout) {
-  // TODO:
-  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
-  // DCHECK(socket) ;
-  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
+  DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  DCHECK(socket) ;
+  DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   fd_set set ;
   FD_ZERO(&set) ;
@@ -278,12 +275,11 @@ bool SocketPosix::IsConnectedAndIdle() const {
 }
 
 Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO:
-  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
-  // DCHECK(!waiting_connect_) ;
-  // DCHECK_NE(nullptr, buf) ;
-  // DCHECK_LT(0, buf_len) ;
-  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
+  DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  DCHECK(!waiting_connect_) ;
+  DCHECK_NE(nullptr, buf) ;
+  DCHECK_LT(0, buf_len) ;
+  DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   // Remember a buffer length and set a result of reading to 0
   std::int32_t local_buf_len = buf_len ;
@@ -324,12 +320,11 @@ Error SocketPosix::Read(char* buf, std::int32_t& buf_len, Timeout timeout) {
 
 Error SocketPosix::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO:
-  // DCHECK_NE(kInvalidSocket, socket_fd_) ;
-  // DCHECK(!waiting_connect_) ;
-  // DCHECK_NE(nullptr, buf) ;
-  // DCHECK_LT(0, buf_len) ;
-  // DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
+  DCHECK_NE(kInvalidSocket, socket_fd_) ;
+  DCHECK(!waiting_connect_) ;
+  DCHECK_NE(nullptr, buf) ;
+  DCHECK_LT(0, buf_len) ;
+  DCHECK(timeout >= 0 || timeout == kInfiniteTimeout) ;
 
   // Remember a buffer length and set a result of writing to 0
   std::int32_t local_buf_len = buf_len ;
@@ -377,7 +372,7 @@ Error SocketPosix::Write(
 }
 
 Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
-  // TODO: DCHECK(address) ;
+  DCHECK(address) ;
 
   if (getsockname(socket_fd_, address->addr, &address->addr_len) < 0) {
     return V8_ERROR_CREATE_WITH_MSG_SP(
@@ -389,7 +384,7 @@ Error SocketPosix::GetLocalAddress(SockaddrStorage* address) const {
 }
 
 Error SocketPosix::GetPeerAddress(SockaddrStorage* address) const {
-  // TODO: DCHECK(address);
+  DCHECK(address) ;
 
   if (!HasPeerAddress()) {
     return V8_ERROR_CREATE_WITH_MSG(
@@ -408,7 +403,7 @@ void SocketPosix::SetPeerAddress(const SockaddrStorage& address) {
   // Connect() has failed. Connecting the same |socket_| again after a
   // connection attempt failed results in unspecified behavior according to
   // POSIX.
-  // TODO: DCHECK(!peer_address_) ;
+  DCHECK(!peer_address_) ;
   peer_address_.reset(new SockaddrStorage(address)) ;
 }
 

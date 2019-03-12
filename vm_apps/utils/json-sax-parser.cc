@@ -46,7 +46,7 @@ class StackMarker {
  public:
   explicit StackMarker(int* depth) : depth_(depth) {
     ++(*depth_) ;
-    // TODO: DCHECK_LE(*depth_, kStackMaxDepth);
+    DCHECK_LE(*depth_, kStackMaxDepth) ;
   }
   ~StackMarker() {
     --(*depth_) ;
@@ -155,9 +155,8 @@ JsonSaxParser::StringBuilder& JsonSaxParser::StringBuilder::operator =(
     StringBuilder&& other) = default ;
 
 void JsonSaxParser::StringBuilder::Append(const char& c) {
-  // TODO:
-  // DCHECK_GE(c, 0) ;
-  // DCHECK_LT(static_cast<unsigned char>(c), 128) ;
+  DCHECK_GE(c, 0) ;
+  DCHECK_LT(static_cast<unsigned char>(c), 128) ;
 
   if (string_) {
     string_->push_back(c) ;
@@ -167,7 +166,7 @@ void JsonSaxParser::StringBuilder::Append(const char& c) {
 }
 
 void JsonSaxParser::StringBuilder::AppendString(const char* str, size_t len) {
-  // TODO: DCHECK(string_) ;
+  DCHECK(string_) ;
   string_->append(str, len) ;
 }
 
@@ -200,14 +199,14 @@ inline bool JsonSaxParser::CanConsume(int length) {
 }
 
 const char* JsonSaxParser::NextChar() {
-  // TODO: DCHECK(CanConsume(1)) ;
+  DCHECK(CanConsume(1)) ;
   ++index_ ;
   ++pos_ ;
   return pos_ ;
 }
 
 void JsonSaxParser::NextNChars(int n) {
-  // TODO: DCHECK(CanConsume(n)) ;
+  DCHECK(CanConsume(n)) ;
   index_ += n ;
   pos_ += n ;
 }
@@ -756,7 +755,7 @@ bool JsonSaxParser::DecodeUTF16(std::string* dest_string) {
     U8_APPEND_UNSAFE(code_unit8, offset, code_point) ;
   } else {
     // Not a surrogate.
-    // TODO: DCHECK(CBU16_IS_SINGLE(code_unit16_high)) ;
+    DCHECK(U16_IS_SINGLE(code_unit16_high)) ;
     if (!IsValidCharacter(code_unit16_high)) {
       if ((options_ & JSON_REPLACE_INVALID_CHARACTERS) == 0) {
         return false ;
@@ -774,7 +773,7 @@ bool JsonSaxParser::DecodeUTF16(std::string* dest_string) {
 }
 
 void JsonSaxParser::DecodeUTF8(const int32_t& point, StringBuilder* dest) {
-  // TODO: DCHECK(IsValidCharacter(point));
+  DCHECK(IsValidCharacter(point)) ;
 
   // Anything outside of the basic ASCII plane will need to be decoded from
   // int32_t to a multi-byte sequence.

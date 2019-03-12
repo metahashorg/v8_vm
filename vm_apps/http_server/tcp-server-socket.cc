@@ -52,8 +52,7 @@ Error TcpServerSocket::GetLocalAddress(IPEndPoint* address) const {
 
 Error TcpServerSocket::Accept(
     std::unique_ptr<StreamSocket>* socket, Timeout timeout) {
-  // TODO: DCHECK(socket) ;
-  // TODO: DCHECK(!callback.is_null()) ;
+  DCHECK(socket) ;
 
   // Make sure the TCPSocket object is destroyed in any case.
   std::unique_ptr<TcpSocket> accepted_socket ;

@@ -39,7 +39,7 @@ bool IsCanonicalHost(const std::string& host) {
       host_info.family != CanonHostInfo::BROKEN) {
     // Success!  Assert that there's no extra garbage.
     canon_host_output.Complete();
-    // TODO: DCHECK_EQ(host_info.out_host.len, static_cast<int>(canon_host.length()));
+    DCHECK_EQ(host_info.out_host.len, static_cast<int>(canon_host.length())) ;
   } else {
     // Empty host, or canonicalization failed.
     canon_host.clear();
@@ -70,9 +70,8 @@ bool IsValidInput(const std::string& scheme,
 
       // Don't do an expensive canonicalization if the host is already
       // canonicalized.
-      // TODO:
-      // DCHECK(policy == SchemeHostPort::CHECK_CANONICALIZATION ||
-      //        IsCanonicalHost(host));
+      DCHECK(policy == SchemeHostPort::CHECK_CANONICALIZATION ||
+             IsCanonicalHost(host)) ;
       if (policy == SchemeHostPort::CHECK_CANONICALIZATION &&
           !IsCanonicalHost(host)) {
         return false;
@@ -89,9 +88,8 @@ bool IsValidInput(const std::string& scheme,
 
       // Don't do an expensive canonicalization if the host is already
       // canonicalized.
-      // TODO:
-      // DCHECK(policy == SchemeHostPort::CHECK_CANONICALIZATION ||
-      //        IsCanonicalHost(host));
+      DCHECK(policy == SchemeHostPort::CHECK_CANONICALIZATION ||
+             IsCanonicalHost(host)) ;
       if (policy == SchemeHostPort::CHECK_CANONICALIZATION &&
           !IsCanonicalHost(host)) {
         return false;
@@ -103,7 +101,7 @@ bool IsValidInput(const std::string& scheme,
       return false;
 
     default:
-      // TODO: NOTREACHED();
+      UNREACHABLE() ;
       return false;
   }
 }
@@ -180,7 +178,7 @@ GURL SchemeHostPort::GetURL() const {
   // If the serialized string is passed to GURL for parsing, it will append an
   // empty path "/". Add that here. Note: per RFC 6454 we cannot do this for
   // normal Origin serialization.
-  // TODO: DCHECK(!parsed.path.is_valid());
+  DCHECK(!parsed.path.is_valid()) ;
   parsed.path = Component(serialized.length(), 1);
   serialized.append("/");
   return GURL(std::move(serialized), parsed, true);

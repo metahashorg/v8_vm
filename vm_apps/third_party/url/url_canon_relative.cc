@@ -370,8 +370,7 @@ bool DoResolveRelativePath(const char* base_url,
 
   // We should always have something to do in this function, the caller checks
   // that some component is being replaced.
-  // TODO:
-  // DCHECK(false) << "Not reached";
+  UNREACHABLE() ;
   return success;
 }
 

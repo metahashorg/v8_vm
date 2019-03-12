@@ -104,7 +104,7 @@ int IPEndPoint::GetSockAddrFamily() const {
     case IPAddress::kIPv6AddressSize:
       return AF_INET6;
     default:
-      // TODO: NOTREACHED() << "Bad IP address" ;
+      UNREACHABLE() ;
       V8_LOG_ERR(errUnknown, "Bad IP address") ;
       return AF_UNSPEC ;
   }
@@ -112,8 +112,8 @@ int IPEndPoint::GetSockAddrFamily() const {
 
 bool IPEndPoint::ToSockAddr(struct sockaddr* address,
                             socklen_t* address_length) const {
-  // TODO: DCHECK(address) ;
-  // TODO: DCHECK(address_length) ;
+  DCHECK(address) ;
+  DCHECK(address_length) ;
   switch (address_.size()) {
     case IPAddress::kIPv4AddressSize: {
       if (*address_length < kSockaddrInSize)
@@ -149,7 +149,7 @@ bool IPEndPoint::ToSockAddr(struct sockaddr* address,
 
 bool IPEndPoint::FromSockAddr(const struct sockaddr* sock_addr,
                               socklen_t sock_addr_len) {
-  // TODO: DCHECK(sock_addr) ;
+  DCHECK(sock_addr) ;
 
   const uint8_t* address ;
   size_t address_len ;

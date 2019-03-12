@@ -33,7 +33,7 @@ HttpServerSession::HttpServerSession(
 
 Error HttpServerSession::GetBody(
     const char*& body, std::int32_t& body_size, bool& owned) {
-  // TODO: DCHECK(request_) ;
+  DCHECK(request_) ;
 
   V8_LOG_FUNCTION_BODY() ;
 

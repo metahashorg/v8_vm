@@ -75,7 +75,7 @@ TcpSocketPosix::~TcpSocketPosix() {
 }
 
 Error TcpSocketPosix::Open(AddressFamily family) {
-  // TODO: DCHECK(!socket_) ;
+  DCHECK(!socket_) ;
   socket_.reset(new SocketPosix) ;
   Error rv = socket_->Open(ConvertAddressFamily(family)) ;
   if (rv != errOk) {
@@ -88,7 +88,7 @@ Error TcpSocketPosix::Open(AddressFamily family) {
 
 Error TcpSocketPosix::AdoptConnectedSocket(
     SocketDescriptor socket, const IPEndPoint& peer_address) {
-  // TODO: DCHECK(!socket_) ;
+  DCHECK(!socket_) ;
 
   SockaddrStorage storage ;
   if (!peer_address.ToSockAddr(storage.addr, &storage.addr_len) &&
@@ -109,7 +109,7 @@ Error TcpSocketPosix::AdoptConnectedSocket(
 }
 
 Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
-  // TODO: DCHECK(!socket_);
+  DCHECK(!socket_) ;
 
   socket_.reset(new SocketPosix) ;
   Error rv = socket_->AdoptUnconnectedSocket(socket) ;
@@ -122,7 +122,7 @@ Error TcpSocketPosix::AdoptUnconnectedSocket(SocketDescriptor socket) {
 }
 
 Error TcpSocketPosix::Bind(const IPEndPoint& address) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   SockaddrStorage storage ;
   if (!address.ToSockAddr(storage.addr, &storage.addr_len)) {
@@ -134,15 +134,15 @@ Error TcpSocketPosix::Bind(const IPEndPoint& address) {
 }
 
 Error TcpSocketPosix::Listen(int backlog) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
   return socket_->Listen(backlog) ;
 }
 
 Error TcpSocketPosix::Accept(
     std::unique_ptr<TcpSocketPosix>* tcp_socket, IPEndPoint* address,
     Timeout timeout) {
-  // TODO: DCHECK(tcp_socket);
-  // TODO: DCHECK(socket_);
+  DCHECK(tcp_socket) ;
+  DCHECK(socket_) ;
 
   std::unique_ptr<SocketPosix> accept_socket ;
   Error rv = socket_->Accept(&accept_socket, timeout) ;
@@ -183,20 +183,20 @@ bool TcpSocketPosix::IsConnectedAndIdle() const {
 
 Error TcpSocketPosix::Read(
     char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return socket_->Read(buf, buf_len, timeout) ;
 }
 
 Error TcpSocketPosix::Write(
     const char* buf, std::int32_t& buf_len, Timeout timeout) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return socket_->Write(buf, buf_len, timeout) ;
 }
 
 Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
-  // TODO: DCHECK(address) ;
+  DCHECK(address) ;
 
   if (!socket_) {
     return V8_ERROR_CREATE_WITH_MSG(
@@ -215,7 +215,7 @@ Error TcpSocketPosix::GetLocalAddress(IPEndPoint* address) const {
 }
 
 Error TcpSocketPosix::GetPeerAddress(IPEndPoint* address) const {
-  // TODO: DCHECK(address);
+  DCHECK(address) ;
 
   if (!IsConnected()) {
     return V8_ERROR_CREATE_WITH_MSG(
@@ -235,12 +235,12 @@ Error TcpSocketPosix::GetPeerAddress(IPEndPoint* address) const {
 }
 
 Error TcpSocketPosix::SetDefaultOptionsForServer() {
-  // TODO: DCHECK(socket_);
+  DCHECK(socket_) ;
   return AllowAddressReuse() ;
 }
 
 void TcpSocketPosix::SetDefaultOptionsForClient() {
-  // TODO: DCHECK(socket_);
+  DCHECK(socket_) ;
 
   // This mirrors the behaviour on Windows. See the comment in
   // tcp_socket_win.cc after searching for "NODELAY".
@@ -269,31 +269,31 @@ void TcpSocketPosix::SetDefaultOptionsForClient() {
 }
 
 Error TcpSocketPosix::AllowAddressReuse() {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return SetReuseAddr(socket_->socket_fd(), true) ;
 }
 
 Error TcpSocketPosix::SetReceiveBufferSize(std::int32_t size) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return SetSocketReceiveBufferSize(socket_->socket_fd(), size) ;
 }
 
 Error TcpSocketPosix::SetSendBufferSize(std::int32_t size) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return SetSocketSendBufferSize(socket_->socket_fd(), size) ;
 }
 
 bool TcpSocketPosix::SetKeepAlive(bool enable, int delay) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return SetTCPKeepAlive(socket_->socket_fd(), enable, delay) ;
 }
 
 bool TcpSocketPosix::SetNoDelay(bool no_delay) {
-  // TODO: DCHECK(socket_) ;
+  DCHECK(socket_) ;
 
   return SetTCPNoDelay(socket_->socket_fd(), no_delay) == errOk ;
 }

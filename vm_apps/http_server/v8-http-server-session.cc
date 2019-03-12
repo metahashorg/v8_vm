@@ -97,7 +97,7 @@ Error ReadInt(
     std::uint8_t *&cur_pos, std::uint8_t *end_pos, std::uint64_t& result) {
   static_assert(std::is_integral<T>::value, "Type must be integral") ;
 
-  // TODO: DCHECK(cur_pos + sizeof(T) <= end_pos) ;
+  DCHECK(cur_pos + sizeof(T) <= end_pos) ;
 
   if ((cur_pos + sizeof(T)) > end_pos) {
     return V8_ERROR_CREATE_WITH_MSG(
@@ -111,7 +111,7 @@ Error ReadInt(
 
 Error ReadVarInt(
     std::uint8_t *&cur_pos, std::uint8_t *end_pos, std::uint64_t& result) {
-  // TODO: DCHECK(cur_pos + sizeof(std::uint8_t) <= end_pos) ;
+  DCHECK(cur_pos + sizeof(std::uint8_t) <= end_pos) ;
 
   if ((cur_pos + sizeof(std::uint8_t)) > end_pos) {
     return V8_ERROR_CREATE_WITH_MSG(
@@ -733,7 +733,6 @@ Error V8HttpServerSession::Do() {
         request_.get(), result, http_response_) ;
   }
 
-  // TODO: Add IP-address to origin - "http-request from 127.0.0.1:8080"
   RequestParser parser ;
   std::string origin = StringPrintf(
       "http-request (%s)", http_request_.ip_endpoint().ToString().c_str()) ;

@@ -38,7 +38,7 @@
 
 #include <stdlib.h>
 
-// @metahash #include "base/logging.h"
+#include "src/base/logging.h"
 #include "vm_apps/third_party/url/url_parse_internal.h"
 #include "vm_apps/third_party/url/url_util.h"
 #include "vm_apps/third_party/url/url_util_internal.h"
@@ -146,8 +146,7 @@ void DoParseAuthority(const CHAR* spec,
                       Component* password,
                       Component* hostname,
                       Component* port_num) {
-  // TODO:
-  // DCHECK(auth.is_valid()) << "We should always get an authority";
+  DCHECK(auth.is_valid()) ;
   if (auth.len == 0) {
     username->reset();
     password->reset();
@@ -216,8 +215,7 @@ void ParsePath(const CHAR* spec,
     ref->reset();
     return;
   }
-  // TODO:
-  // DCHECK(path.len > 0) << "We should never have 0 length paths";
+  DCHECK(path.len > 0) ;
 
   // Search for first occurrence of either ? or #.
   int query_separator = -1;  // Index of the '?'
@@ -328,8 +326,7 @@ void DoParseAfterScheme(const CHAR* spec,
 // host, path, etc.
 template<typename CHAR>
 void DoParseStandardURL(const CHAR* spec, int spec_len, Parsed* parsed) {
-  // TODO:
-  // DCHECK(spec_len >= 0);
+  DCHECK(spec_len >= 0) ;
 
   // Strip leading & trailing spaces and control characters.
   int begin = 0;
@@ -350,8 +347,7 @@ void DoParseStandardURL(const CHAR* spec, int spec_len, Parsed* parsed) {
 
 template<typename CHAR>
 void DoParseFileSystemURL(const CHAR* spec, int spec_len, Parsed* parsed) {
-  // TODO:
-  // DCHECK(spec_len >= 0);
+  DCHECK(spec_len >= 0) ;
 
   // Get the unused parts of the URL out of the way.
   parsed->username.reset();
@@ -507,8 +503,7 @@ void DoParsePathURL(const CHAR* spec, int spec_len,
 
   if (path_begin == spec_len)
     return;
-  // TODO:
-  // DCHECK_LT(path_begin, spec_len);
+  DCHECK_LT(path_begin, spec_len) ;
 
   ParsePath(spec,
             MakeRange(path_begin, spec_len),
@@ -519,8 +514,7 @@ void DoParsePathURL(const CHAR* spec, int spec_len,
 
 template<typename CHAR>
 void DoParseMailtoURL(const CHAR* spec, int spec_len, Parsed* parsed) {
-  // TODO:
-  // DCHECK(spec_len >= 0);
+  DCHECK(spec_len >= 0) ;
 
   // Get the non-path and non-scheme parts of the URL out of the way, we never
   // use them.

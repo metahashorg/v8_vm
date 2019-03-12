@@ -7,8 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 
-// @metahas #include "base/logging.h"
-// @metahas #include "base/strings/string_number_conversions.h"
+#include "src/base/logging.h"
 #include "vm_apps/third_party/url/gurl.h"
 #include "vm_apps/third_party/url/url_canon.h"
 #include "vm_apps/third_party/url/url_canon_stdstring.h"
@@ -24,7 +23,7 @@ GURL AddSuboriginToUrl(const GURL& url, const std::string& suborigin) {
   if (url.scheme() == kHttpScheme) {
     replacements.SetSchemeStr(kHttpSuboriginScheme);
   } else {
-    // TODO: DCHECK(url.scheme() == kHttpsScheme);
+    DCHECK(url.scheme() == kHttpsScheme) ;
     replacements.SetSchemeStr(kHttpsSuboriginScheme);
   }
   std::string new_host = suborigin + "." + url.host();
@@ -57,7 +56,7 @@ Origin::Origin(const GURL& url) : unique_(true), suborigin_(std::string()) {
     if (url.scheme() == kHttpSuboriginScheme) {
       replacements.SetSchemeStr(kHttpScheme);
     } else {
-      // TODO: DCHECK(url.scheme() == kHttpsSuboriginScheme);
+      DCHECK(url.scheme() == kHttpsSuboriginScheme) ;
       replacements.SetSchemeStr(kHttpsScheme);
     }
 
