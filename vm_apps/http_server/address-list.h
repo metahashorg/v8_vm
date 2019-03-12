@@ -47,7 +47,7 @@ class AddressList {
   }
 
   // Sets canonical name to the literal of the first IP address on the list.
-  // TODO: void SetDefaultCanonicalName();
+  void SetDefaultCanonicalName() ;
 
   using iterator = std::vector<IPEndPoint>::iterator ;
   using const_iterator = std::vector<IPEndPoint>::const_iterator ;

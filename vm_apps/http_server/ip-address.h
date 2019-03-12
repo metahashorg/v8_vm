@@ -224,13 +224,11 @@ std::string IPAddressToPackedString(const IPAddress& address) ;
 
 // Converts an IPv4 address to an IPv4-mapped IPv6 address.
 // For example 192.168.0.1 would be converted to ::ffff:192.168.0.1.
-// TODO:
-// IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address) ;
+IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address) ;
 
 // Converts an IPv4-mapped IPv6 address to IPv4 address. Should only be called
 // on IPv4-mapped IPv6 addresses.
-// TODO:
-// IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address) ;
+IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address) ;
 
 // Compares an IP address to see if it falls within the specified IP block.
 // Returns true if it does, false otherwise.
@@ -242,10 +240,9 @@ std::string IPAddressToPackedString(const IPAddress& address) ;
 // In cases when an IPv4 address is being compared to an IPv6 address prefix
 // and vice versa, the IPv4 addresses will be converted to IPv4-mapped
 // (IPv6) addresses.
-// TODO:
-// bool IPAddressMatchesPrefix(
-//     const IPAddress& ip_address, const IPAddress& ip_prefix,
-//     size_t prefix_length_in_bits) ;
+bool IPAddressMatchesPrefix(
+    const IPAddress& ip_address, const IPAddress& ip_prefix,
+    size_t prefix_length_in_bits) ;
 
 // Parses an IP block specifier from CIDR notation to an
 // (IP address, prefix length) pair. Returns true on success and fills
@@ -266,17 +263,15 @@ std::string IPAddressToPackedString(const IPAddress& address) ;
 // Returns true on success, and fills |ip_address| with the numeric value.
 // In other words, |hostname| must be an IPv4 literal, or an IPv6 literal
 // surrounded by brackets as in [::1].
-// TODO:
-// V8_WARN_UNUSED_RESULT
-// bool ParseURLHostnameToAddress(
-//     const base::StringPiece& hostname, IPAddress* ip_address) ;
+V8_WARN_UNUSED_RESULT
+bool ParseURLHostnameToAddress(
+    const std::string& hostname, IPAddress* ip_address) ;
 
 // Returns number of matching initial bits between the addresses |a1| and |a2|.
 unsigned CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) ;
 
 // Computes the number of leading 1-bits in |mask|.
-// TODO:
-// unsigned MaskPrefixLength(const IPAddress& mask) ;
+unsigned MaskPrefixLength(const IPAddress& mask) ;
 
 // Checks whether |address| starts with |prefix|. This provides similar
 // functionality as IPAddressMatchesPrefix() but doesn't perform automatic IPv4

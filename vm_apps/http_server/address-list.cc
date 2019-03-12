@@ -73,8 +73,7 @@ AddressList AddressList::CopyWithPort(
   return out ;
 }
 
-// TODO:
-// void AddressList::SetDefaultCanonicalName() {
-//   DCHECK(!empty());
-//   set_canonical_name(front().ToStringWithoutPort());
-// }
+void AddressList::SetDefaultCanonicalName() {
+  DCHECK(!empty()) ;
+  set_canonical_name(front().ToStringWithoutPort()) ;
+}

@@ -348,57 +348,67 @@ std::string IPAddressToPackedString(const IPAddress& address) {
                      address.size()) ;
 }
 
-// TODO:
-// IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address) {
-//   DCHECK(address.IsIPv4()) ;
-//   // IPv4-mapped addresses are formed by:
-//   // <80 bits of zeros>  + <16 bits of ones> + <32-bit IPv4 address>.
-//   base::StackVector<std::uint8_t, 16> bytes ;
-//   bytes->insert(bytes->end(), std::begin(kIPv4MappedPrefix),
-//                 std::end(kIPv4MappedPrefix)) ;
-//   bytes->insert(bytes->end(), address.bytes().begin(), address.bytes().end()) ;
-//   return IPAddress(bytes->data(), bytes->size()) ;
-// }
+IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address) {
+  DCHECK(address.IsIPv4()) ;
+  // IPv4-mapped addresses are formed by:
+  // <80 bits of zeros>  + <16 bits of ones> + <32-bit IPv4 address>.
+  // base::StackVector<std::uint8_t, 16> bytes ;
+  // bytes->insert(bytes->end(), std::begin(kIPv4MappedPrefix),
+  //               std::end(kIPv4MappedPrefix)) ;
+  // bytes->insert(bytes->end(), address.bytes().begin(), address.bytes().end()) ;
+  // return IPAddress(bytes->data(), bytes->size()) ;
+  std::vector<std::uint8_t> bytes ;
+  bytes.reserve(16) ;
+  bytes.insert(bytes.end(), std::begin(kIPv4MappedPrefix),
+               std::end(kIPv4MappedPrefix)) ;
+  bytes.insert(bytes.end(), address.bytes().begin(), address.bytes().end()) ;
+  return IPAddress(bytes.data(), bytes.size()) ;
+}
 
-// TODO:
-// IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address) {
-//   DCHECK(address.IsIPv4MappedIPv6()) ;
-//
-//   base::StackVector<std::uint8_t, 16> bytes ;
-//   bytes->insert(bytes->end(),
-//                 address.bytes().begin() + arraysize(kIPv4MappedPrefix),
-//                 address.bytes().end()) ;
-//   return IPAddress(bytes->data(), bytes->size()) ;
-// }
+IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address) {
+  DCHECK(address.IsIPv4MappedIPv6()) ;
 
-// TODO:
-// bool IPAddressMatchesPrefix(const IPAddress& ip_address,
-//                             const IPAddress& ip_prefix,
-//                             size_t prefix_length_in_bits) {
-//   // Both the input IP address and the prefix IP address should be either IPv4
-//   // or IPv6.
-//   DCHECK(ip_address.IsValid()) ;
-//   DCHECK(ip_prefix.IsValid()) ;
-//
-//   DCHECK_LE(prefix_length_in_bits, ip_prefix.size() * 8) ;
-//
-//   // In case we have an IPv6 / IPv4 mismatch, convert the IPv4 addresses to
-//   // IPv6 addresses in order to do the comparison.
-//   if (ip_address.size() != ip_prefix.size()) {
-//     if (ip_address.IsIPv4()) {
-//       return IPAddressMatchesPrefix(ConvertIPv4ToIPv4MappedIPv6(ip_address),
-//                                     ip_prefix, prefix_length_in_bits) ;
-//     }
-//     return IPAddressMatchesPrefix(ip_address,
-//                                   ConvertIPv4ToIPv4MappedIPv6(ip_prefix),
-//                                   96 + prefix_length_in_bits) ;
-//   }
-//
-//   return IPAddressPrefixCheck(ip_address.bytes(), ip_prefix.bytes().data(),
-//                               prefix_length_in_bits) ;
-// }
+  // base::StackVector<std::uint8_t, 16> bytes ;
+  // bytes->insert(bytes->end(),
+  //               address.bytes().begin() + arraysize(kIPv4MappedPrefix),
+  //               address.bytes().end()) ;
+  // return IPAddress(bytes->data(), bytes->size()) ;
+  // base::StackVector<std::uint8_t, 16> bytes ;
+  std::vector<std::uint8_t> bytes ;
+  bytes.reserve(16) ;
+  bytes.insert(bytes.end(),
+                address.bytes().begin() + arraysize(kIPv4MappedPrefix),
+                address.bytes().end()) ;
+  return IPAddress(bytes.data(), bytes.size()) ;
+}
 
-// TODO:
+bool IPAddressMatchesPrefix(const IPAddress& ip_address,
+                            const IPAddress& ip_prefix,
+                            size_t prefix_length_in_bits) {
+  // Both the input IP address and the prefix IP address should be either IPv4
+  // or IPv6.
+  DCHECK(ip_address.IsValid()) ;
+  DCHECK(ip_prefix.IsValid()) ;
+
+  DCHECK_LE(prefix_length_in_bits, ip_prefix.size() * 8) ;
+
+  // In case we have an IPv6 / IPv4 mismatch, convert the IPv4 addresses to
+  // IPv6 addresses in order to do the comparison.
+  if (ip_address.size() != ip_prefix.size()) {
+    if (ip_address.IsIPv4()) {
+      return IPAddressMatchesPrefix(ConvertIPv4ToIPv4MappedIPv6(ip_address),
+                                    ip_prefix, prefix_length_in_bits) ;
+    }
+
+    return IPAddressMatchesPrefix(ip_address,
+                                  ConvertIPv4ToIPv4MappedIPv6(ip_prefix),
+                                  96 + prefix_length_in_bits) ;
+  }
+
+  return IPAddressPrefixCheck(ip_address.bytes(), ip_prefix.bytes().data(),
+                              prefix_length_in_bits) ;
+}
+
 // bool ParseCIDRBlock(const std::string& cidr_literal,
 //                     IPAddress* ip_address,
 //                     size_t* prefix_length_in_bits) {
@@ -428,19 +438,18 @@ std::string IPAddressToPackedString(const IPAddress& address) {
 //   return true ;
 // }
 
-// TODO:
-// bool ParseURLHostnameToAddress(const base::StringPiece& hostname,
-//                                IPAddress* ip_address) {
-//   if (hostname.size() >= 2 && hostname.front() == '[' &&
-//       hostname.back() == ']') {
-//     // Strip the square brackets that surround IPv6 literals.
-//     auto ip_literal =
-//         base::StringPiece(hostname).substr(1, hostname.size() - 2) ;
-//     return ip_address->AssignFromIPLiteral(ip_literal) && ip_address->IsIPv6() ;
-//   }
-//
-//   return ip_address->AssignFromIPLiteral(hostname) && ip_address->IsIPv4() ;
-// }
+bool ParseURLHostnameToAddress(const std::string& hostname,
+                               IPAddress* ip_address) {
+  if (hostname.size() >= 2 && hostname.front() == '[' &&
+      hostname.back() == ']') {
+    // Strip the square brackets that surround IPv6 literals.
+    auto ip_literal =
+        std::string(hostname).substr(1, hostname.size() - 2) ;
+    return ip_address->AssignFromIPLiteral(ip_literal) && ip_address->IsIPv6() ;
+  }
+
+  return ip_address->AssignFromIPLiteral(hostname) && ip_address->IsIPv4() ;
+}
 
 unsigned CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
   DCHECK_EQ(a1.size(), a2.size()) ;
@@ -458,10 +467,14 @@ unsigned CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
   return static_cast<unsigned>(a1.size() * CHAR_BIT) ;
 }
 
-// TODO:
-// unsigned MaskPrefixLength(const IPAddress& mask) {
-//   base::StackVector<std::uint8_t, 16> all_ones ;
-//   all_ones->resize(mask.size(), 0xFF) ;
-//   return CommonPrefixLength(mask,
-//                             IPAddress(all_ones->data(), all_ones->size())) ;
-// }
+unsigned MaskPrefixLength(const IPAddress& mask) {
+  // base::StackVector<std::uint8_t, 16> all_ones ;
+  // all_ones->resize(mask.size(), 0xFF) ;
+  // return CommonPrefixLength(mask,
+  //                           IPAddress(all_ones->data(), all_ones->size())) ;
+  std::vector<std::uint8_t> all_ones ;
+  all_ones.reserve(16) ;
+  all_ones.resize(mask.size(), 0xFF) ;
+  return CommonPrefixLength(mask,
+                            IPAddress(all_ones.data(), all_ones.size())) ;
+}
